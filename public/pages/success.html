@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful - WedEazzy</title>
+  <meta name="description" content="Payment success confirmation and tax invoice generation page for WedEazzy premium vendor plans." />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0E1726;
+      --gold: #C9A33A;
+      --rose: #C8102E;
+      --blush: #FAE7E9;
+      --cream: #FBF7F2;
+      --text: #3A3530;
+      --text-secondary: #79706A;
+      --border: #E8DFD4;
+      --success: #10B981;
+      --bg-card: #FFFFFF;
+      --radius: 16px;
+      --sans: 'Inter', sans-serif;
+      --serif: 'Playfair Display', serif;
+    }
+
+    [data-theme="dark"] {
+      --navy: #FBF7F2;
+      --bg-card: #151F32;
+      --cream: #0E1726;
+      --text: #E8DFD4;
+      --text-secondary: #A89F98;
+      --border: #28354F;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--sans);
+      color: var(--text);
+      background-color: var(--cream);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px;
+      transition: background-color 0.3s ease;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 40px rgba(14, 23, 38, 0.08);
+      padding: 40px 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      animation: slide-up 0.5s ease-out;
+    }
+
+    @keyframes slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .success-icon-wrap {
+      width: 80px;
+      height: 80px;
+      background-color: rgba(16, 185, 129, 0.1);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 24px;
+    }
+
+    .success-icon {
+      width: 44px;
+      height: 44px;
+      color: var(--success);
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-size: 28px;
+      color: var(--navy);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 14.5px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .receipt-card {
+      background-color: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13.5px;
+    }
+
+    .receipt-row:last-child {
+      margin-bottom: 0;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--navy);
+    }
+
+    .receipt-label {
+      color: var(--text-secondary);
+    }
+
+    .receipt-value {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .btn-dashboard {
+      background: linear-gradient(135deg, var(--rose) 0%, var(--navy) 100%);
+      color: #FFFFFF;
+      font-weight: 700;
+      border: none;
+      border-radius: 99px;
+      padding: 14px 28px;
+      font-size: 14.5px;
+      display: inline-block;
+      text-decoration: none;
+      box-shadow: 0 8px 20px rgba(198, 16, 46, 0.25);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .btn-dashboard:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(198, 16, 46, 0.35);
+    }
+
+    .btn-invoice {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      font-weight: 700;
+      border-radius: 99px;
+      padding: 13px 28px;
+      font-size: 14px;
+      display: inline-block;
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .btn-invoice:hover {
+      background: var(--cream);
+      border-color: var(--text);
+    }
+
+    .footer-note {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 24px;
+      line-height: 1.5;
+    }
+
+    .bubble {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(198, 16, 46, 0.05) 0%, transparent 70%);
+      z-index: -1;
+    }
+    .bubble-1 { top: -80px; left: -80px; }
+    .bubble-2 { bottom: -80px; right: -80px; }
+
+    /* Printable Invoice Stylesheet */
+    #invoice-receipt {
+      display: none;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #invoice-receipt, #invoice-receipt * {
+        visibility: visible;
+      }
+      #invoice-receipt {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 30px;
+        background: #FFFFFF;
+        color: #000000;
+        font-family: 'Inter', sans-serif;
+      }
+      .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 2px solid #333;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+      }
+      .invoice-brand {
+        font-size: 24px;
+        font-weight: 800;
+        color: #C8102E;
+      }
+      .invoice-subtitle {
+        font-size: 12px;
+        color: #555;
+      }
+      .invoice-meta {
+        text-align: right;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 25px;
+        margin-bottom: 25px;
+      }
+      .invoice-table th, .invoice-table td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+        font-size: 13px;
+      }
+      .invoice-table th {
+        background-color: #f5f5f5;
+        font-weight: 700;
+      }
+      .invoice-footer {
+        border-top: 1px solid #ddd;
+        padding-top: 15px;
+        font-size: 11px;
+        color: #666;
+        text-align: center;
+        margin-top: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="bubble bubble-1"></div>
+    <div class="bubble bubble-2"></div>
+
+    <div class="success-icon-wrap">
+      <svg class="success-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+      </svg>
+    </div>
+
+    <h1>Payment Successful!</h1>
+    <p class="subtitle">Thank you for your payment. Your WedEazzy Listing / Ad Campaign is now fully active.</p>
+
+    <div class="receipt-card">
+      <div class="receipt-row">
+        <span class="receipt-label">Activated Package</span>
+        <span class="receipt-value" id="planName">Featured Plan</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Transaction ID</span>
+        <span class="receipt-value" id="txnId">TXN_123456789</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Payment Gateway</span>
+        <span class="receipt-value">Razorpay Secure</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Validity Period</span>
+        <span class="receipt-value" id="validityStr">30 Days (Auto-activated)</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Amount Paid (Inc. GST)</span>
+        <span class="receipt-value" id="amountPaid">₹7,078.82</span>
+      </div>
+    </div>
+
+    <a href="/pages/bdashboard.html" class="btn-dashboard">Go to Partner Dashboard</a>
+    <button onclick="window.print()" class="btn-invoice">🖨️ Print Invoice Receipt</button>
+    
+    <p class="footer-note">A payment confirmation receipt has been dispatched to your registered email and WhatsApp.</p>
+  </div>
+
+  <!-- Hidden Printable Invoice Template -->
+  <div id="invoice-receipt">
+    <div class="invoice-header">
+      <div>
+        <h2 class="invoice-brand">WedEazzy</h2>
+        <p class="invoice-subtitle">WedEazzy.com Payments Desk</p>
+      </div>
+      <div class="invoice-meta">
+        <strong>TAX INVOICE</strong><br>
+        Invoice: <span id="invNo">INV-N/A</span><br>
+        Date: <span id="invDate">N/A</span>
+      </div>
+    </div>
+    
+    <div style="margin-bottom: 25px; font-size: 13px; line-height: 1.6;">
+      <div style="float: left; width: 50%;">
+        <strong>Billed To:</strong><br>
+        WedEazzy Partner Vendor<br>
+        Registered Account Business Listing
+      </div>
+      <div style="float: right; width: 50%; text-align: right;">
+        <strong>Service Provider:</strong><br>
+        WedEazzy India Pvt Ltd<br>
+        GSTIN: 27AABCW1234H1Z1<br>
+        Email: accounts@wedeazzy.com
+      </div>
+      <div style="clear: both;"></div>
+    </div>
+
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="text-align: right; width: 20%;">Base Price</th>
+          <th style="text-align: right; width: 20%;">GST (18%)</th>
+          <th style="text-align: right; width: 20%;">Total Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span id="invPlanName">Featured listing plan subscription</span></td>
+          <td style="text-align: right;">₹<span id="invBaseAmt">0.00</span></td>
+          <td style="text-align: right;">₹<span id="invGstAmt">0.00</span></td>
+          <td style="text-align: right; font-weight: 700;">₹<span id="invTotalAmt">0.00</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 30px; font-size: 13px; line-height: 1.6;">
+      <p><strong>Payment Details:</strong></p>
+      <p>Transaction ID: <span id="invTxnId">TXN_N/A</span></p>
+      <p>Gateway: Razorpay Payment Gateway</p>
+      <p>Status: Successful / Paid</p>
+    </div>
+
+    <div class="invoice-footer">
+      <p>This is a computer-generated tax invoice and does not require a physical signature.</p>
+      <p>Thank you for choosing WedEazzy.com to grow your business.</p>
+      <p>© WedEazzy.com. All rights reserved.</p>
+    </div>
+  </div>
+
+  <script>
+    // Extract parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const plan = urlParams.get('plan') || 'Campaign Setup';
+    const txnId = urlParams.get('txnId') || 'N/A';
+    const amount = urlParams.get('amount') || '0';
+
+    // Format Plan name
+    let formattedPlan = plan;
+    if (formattedPlan !== 'Ad Campaign' && !formattedPlan.includes('Plan') && !formattedPlan.includes('Campaign')) {
+      formattedPlan = formattedPlan + ' Plan';
+    }
+    
+    const setElementText = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+
+    setElementText('planName', formattedPlan);
+    setElementText('txnId', txnId);
+
+    // Plan vs campaign validity
+    const isCampaign = plan.toLowerCase().includes('campaign') || plan.toLowerCase().includes('ad');
+    setElementText('validityStr', isCampaign 
+      ? '14 Days Campaign Duration'
+      : '30 Days Subscription Upgrade');
+    
+    const parsedAmount = parseFloat(amount);
+    if (!isNaN(parsedAmount) && parsedAmount > 0) {
+      const displayAmt = '₹' + parsedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      setElementText('amountPaid', displayAmt);
+
+      // Populate printable invoice
+      const baseAmount = parsedAmount / 1.18;
+      const gstAmount = parsedAmount - baseAmount;
+      
+      setElementText('invNo', 'INV-' + txnId.replace('TXN_', ''));
+      setElementText('invDate', new Date().toLocaleDateString('en-IN'));
+      setElementText('invPlanName', formattedPlan + ' - WedEazzy B2B Marketing Services');
+      setElementText('invBaseAmt', baseAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setElementText('invGstAmt', gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setElementText('invTotalAmt', parsedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setElementText('invTxnId', txnId);
+    } else {
+      setElementText('amountPaid', 'Verified Success');
+    }
+
+    // Auto-detect theme from localStorage
+    const savedTheme = localStorage.getItem('wedeazzy_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
+</body>
+</html>

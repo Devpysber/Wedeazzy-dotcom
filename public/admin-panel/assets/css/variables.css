@@ -1,0 +1,117 @@
+/**
+ * WedEazzy Modular Admin Panel - Design Tokens & Variables
+ * Inspired by Linear, Stripe, and Airbnb SaaS layouts.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Font Family Mappings */
+  --font-sans: 'Inter', sans-serif;
+  --font-head: 'Outfit', sans-serif;
+
+  /* Modern Light Theme Palette */
+  --canvas-bg: #f9fafb;       /* Cool background gray */
+  --surface-bg: #ffffff;      /* Pure white cards */
+  --border-color: #e5e7eb;    /* Crisp divider borders */
+  --border-subtle: #f3f4f6;   /* Inside card dividers */
+  
+  --text-main: #111827;       /* Core dark gray */
+  --text-sub: #4b5563;        /* Sub-headings and descriptions */
+  --text-muted: #9ca3af;      /* Placeholders and inactive tags */
+
+  /* Accents & Brand Marks */
+  --brand-rose: #f43f5e;
+  --brand-rose-hover: #e11d48;
+  --brand-gold: #d4af37;
+  --brand-gold-soft: #fef08a;
+
+  /* Status Colors */
+  --bg-status-pending: #fef3c7;
+  --text-status-pending: #d97706;
+  --bg-status-confirmed: #d1fae5;
+  --text-status-confirmed: #059669;
+  --bg-status-cancelled: #fee2e2;
+  --text-status-cancelled: #dc2626;
+
+  /* Spacing Scale */
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+
+  /* Card Shadows */
+  --shadow-box: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-glow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.06), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+
+  --transition-default: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+  /* Modern Dark Theme Palette */
+  --canvas-bg: #090b11;       /* Deep obsidian canvas */
+  --surface-bg: #0f111a;      /* Slate blue card bases */
+  --border-color: #1e2230;    /* Dark divider lines */
+  --border-subtle: #141722;   /* Inside card dividers */
+  
+  --text-main: #f3f4f6;       /* Crisp silver headings */
+  --text-sub: #9ca3af;        /* Slate descriptions */
+  --text-muted: #6b7280;      /* Dark placeholders */
+
+  --brand-rose: #f43f5e;
+  --brand-rose-hover: #fda4af;
+  --brand-gold: #eab308;
+
+  /* Status Colors */
+  --bg-status-pending: rgba(217, 119, 6, 0.12);
+  --text-status-pending: #fbbf24;
+  --bg-status-confirmed: rgba(5, 150, 105, 0.12);
+  --text-status-confirmed: #34d399;
+  --bg-status-cancelled: rgba(220, 38, 38, 0.12);
+  --text-status-cancelled: #f87171;
+
+  /* Card Shadows */
+  --shadow-box: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Global Browser Overrides */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+}
+
+body {
+  background-color: var(--canvas-bg);
+  color: var(--text-main);
+  transition: background-color var(--transition-default), color var(--transition-default);
+  overflow-x: hidden;
+  height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-head);
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* Beautiful custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--canvas-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

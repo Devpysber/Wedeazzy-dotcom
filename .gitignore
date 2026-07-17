@@ -1,0 +1,32 @@
+# --- Dependencies ---
+node_modules/
+**/node_modules/
+
+# --- Secrets / environment (NEVER commit) ---
+.env
+.env.*
+**/.env
+**/.env.*
+# keep the placeholder templates only
+!.env.example
+!**/.env.example
+
+# --- Runtime / generated ---
+**/uploads/
+!**/uploads/.gitkeep
+**/baileys-auth/
+!**/baileys-auth/.gitkeep
+**/logs/
+!**/logs/.gitkeep
+.data/
+**/.data/
+*.log
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# redundant local deploy-copy artifact (not needed in repo)
+/wedeazzy-production-deploy/

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Failed - WedEazzy</title>
+  <meta name="description" content="Payment failed status page for WedEazzy transaction reconciliation and support guidance." />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0E1726;
+      --gold: #C9A33A;
+      --rose: #C8102E;
+      --blush: #FAE7E9;
+      --cream: #FBF7F2;
+      --text: #3A3530;
+      --text-secondary: #79706A;
+      --border: #E8DFD4;
+      --danger: #EF4444;
+      --bg-card: #FFFFFF;
+      --radius: 16px;
+      --sans: 'Inter', sans-serif;
+      --serif: 'Playfair Display', serif;
+    }
+
+    [data-theme="dark"] {
+      --navy: #FBF7F2;
+      --bg-card: #151F32;
+      --cream: #0E1726;
+      --text: #E8DFD4;
+      --text-secondary: #A89F98;
+      --border: #28354F;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--sans);
+      color: var(--text);
+      background-color: var(--cream);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px;
+      transition: background-color 0.3s ease;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 40px rgba(14, 23, 38, 0.08);
+      padding: 40px 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      animation: slide-up 0.5s ease-out;
+    }
+
+    @keyframes slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .failure-icon-wrap {
+      width: 80px;
+      height: 80px;
+      background-color: rgba(239, 68, 68, 0.1);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 24px;
+    }
+
+    .failure-icon {
+      width: 44px;
+      height: 44px;
+      color: var(--danger);
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-size: 28px;
+      color: var(--navy);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 14.5px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .details-card {
+      background-color: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 32px;
+      text-align: left;
+    }
+
+    .details-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13.5px;
+    }
+
+    .details-row:last-child {
+      margin-bottom: 0;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--danger);
+    }
+
+    .details-label {
+      color: var(--text-secondary);
+    }
+
+    .details-value {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .btn-retry {
+      background: var(--navy);
+      color: #FFFFFF;
+      font-weight: 700;
+      border: none;
+      border-radius: 99px;
+      padding: 14px 28px;
+      font-size: 14.5px;
+      display: inline-block;
+      text-decoration: none;
+      box-shadow: 0 8px 20px rgba(14, 23, 38, 0.25);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .btn-retry:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(14, 23, 38, 0.35);
+    }
+
+    .btn-outline {
+      border: 1.5px solid var(--border);
+      color: var(--text-secondary);
+      font-weight: 600;
+      border-radius: 99px;
+      padding: 13px 28px;
+      font-size: 14px;
+      display: inline-block;
+      text-decoration: none;
+      width: 100%;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .btn-outline:hover {
+      background-color: var(--cream);
+      color: var(--navy);
+      border-color: var(--text-secondary);
+    }
+
+    .footer-note {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 24px;
+      line-height: 1.5;
+    }
+
+    .bubble {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.04) 0%, transparent 70%);
+      z-index: -1;
+    }
+    .bubble-1 { top: -80px; left: -80px; }
+    .bubble-2 { bottom: -80px; right: -80px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="bubble bubble-1"></div>
+    <div class="bubble bubble-2"></div>
+
+    <div class="failure-icon-wrap">
+      <svg class="failure-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </div>
+
+    <h1>Payment Failed</h1>
+    <p class="subtitle">The transaction could not be completed. Don't worry, your campaign configuration and settings have been safely preserved in your dashboard.</p>
+
+    <div class="details-card">
+      <div class="details-row">
+        <span class="details-label">Transaction ID</span>
+        <span class="details-value" id="txnId">TXN_123456789</span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Gateway Status</span>
+        <span class="details-value" id="gatewayStatus">PAYMENT_ERROR</span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Help Desk support</span>
+        <span class="details-value"><a href="mailto:support@wedeazzy.com" style="color:var(--rose); text-decoration:none; font-weight:600;">support@wedeazzy.com</a></span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Error Code</span>
+        <span class="details-value" id="errorCode">PAYMENT_DECLINED</span>
+      </div>
+    </div>
+
+    <a href="/pages/bdashboard.html" class="btn-retry">Return to Dashboard & Retry</a>
+    <a href="tel:+917498987620" class="btn-outline">📞 Call Support (+91 74989 87620)</a>
+    
+    <p class="footer-note">For payment failures where money was debited, Razorpay will reconcile and refund automatically within 5-7 business days. Contact support for assistance.</p>
+  </div>
+
+  <script>
+    // Extract parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const txnId = urlParams.get('txnId') || 'N/A';
+    const error = urlParams.get('error') || 'PAYMENT_FAILED';
+
+    const setElementText = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+
+    setElementText('txnId', txnId);
+    setElementText('gatewayStatus', error);
+    setElementText('errorCode', error);
+
+    // Auto-detect theme from localStorage
+    const savedTheme = localStorage.getItem('wedeazzy_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
+</body>
+</html>

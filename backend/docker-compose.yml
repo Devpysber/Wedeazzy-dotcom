@@ -1,0 +1,34 @@
+# WedEazzy backend - local dev stack.
+# Hostinger VPS: run the same compose file in /opt/wedeazzy/, swap the `app`
+# image for the built one, put Nginx + Certbot in front (see DEPLOY.md).
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wedeazzy
+      MYSQL_USER: wedeazzy
+      MYSQL_PASSWORD: changeme
+      MYSQL_ROOT_PASSWORD: changemeroot
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./.data/mysql:/var/lib/mysql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on: [db]
+    env_file: .env
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./baileys-auth:/app/baileys-auth
+      - ./uploads:/app/uploads
+    command: sh -c "npx prisma migrate deploy && node src/server.js"

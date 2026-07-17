@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page Not Found | WedEazzy.com</title>
+  <meta name="description" content="Oops! The wedding planning page you are looking for cannot be found. Head back to WedEazzy to plan your dream wedding." />
+  
+  <!-- Open Graph / SEO -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Page Not Found | WedEazzy" />
+  <meta property="og:description" content="Plan your dream wedding with WedEazzy. Find top venues and premium wedding vendors." />
+  <meta property="og:image" content="../assets/images/logo.png" />
+  
+  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet" />
+  
+  <style>
+    :root {
+      --primary-grad: linear-gradient(135deg, #c8102e 0%, #e03a56 100%);
+      --accent-color: #c8102e;
+      --text-main: #2b2520;
+      --text-muted: #6b635c;
+      --bg-light: #fdfaf7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-main);
+      background: radial-gradient(circle at 10% 20%, rgba(254, 243, 243, 1) 0%, rgba(253, 232, 237, 1) 40%, rgba(244, 245, 249, 1) 90%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Floating background shapes */
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 1;
+      opacity: 0.5;
+    }
+    .shape-1 {
+      top: 10%;
+      left: 10%;
+      width: 300px;
+      height: 300px;
+      background-color: #ffd0d5;
+      animation: float-slow 12s infinite alternate ease-in-out;
+    }
+    .shape-2 {
+      bottom: 10%;
+      right: 10%;
+      width: 400px;
+      height: 400px;
+      background-color: #dbe4ff;
+      animation: float-slow 16s infinite alternate-reverse ease-in-out;
+    }
+
+    @keyframes float-slow {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-40px) scale(1.1); }
+    }
+
+    .card-glass {
+      position: relative;
+      z-index: 10;
+      max-width: 540px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 30px 60px rgba(40, 20, 25, 0.08);
+      border-radius: 32px;
+      padding: 48px 36px;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    img.logo {
+      height: 48px;
+      margin-bottom: 24px;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.02));
+      animation: pulse-soft 3s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulse-soft {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.03); }
+    }
+
+    .error-code {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 110px;
+      font-weight: 700;
+      line-height: 1;
+      background: var(--primary-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+      letter-spacing: -2px;
+      position: relative;
+      display: inline-block;
+    }
+
+    .error-code::after {
+      content: '';
+      position: absolute;
+      bottom: 10px;
+      left: 10%;
+      width: 80%;
+      height: 6px;
+      background: var(--primary-grad);
+      border-radius: 999px;
+      opacity: 0.15;
+    }
+
+    h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #1b1b1f;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    p {
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .btns {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    a.btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border-radius: 99px;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-red {
+      background: var(--primary-grad);
+      color: #fff;
+      box-shadow: 0 10px 25px rgba(200, 16, 46, 0.25);
+    }
+
+    .btn-red:hover {
+      box-shadow: 0 12px 30px rgba(200, 16, 46, 0.35);
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+    }
+
+    .btn-out {
+      background: #ffffff;
+      color: #1b1b1f;
+      border: 1.5px solid #e5e5eb;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    }
+
+    .btn-out:hover {
+      border-color: #1b1b1f;
+      background: #1b1b1f;
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="shape shape-1"></div>
+  <div class="shape shape-2"></div>
+
+  <div class="card-glass">
+    <img class="logo" src="../assets/images/logo.png" alt="WedEazzy" />
+    <div class="error-code">404</div>
+    <h2>This page is not on our shaadi list</h2>
+    <p>The page you tried to open doesn't exist. Head back home to browse top-rated vendors by city, or message our wedding support team on WhatsApp.</p>
+    <div class="btns">
+      <a class="btn btn-red" href="../index.html">Back to Home</a>
+      <a class="btn btn-out" href="https://wa.me/917498987620?text=Hi%20WedEazzy!%20I%20landed%20on%20a%20404%20page%20-%20can%20you%20help?" target="_blank" rel="noopener">Chat on WhatsApp</a>
+    </div>
+  </div>
+</body>
+</html>

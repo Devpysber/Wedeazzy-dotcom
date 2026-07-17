@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#FFF0F2">
+  <title>User Dashboard | WedEazzy Wedding Planning Portal</title>
+  <meta name="description" content="WedEazzy Couple Planning Portal. Manage your wedding checklist, guest RSVP lists, budget allocation, vendor inquiries, and shortlist favorites." />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Custom Premium Stylesheet -->
+  <link rel="stylesheet" href="../css/user-dashboard.css">
+
+  <!-- ChartJS and SheetJS (XLSX) CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Toolbar Header (Fixed Top Navbar) -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-area">
+        <img src="../assets/images/logo.png" alt="WedEazzy" class="logo-img" onerror="this.src='https://raw.githubusercontent.com/HiteshD/WedeazzyAssets/main/logo.png'">
+      </div>
+      <span class="menu-toggle" onclick="toggleMobileSidebar()">☰</span>
+    </div>
+
+    <div class="header-right">
+      <!-- Navbar Navigation Links -->
+      <nav class="navbar-links">
+        <a href="../index.html?tab=venues" class="navbar-link">Venues</a>
+        <a href="../index.html?tab=vendors" class="navbar-link">Vendors</a>
+        <a href="../index.html?tab=contact" class="navbar-link">Contact</a>
+        <a href="../index.html?tab=blogs" class="navbar-link">Blogs</a>
+      </nav>
+
+      <!-- User dropdown context avatar -->
+      <div class="header-profile-dropdown" id="profileDropdown" title="User Menu" onclick="toggleProfileDropdown(event)">
+        <div class="header-profile-trigger">
+          <div class="header-avatar-circle" id="headerProfileAvatarLetter">C</div>
+        </div>
+        
+        <!-- Profile Actions Dropdown (Premium Glassmorphic) -->
+        <div class="profile-dropdown-menu" id="profileDropdownMenu">
+          <div class="profile-dropdown-header">
+            <div class="profile-dropdown-avatar" id="dropdownAvatarLetter">C</div>
+            <div class="profile-dropdown-meta">
+              <h4 id="dropdownUserTitle">Couple Planner</h4>
+              <p id="dropdownUserEmail">couple@wedeazzy.com</p>
+            </div>
+          </div>
+          <div class="profile-dropdown-divider"></div>
+          <a href="#" onclick="switchTab('profile'); closeAllDropdowns(); event.preventDefault();" class="dropdown-menu-item">
+            <span>👤</span> Edit Profile
+          </a>
+          <a href="#" onclick="switchTab('settings'); closeAllDropdowns(); event.preventDefault();" class="dropdown-menu-item">
+            <span>⚙️</span> Security Settings
+          </a>
+          <div class="profile-dropdown-divider"></div>
+          <a href="#" onclick="handleLogout(); event.preventDefault();" class="dropdown-menu-item logout text-danger">
+            <span>🚪</span> Log Out
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-wrapper">
+    <!-- Glowing background accent lights (Premium SaaS aesthetics) -->
+    <div class="dashboard-glow glow-1"></div>
+    <div class="dashboard-glow glow-2"></div>
+    
+    <!-- Mobile Sidebar Drawer Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
+
+    <!-- 1. Left Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <nav class="sidebar-nav">
+        <button onclick="switchTab('dashboard')" data-tab="dashboard" class="nav-item active">
+          <span class="nav-icon">🧭</span> Dashboard Home
+        </button>
+        <button onclick="switchTab('browse')" data-tab="browse" class="nav-item">
+          <span class="nav-icon">🔍</span> Browse Vendors
+        </button>
+        <button onclick="switchTab('inquiries')" data-tab="inquiries" class="nav-item">
+          <span class="nav-icon">📩</span> My Inquiries
+        </button>
+        <button onclick="switchTab('favorites')" data-tab="favorites" class="nav-item">
+          <span class="nav-icon">💖</span> Favorite Vendors
+        </button>
+        <button onclick="switchTab('planning')" data-tab="planning" class="nav-item">
+          <span class="nav-icon">📋</span> Wedding Planning
+        </button>
+        <button onclick="switchTab('settings')" data-tab="settings" class="nav-item">
+          <span class="nav-icon">⚙️</span> Profile Settings
+        </button>
+        <button onclick="handleLogout()" class="nav-item">
+          <span class="nav-icon">🚪</span> Logout
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main Working Panel -->
+    <main class="main-panel">
+      <!-- Dynamic Scrollable Viewport Content -->
+      <section class="content-viewport" id="contentViewport">
+        <!-- RENDERED DYNAMICALLY BY CLIENT SPA ENGINE -->
+      </section>
+    </main>
+  </div>
+
+  <!-- Premium Glassmorphic Support Concierge Chat -->
+  <script src="../js/support-widget.js"></script>
+
+  <!-- Real-time dynamic toast tray container -->
+  <div id="toastContainer"></div>
+
+  <!-- Custom Premium Dashboard JS Engine -->
+  <script src="../js/user-dashboard.js"></script>
+</body>
+</html>

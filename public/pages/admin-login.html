@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authenticating Session... | WedEazzy</title>
+  <meta name="description" content="Secure session verification gate for WedEazzy portal users, vendors, and administrators." />
+  
+  <!-- Font Awesome Icons & Premium Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --red:       #C8102E;
+      --red-dark:  #9F0B23;
+      --cream:     #FBF7F2;
+      --ink:       #1B1B1F;
+      --text-mute: #79706A;
+      --line:      #E8DFD4;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: var(--ink);
+      text-align: center;
+    }
+
+    .gateway-container {
+      background: #ffffff;
+      border: 1.5px solid var(--line);
+      border-radius: 20px;
+      padding: 40px;
+      width: 420px;
+      max-width: 90%;
+      box-shadow: 0 10px 30px rgba(80,40,20,0.06);
+      position: relative;
+    }
+
+    .brand {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .brand em {
+      font-style: italic;
+      color: var(--red);
+      font-weight: 500;
+    }
+
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--line);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 1s cubic-bezier(0.55, 0.085, 0.68, 0.53) infinite;
+      margin: 0 auto 24px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+
+    p {
+      font-size: 14px;
+      color: var(--text-mute);
+      margin: 0;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="gateway-container">
+    <div class="loader" id="loader"></div>
+    <div class="brand">Wed<em>Eazzy</em>.com</div>
+    <h2 id="statusTitle">Authenticating Session</h2>
+    <p id="statusMsg">Connecting with security keys and verifying login credentials...</p>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const auth = urlParams.get('auth');
+      const provider = urlParams.get('provider');
+      const role = urlParams.get('role');
+      const error = urlParams.get('error');
+
+      const el = {
+        loader: document.getElementById('loader'),
+        title: document.getElementById('statusTitle'),
+        msg: document.getElementById('statusMsg')
+      };
+
+      // 1. Check for failed authentication
+      if (error || window.location.search.includes('error=')) {
+        if (el.loader) {
+          el.loader.style.borderColor = '#FAE7E9';
+          el.loader.style.borderTopColor = '#C8102E';
+          el.loader.style.animationPlayState = 'paused';
+        }
+
+        if (el.title) {
+          el.title.innerHTML = 'Authentication Failed';
+          el.title.style.color = '#C8102E';
+        }
+        if (el.msg) el.msg.textContent = 'We were unable to verify your identity via Google. Redirecting you back to login portal...';
+
+        setTimeout(() => {
+          window.location.href = "../admin-panel/login.html?error=google_failed";
+        }, 3000);
+        return;
+      }
+
+      // 2. Check for successful OAuth redirect — exchange the server-side session
+      // for the JWT via a one-time fetch instead of reading it from the URL, so the
+      // token never appears in browser history, access logs, or Referer headers.
+      let token = null;
+      if (auth === 'success') {
+        try {
+          const exchangeRes = await fetch('/api/auth/consume-oauth-token', { credentials: 'same-origin' });
+          const exchangeData = await exchangeRes.json();
+          if (exchangeRes.ok && exchangeData.ok) {
+            token = exchangeData.token;
+          }
+        } catch (_) {}
+      }
+
+      if (auth === 'success' && token) {
+        try {
+          if (el.title) el.title.textContent = 'Session Verified';
+          if (el.msg) el.msg.textContent = 'Encrypting credentials and synchronizing profile dashboard...';
+
+          // A. Store token for general user dashboards (sessionStorage only —
+          // not persisted to disk, reducing token-theft exposure).
+          localStorage.removeItem('wedeazzy_token');
+          sessionStorage.removeItem('wedeazzy_token');
+          localStorage.removeItem('wedeazzy_admin_token');
+          sessionStorage.removeItem('wedeazzy_admin_token');
+
+          if (role === 'admin') {
+            sessionStorage.setItem('wedeazzy_admin_token', token);
+          } else {
+            sessionStorage.setItem('wedeazzy_token', token);
+          }
+
+          // B. Decode JWT token payload
+          const tokenParts = token.split('.');
+          let email = 'hello@wedeazzy.com';
+          if (tokenParts.length === 3) {
+            try {
+              const payload = JSON.parse(atob(tokenParts[1]));
+              if (payload.email) email = payload.email;
+            } catch (_) {}
+          }
+
+          // C. If user is Admin, we must construct the administrative session storage
+          if (role === 'admin') {
+            const adminSession = {
+              email: email,
+              loginTime: Date.now(),
+              role: "Administrator",
+              avatarLetter: email.charAt(0).toUpperCase()
+            };
+
+            // Store admin session in sessionStorage only (tab-scoped, not persisted to disk)
+            sessionStorage.setItem('wedeazzy_admin_session', JSON.stringify(adminSession));
+            
+            setTimeout(() => {
+              window.location.href = "../admin-panel/dashboard.html";
+            }, 1000);
+            return;
+          }
+
+          // D. If Vendor, redirect to vendor business control center
+          if (role === 'vendor') {
+            setTimeout(() => {
+              window.location.href = "bdashboard.html";
+            }, 1000);
+            return;
+          }
+
+          // E. If Couple/Customer, redirect to couple wedding planner panel
+          if (role === 'couple') {
+            setTimeout(() => {
+              window.location.href = "user-dashboard.html";
+            }, 1000);
+            return;
+          }
+
+          // Fallback if role is unrecognised
+          setTimeout(() => {
+            window.location.href = "../index.html";
+          }, 1000);
+
+        } catch (e) {
+          console.error("Auth redirect synchronization failed:", e);
+          if (el.title) el.title.textContent = 'Verification Error';
+          if (el.msg) el.msg.textContent = 'An error occurred during session synchronization. Redirecting to home...';
+          setTimeout(() => {
+            window.location.href = "../index.html";
+          }, 3000);
+        }
+        return;
+      }
+
+      // 3. Fallback: standard staff routing direct redirect to staff panel
+      if (el.title) el.title.textContent = 'Loading Staff Portal';
+      if (el.msg) el.msg.textContent = 'Initializing secure administrative keys...';
+      
+      // Pass along any other query parameters (e.g. ?action=reset&token=...)
+      window.location.href = "../admin-panel/login.html" + window.location.search;
+    });
+  </script>
+</body>
+</html>

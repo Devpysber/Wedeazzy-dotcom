@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Block admin panel, API, uploads, and dev files from indexing
+Disallow: /admin-panel/
+Disallow: /api/
+Disallow: /uploads/
+Disallow: /pages/bdashboard.html
+Disallow: /pages/user-dashboard.html
+Disallow: /pages/admin-login.html
+Disallow: /build-data.ps1
+Disallow: /LEADS-APPS-SCRIPT.gs
+Disallow: /SETUP-GOOGLE-SHEET.md
+
+Sitemap: https://www.wedeazzy.com/sitemap.xml

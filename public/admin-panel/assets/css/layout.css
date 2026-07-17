@@ -1,0 +1,347 @@
+/**
+ * WedEazzy Modular Admin Panel - Structure Layout CSS
+ * Handles sidebars, navbars, main viewports, and mobile slide-outs.
+ */
+
+.app-wrapper {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* LEFT SIDEBAR: Static navigation drawers */
+.side-drawer {
+  width: 270px;
+  background-color: var(--surface-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  z-index: 50;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.side-drawer::-webkit-scrollbar {
+  display: none;
+}
+
+.side-drawer.collapsed {
+  width: 78px;
+}
+
+.brand-banner {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.brand-banner img,
+.brand-logo-img {
+  height: 30px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  display: block;
+  transition: filter 0.2s ease, opacity 0.2s ease, transform 0.3s ease;
+}
+
+/* Dark mode: invert the black logo to white */
+[data-theme="dark"] .brand-logo-img,
+[data-theme="dark"] .brand-banner img {
+  filter: invert(1) brightness(1.15);
+}
+
+/* Collapsed sidebar: shrink & centre the logo mark */
+.side-drawer.collapsed .brand-logo-img,
+.side-drawer.collapsed .brand-banner img {
+  height: 22px;
+  max-width: 36px;
+  overflow: hidden;
+}
+
+/* Hide the old text title — logo replaces it */
+.brand-title {
+  display: none;
+}
+
+.drawer-links-wrapper {
+  flex: 1;
+  padding: 16px 10px;
+}
+
+.drawer-category-label {
+  font-family: var(--font-head);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 12px 14px 4px;
+  transition: opacity 0.2s ease;
+}
+
+.side-drawer.collapsed .drawer-category-label {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Nav links styling */
+.nav-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  color: var(--text-sub);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 8px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: all var(--transition-default);
+}
+
+.nav-link-btn:hover {
+  background-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+.nav-link-btn.active {
+  background-color: rgba(244, 63, 94, 0.08); /* 8% Rose */
+  color: var(--brand-rose);
+  font-weight: 600;
+}
+
+.nav-link-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-link-left i {
+  font-size: 1rem;
+  width: 18px;
+  text-align: center;
+}
+
+.nav-link-btn .submenu-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.25s ease;
+  color: var(--text-muted);
+}
+
+.nav-link-btn.expanded .submenu-arrow {
+  transform: rotate(180deg);
+}
+
+.sub-links-drawer {
+  padding-left: 32px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sub-links-drawer.show {
+  max-height: 250px;
+}
+
+.sub-link-item {
+  display: block;
+  padding: 6px 12px;
+  font-size: 0.77rem;
+  color: var(--text-sub);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.sub-link-item:hover, .sub-link-item.active {
+  color: var(--brand-rose);
+  background-color: rgba(244, 63, 94, 0.02);
+}
+
+.side-drawer.collapsed .menu-label,
+.side-drawer.collapsed .submenu-arrow,
+.side-drawer.collapsed .sub-links-drawer,
+.side-drawer.collapsed .badge-count {
+  display: none !important;
+}
+
+.drawer-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--surface-bg);
+}
+
+.admin-badge-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-rose), var(--brand-gold));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 8px rgba(244, 63, 94, 0.15);
+}
+
+.admin-badge-info {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.side-drawer.collapsed .admin-badge-info,
+.side-drawer.collapsed .footer-logout-btn {
+  display: none !important;
+}
+
+/* RIGHT PORTAL FRAME */
+.portal-frame {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Premium Top Header — 3-column flex: toggle | greeting | actions */
+.top-header {
+  height: 64px;
+  background-color: var(--surface-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  z-index: 40;
+  position: sticky;
+  top: 0;
+}
+
+/* Legacy classes kept for backward-compat but superseded by .hdr-* */
+.hamburger-trigger-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-sub);
+  cursor: pointer;
+  background: var(--surface-bg);
+  transition: background-color var(--transition-default);
+}
+
+.hamburger-trigger-btn:hover {
+  background-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+.header-action-nodes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* The header greeting widget fills centre column */
+.header-greeting-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--surface-bg);
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-default);
+}
+
+.header-icon-btn:hover {
+  background-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+.header-icon-btn .badge-alert-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--brand-rose);
+  border-radius: 50%;
+  border: 2px solid var(--surface-bg);
+}
+
+/* Main content grids frame */
+.portal-body {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Tablet & Mobile responsive drawer */
+@media (max-width: 768px) {
+  .app-wrapper {
+    flex-direction: column;
+  }
+
+  .side-drawer {
+    width: 100% !important;
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .side-drawer.collapsed {
+    width: 100% !important;
+  }
+
+  .drawer-footer {
+    display: none !important;
+  }
+
+  .top-header {
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  .portal-body {
+    padding: 16px;
+  }
+}

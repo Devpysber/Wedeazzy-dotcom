@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0E1726">
+  <title>Business Dashboard | WedEazzy Premium Platform</title>
+  <meta name="description" content="WedEazzy Premium Vendor Dashboard to manage bookings, leads, inquiries, profile settings and SaaS subscriptions." />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Custom Premium Stylesheet -->
+  <link rel="stylesheet" href="../css/dashboard-premium.css">
+
+  <!-- ChartJS and SheetJS (XLSX) CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+</head>
+<body>
+
+  <!-- 2. Top Navigation Toolbar Header (Fixed Top Navbar) -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-area">
+        <img src="../assets/images/logo.png" alt="WedEazzy" class="logo-img" onerror="this.src='https://raw.githubusercontent.com/HiteshD/WedeazzyAssets/main/logo.png'">
+      </div>
+      <span class="menu-toggle" onclick="toggleMobileSidebar()">☰</span>
+    </div>
+
+    <div class="header-right">
+      <!-- Navbar Navigation Links -->
+      <nav class="navbar-links">
+        <a href="../index.html?tab=venues" class="navbar-link">Venues</a>
+        <a href="../index.html?tab=vendors" class="navbar-link">Vendors</a>
+        <a href="../index.html?tab=contact" class="navbar-link">Contact</a>
+        <a href="../index.html?tab=blogs" class="navbar-link">Blogs</a>
+      </nav>
+
+      <!-- User dropdown context avatar -->
+      <div class="header-profile-dropdown" id="profileDropdown" title="User Menu" onclick="toggleProfileDropdown(event)">
+        <div class="header-profile-trigger">
+          <div class="header-avatar-circle" id="headerProfileAvatarLetter">Y</div>
+        </div>
+        
+        <!-- Profile Actions Dropdown (Premium Glassmorphic) -->
+        <div class="profile-dropdown-menu" id="profileDropdownMenu">
+          <div class="profile-dropdown-header">
+            <div class="profile-dropdown-avatar" id="dropdownAvatarLetter">Y</div>
+            <div class="profile-dropdown-meta">
+              <h4 id="dropdownUserTitle">WedEazzy Partner</h4>
+              <p id="dropdownUserEmail">partner@wedeazzy.com</p>
+            </div>
+          </div>
+          <div class="profile-dropdown-divider"></div>
+          <a href="#" onclick="switchTab('profile'); closeAllDropdowns(); event.preventDefault();" class="dropdown-menu-item">
+            <span>👤</span> Edit Profile
+          </a>
+          <a href="#" onclick="switchTab('settings'); closeAllDropdowns(); event.preventDefault();" class="dropdown-menu-item">
+            <span>⚙️</span> Security Settings
+          </a>
+          <a href="#" onclick="switchTab('subscriptions'); closeAllDropdowns(); event.preventDefault();" class="dropdown-menu-item">
+            <span>💳</span> Subscription Status
+          </a>
+          <div class="profile-dropdown-divider"></div>
+          <a href="#" onclick="handleLogout(); event.preventDefault();" class="dropdown-menu-item logout text-danger">
+            <span>🚪</span> Log Out
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-wrapper">
+    <!-- Glowing background accent lights (Premium SaaS aesthetics) -->
+    <div class="dashboard-glow glow-1"></div>
+    <div class="dashboard-glow glow-2"></div>
+    
+    <!-- Mobile Sidebar Drawer Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
+
+    <!-- 1. Left Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <nav class="sidebar-nav">
+        <button onclick="switchTab('dashboard')" data-tab="dashboard" class="nav-item active">
+          <span class="nav-icon">🧭</span> Dashboard
+        </button>
+
+        <button onclick="switchTab('grow-business')" data-tab="grow-business" class="nav-item">
+          <span class="nav-icon">📈</span> Grow Business
+        </button>
+
+        <button onclick="switchTab('profile')" data-tab="profile" class="nav-item">
+          <span class="nav-icon">⚙️</span> Profile
+        </button>
+        <button onclick="switchTab('businesses')" data-tab="businesses" class="nav-item">
+          <span class="nav-icon">🏛️</span> My Businesses
+        </button>
+        <button onclick="switchTab('add-business')" data-tab="add-business" class="nav-item">
+          <span class="nav-icon">💻</span> Add Business
+        </button>
+        <button onclick="switchTab('bookings')" data-tab="bookings" class="nav-item">
+          <span class="nav-icon">📅</span> Booking Manager
+        </button>
+        <button onclick="switchTab('subscriptions')" data-tab="subscriptions" class="nav-item">
+          <span class="nav-icon">🔖</span> Subscriptions
+        </button>
+
+        <!-- Marketing Dropdown Menu -->
+        <div class="sidebar-dropdown">
+          <button class="nav-item dropdown-toggle" onclick="toggleSidebarDropdown(this)">
+            <span class="nav-icon">📣</span> Marketing <span class="arrow">▼</span>
+          </button>
+          <div class="dropdown-container">
+            <button onclick="switchTab('promotions')" data-tab="promotions" class="nav-item sub-item">
+              <span>📈</span> Promotions
+            </button>
+            <button onclick="switchTab('campaigns')" data-tab="campaigns" class="nav-item sub-item">
+              <span>🎯</span> Ads Campaigns
+            </button>
+            <button onclick="switchTab('coupons')" data-tab="coupons" class="nav-item sub-item">
+              <span>🎫</span> Coupons
+            </button>
+          </div>
+        </div>
+
+        <button onclick="handleLogout()" class="nav-item text-danger">
+          <span class="nav-icon">🚪</span> Logout
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main Working Panel -->
+    <main class="main-panel">
+      <!-- Dynamic Scrollable Viewport Content -->
+      <section class="content-viewport" id="contentViewport">
+        <!-- RENDERED DYNAMICALLY BY CLIENT SPA ENGINE -->
+      </section>
+    </main>
+  </div>
+
+  <!-- Real-time dynamic toast tray container -->
+  <div id="toastContainer"></div>
+
+  <!-- Custom Premium Dashboard JS Engine -->
+  <script src="../js/dashboard-premium.js"></script>
+</body>
+</html>

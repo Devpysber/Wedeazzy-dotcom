@@ -1,0 +1,451 @@
+// WedEazzy backend schema
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- ENUMS ----------
+enum Role {
+  admin
+  vendor
+  couple
+}
+
+enum VendorTier {
+  basic
+  featured
+}
+
+enum InquiryStatus {
+  new
+  contacted
+  quoted
+  booked
+  closed
+  lost
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+}
+
+enum TxnStatus {
+  initiated
+  success
+  failed
+  refunded
+}
+
+enum AdCampaignStatus {
+  draft
+  pending_review
+  active
+  paused
+  completed
+}
+
+// ---------- CORE ----------
+model User {
+  id            String    @id @default(cuid())
+  phone         String?   @unique                            // E.164: 917498987620
+  role          Role
+  name          String?
+  email         String?   @unique
+  passwordHash  String?
+  verifiedAt    DateTime?
+  googleId      String?   @unique @map("google_id")
+  authProvider  String    @default("local") @map("auth_provider")
+  revokedBefore DateTime? @map("revoked_before")
+  suspendedAt   DateTime? @map("suspended_at")
+  imageUrl      String?   @map("image_url")
+  lastLogin     DateTime? @map("last_login")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor            Vendor[]
+  couple            Couple?
+  sessions          Session[]
+  txns              Transaction[]
+  waMessages        WaMessage[]   @relation("WaMessagesToUser")
+  inquiriesAsCouple Inquiry[]     @relation("CoupleInquiries")
+
+  @@index([role])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique                              // JWT jti
+  ip         String?
+  userAgent  String?  @db.VarChar(255)
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+// OtpCode: hashed OTPs for WhatsApp phone login (startOtp/verifyOtp), email
+// verification (startEmailOtp/verifyEmailOtp) and admin 2FA. The `phone` column
+// also stores email addresses for the email/2FA flows (unified store).
+// Distinct from UserOtp below — both are in active use.
+model OtpCode {
+  id         String   @id @default(cuid())
+  phone      String                                        // E.164
+  codeHash   String                                        // bcrypt of 6-digit code
+  purpose    String                                        // "login" | "signup" | etc.
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([phone, createdAt])
+}
+
+// ---------- VENDORS ----------
+model Vendor {
+  id                String     @id @default(cuid())
+  // Nullable: seeded/unclaimed listings have no owner yet.
+  // Claim flow: vendor signs up via OTP -> we set userId.
+  userId            String?
+  legacyId          String?    @unique                     // matches the static-site vendor `id` (slug) for claim flow
+  businessName      String
+  slug              String     @unique
+  category          String
+  categorySlug      String
+  city              String
+  citySlug          String
+  area              String?
+  address           String?    @db.Text
+  pincode           String?
+  lat               Float?
+  lng               Float?
+  googleCid         String?
+  whatsappNumber    String?                                // optional; ALL inquiries still route to admin first
+  description       String?    @db.Text
+  priceMin          Int?                                   // INR
+  priceMax          Int?
+  capacity          Int?                                   // for venues - guest count
+  services          Json?                                  // ["catering","stage","sound"] etc.
+  alternateMobile   String?
+  website           String?
+  instagram         String?
+  facebook          String?
+  youtube           String?
+  businessTimings   String?    @db.Text
+  yearsExperience   Int?
+  teamSize          Int?
+  serviceAreas      String?
+  languagesSpoken   String?
+  acceptsDestination Boolean    @default(false)
+  googleBusiness    String?
+  rating            Float      @default(4.5)
+  ratingCount       Int        @default(0)
+  tier              VendorTier @default(basic)
+  featuredUntil     DateTime?
+  subscriptionPlan   String     @default("Free")
+  subscriptionStart  DateTime?  @default(now())
+  subscriptionExpiry DateTime?
+  razorpayOrderId    String?
+  isActive          Boolean    @default(true)
+  isVerified        Boolean    @default(false)
+  isProfileComplete Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  user       User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos     VendorPhoto[]
+  inquiries  Inquiry[]
+  bookings   Booking[]
+  campaigns  AdCampaign[]
+  lock       PincodeLock?
+  reviews    Review[]
+
+  @@index([categorySlug, citySlug])
+  @@index([pincode, categorySlug])
+  @@index([tier])
+  @@index([userId])
+}
+
+model VendorPhoto {
+  id        String   @id @default(cuid())
+  vendorId  String
+  url       String   @db.VarChar(500)
+  width     Int?
+  height    Int?
+  position  Int      @default(0)
+  isCover   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  @@index([vendorId, position])
+}
+
+// Hard "one featured per pincode + category" constraint backing the sales pitch.
+model PincodeLock {
+  pincode      String
+  categorySlug String
+  vendorId     String   @unique
+  lockedUntil  DateTime
+  createdAt    DateTime @default(now())
+
+  vendor       Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@id([pincode, categorySlug])
+}
+
+// ---------- COUPLES ----------
+model Couple {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  partnerName   String?
+  weddingDate   DateTime?
+  city          String?
+  citySlug      String?
+  budgetMin     Int?
+  budgetMax     Int?
+  guestCount    Int?
+  vibe          String?                                    // "destination", "intimate", "grand"...
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planTasks     PlanTask[]
+  shortlists    Shortlist[]
+  bookings      Booking[]
+}
+
+model Shortlist {
+  id        String        @id @default(cuid())
+  coupleId  String
+  vendorId  String
+  status    InquiryStatus @default(new)
+  createdAt DateTime      @default(now())
+
+  couple    Couple        @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  @@unique([coupleId, vendorId])
+}
+
+model PlanTask {
+  id         String   @id @default(cuid())
+  coupleId   String
+  title      String
+  category   String?                                       // "venue","photographer","attire", etc.
+  dueDate    DateTime?
+  done       Boolean  @default(false)
+  remindAt   DateTime?
+  remindedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  couple     Couple   @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  @@index([coupleId, dueDate])
+  @@index([remindAt])
+}
+
+// ---------- INQUIRIES (every couple→vendor message lands here, admin sees all) ----------
+model Inquiry {
+  id          String         @id @default(cuid())
+  vendorId    String
+  coupleUserId String?                                     // null = anonymous public-site inquiry
+  name        String
+  phone       String
+  email       String?
+  eventDate   DateTime?
+  guests      String?                                      // free text band: "100-300"
+  budget      String?
+  callDiscussion String?
+  notes       String?        @db.Text
+  source      String?                                      // "public_site" | "couple_dashboard" | "shortlist"
+  status      InquiryStatus  @default(new)
+  forwardedAt DateTime?                                    // when admin forwarded to vendor
+  createdAt   DateTime       @default(now())
+
+  vendor      Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  coupleUser  User?          @relation("CoupleInquiries", fields: [coupleUserId], references: [id])
+  review      Review?
+
+  @@index([vendorId, status, createdAt])
+}
+
+// ---------- BOOKINGS & PAYMENTS ----------
+model Booking {
+  id         String        @id @default(cuid())
+  coupleId   String
+  vendorId   String
+  eventDate  DateTime
+  amount     Int?
+  status     BookingStatus @default(pending)
+  notes      String?       @db.Text
+  createdAt  DateTime      @default(now())
+
+  couple     Couple        @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  vendor     Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id           String     @id @default(cuid())
+  userId       String
+  amount       Int                                         // paise
+  purpose      String                                      // "featured_upgrade", "ad_credits"
+  gateway      String     @default("razorpay")
+  gatewayRef   String?    @unique
+  status       TxnStatus  @default(initiated)
+  meta         Json?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, status])
+}
+
+// ---------- ADS (Phase 4 + Grow Business Module) ----------
+model AdCampaign {
+  id             String           @id @default(cuid())
+  vendorId       String
+
+  // Core fields
+  platform       String                                     // "facebook" | "instagram" | "google" | "whatsapp" | "featured"
+  dailyBudget    Int                                        // INR
+  durationDays   Int
+  goal           String           @default("leads")         // "leads" | "whatsapp" | "traffic" | "social" | "featured"
+  targetCity     String?
+  targetAudience String?          @db.Text
+  creativeCopy   String?          @db.Text
+  status         AdCampaignStatus @default(draft)
+
+  // Grow Business Package fields
+  packageType    String?                                    // "whatsapp_leads" | "more_leads" | "website_sales"
+  planDays       Int?                                       // 10 | 20 | 30 | 90 | 0=custom
+  totalAmount    Int?                                       // Total campaign cost in INR (incl. GST)
+  gstAmount      Int?                                       // GST amount in INR
+  baseAmount     Int?                                       // Pre-tax base amount
+
+  // Audience Targeting
+  gender         String?          @default("all")           // "all" | "male" | "female"
+  targetAreas    Json?                                      // Array of location strings
+  ageMin         Int?             @default(18)
+  ageMax         Int?             @default(65)
+  timeSchedule   String?          @default("whole_day")     // "whole_day" | "custom"
+  startTime      String?                                    // "06:00" etc.
+  endTime        String?                                    // "02:00" etc.
+
+  // Payment
+  paymentMethod  String?                                    // "razorpay" | "google_pay" | "paytm" | "bhim" | "upi" | "credit_card" | "debit_card" | "net_banking"
+  paymentStatus  String           @default("pending")       // "pending" | "paid" | "failed"
+  paymentRef     String?                                    // External payment reference
+
+  // Admin Management
+  adminStatus    String           @default("pending")       // "pending" | "approved" | "running" | "completed" | "rejected"
+  adminNotes     String?          @db.Text
+
+  // Analytics (updated by admin)
+  analyticsReach       Int        @default(0)
+  analyticsImpressions Int        @default(0)
+  analyticsClicks      Int        @default(0)
+  analyticsLeads       Int        @default(0)
+  analyticsWhatsapp    Int        @default(0)
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  vendor         Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, adminStatus])
+  @@index([adminStatus, createdAt])
+}
+
+// ---------- WHATSAPP LOG ----------
+model WaMessage {
+  id           String    @id @default(cuid())
+  userId       String?
+  to           String                                        // E.164
+  body         String    @db.Text
+  template     String?
+  status       String    @default("queued")                  // queued | sending | sent | failed
+  error        String?
+  retryCount   Int       @default(0)                        // how many send attempts so far
+  nextRetryAt  DateTime?                                     // when to next attempt (null = not scheduled)
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  user         User?     @relation("WaMessagesToUser", fields: [userId], references: [id])
+  @@index([to, createdAt])
+  @@index([status, nextRetryAt])                            // for retry sweep query
+}
+
+// ---------- NEW AUTH SUPPORT TABLES ----------
+// UserOtp: hashed OTPs for the passwordless couple login/registration flow
+// (checkUser / registerAndSendOtp / verifyOtpLogin), keyed by email. Kept
+// separate from OtpCode by design — both tables are in active use.
+model UserOtp {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("user_otps")
+  @@index([email])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  used      Int      @default(0) // 0 = unused, 1 = used
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("password_reset_tokens")
+  @@index([token])
+}
+
+model JwtDenylist {
+  id        String   @id @default(cuid())
+  token     String   @unique @db.VarChar(500)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("jwt_denylist")
+  @@index([token])
+}
+
+// ---------- ANALYTICS EVENTS ----------
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  vendorId    String
+  campaignId  String?
+  eventType   String                                       // "profile_visit" | "whatsapp_click" | "lead_gen"
+  createdAt   DateTime @default(now())
+
+  @@index([vendorId, eventType, createdAt])
+  @@index([campaignId, eventType, createdAt])
+}
+
+// ---------- CUSTOMER REVIEWS ----------
+model Review {
+  id        String   @id @default(cuid())
+  vendorId  String
+  inquiryId String?  @unique
+  name      String
+  rating    Float
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  inquiry   Inquiry? @relation(fields: [inquiryId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId, createdAt])
+}
+

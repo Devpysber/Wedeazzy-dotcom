@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard Console - WedEazzy</title>
+  
+  <!-- Font Awesome Icons & Stylesheets -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Modular Design stylesheets -->
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/templates.css">
+
+  <style>
+    /* ============================================
+       WEDEAZZY ADMIN – PREMIUM HEADER REDESIGN
+       Reference: Greeting + Clock + Partner ID
+    ============================================ */
+
+    /* WhatsApp circular green badges */
+    .whatsapp-sidebar-icon {
+      background-color: #25D366;
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.77rem !important;
+      box-shadow: 0 2px 4px rgba(37, 211, 102, 0.2);
+    }
+
+    /* ---- HEADER CENTRE: Greeting Widget ---- */
+    .header-greeting-widget {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.25;
+      user-select: none;
+    }
+
+    .header-greeting-top {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .header-greeting-emoji {
+      font-size: 1.25rem;
+      line-height: 1;
+      display: inline-block;
+      animation: floatEmoji 3s ease-in-out infinite;
+    }
+
+    @keyframes floatEmoji {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-3px); }
+    }
+
+    .header-greeting-text {
+      font-family: var(--font-head);
+      font-size: 0.975rem;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    .header-greeting-sub {
+      font-size: 0.73rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 1px;
+    }
+
+    .header-greeting-sep {
+      display: inline-block;
+      width: 1px;
+      height: 10px;
+      background: var(--border-color);
+      vertical-align: middle;
+    }
+
+    /* ---- HEADER RIGHT: Action Nodes ---- */
+    .profile-dropdown-container {
+      position: relative;
+    }
+
+    .profile-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      background-color: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: 210px;
+      box-shadow: 0 16px 32px -8px rgba(0,0,0,0.12), 0 4px 8px -2px rgba(0,0,0,0.06);
+      display: none;
+      flex-direction: column;
+      padding: 6px 0;
+      z-index: 80;
+      animation: dropdownFade 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .profile-dropdown-menu.show {
+      display: flex;
+    }
+
+    @keyframes dropdownFade {
+      from { opacity: 0; transform: translateY(8px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)   scale(1);    }
+    }
+
+    .dropdown-session-label {
+      padding: 10px 16px 8px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .dropdown-session-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .dropdown-session-role {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .dropdown-menu-item {
+      padding: 9px 16px;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .dropdown-menu-item i {
+      width: 14px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .dropdown-menu-item:hover {
+      background-color: var(--border-subtle);
+      color: var(--text-main);
+    }
+
+    .dropdown-menu-item:hover i {
+      color: var(--text-sub);
+    }
+
+    .dropdown-menu-item.logout {
+      color: var(--brand-rose);
+      border-top: 1px solid var(--border-subtle);
+      margin-top: 4px;
+    }
+
+    .dropdown-menu-item.logout i {
+      color: var(--brand-rose);
+    }
+
+    .dropdown-menu-item.logout:hover {
+      background-color: rgba(244, 63, 94, 0.06);
+    }
+
+    /* ---- Header icon buttons (right side) ---- */
+    .hdr-icon-btn {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--surface-bg);
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+    }
+
+    .hdr-icon-btn:hover {
+      background-color: var(--border-subtle);
+      border-color: var(--border-color);
+      color: var(--text-main);
+      transform: translateY(-1px);
+    }
+
+    /* Notification badge counter */
+    .hdr-notif-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 3px;
+      background: var(--brand-rose);
+      border-radius: 99px;
+      font-size: 0.55rem;
+      font-weight: 800;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--surface-bg);
+      line-height: 1;
+      animation: pulseBadge 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseBadge {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+      50%       { box-shadow: 0 0 0 4px rgba(244, 63, 94, 0); }
+    }
+
+    /* Admin avatar button (header) */
+    .hdr-avatar-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--brand-rose), var(--brand-gold));
+      color: white;
+      font-weight: 700;
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 2px solid var(--surface-bg);
+      box-shadow: 0 0 0 1px var(--border-color), 0 2px 8px rgba(244,63,94,0.18);
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+    }
+
+    .hdr-avatar-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 1px var(--brand-rose), 0 4px 12px rgba(244,63,94,0.25);
+    }
+
+    /* Sidebar toggle (left of header) */
+    .hdr-toggle-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--surface-bg);
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+    }
+
+    .hdr-toggle-btn:hover {
+      background-color: var(--border-subtle);
+      color: var(--text-main);
+      transform: translateY(-1px);
+    }
+
+    /* Separator dot between time and partner id */
+    .hdr-divider-pipe {
+      color: var(--border-color);
+      font-weight: 300;
+    }
+
+    /* Header right cluster */
+    .header-right-cluster {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 900px) {
+      .header-greeting-sub .partner-id-segment {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .header-greeting-widget {
+        align-items: flex-start;
+      }
+      .header-greeting-sub {
+        font-size: 0.65rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating widgets dock -->
+  <div class="toasts-alert-dock" id="toastsDock"></div>
+
+  <!-- Overlay Modal frame -->
+  <div class="overlay-mask" id="overlayMask">
+    <div class="popup-modal-box" id="modalBox">
+      <div class="modal-header-section">
+        <h4 class="modal-title">Launch Action Modal</h4>
+        <button class="modal-close-trigger" onclick="window.closeModal()">&times;</button>
+      </div>
+      <div class="modal-body-section">
+        <!-- Injected via scripts -->
+      </div>
+      <div class="modal-footer-section">
+        <!-- Injected via scripts -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Complete Admin Drawer Wrapper -->
+  <div class="app-wrapper">
+
+    <!-- LEFT SIDEBAR: Static navigation drawers -->
+    <aside class="side-drawer" id="sideDrawer">
+      
+      <!-- Brand banner logo node -->
+      <div class="brand-banner">
+        <img src="assets/logo.png" alt="WedEazzy" class="brand-logo-img">
+      </div>
+
+      <!-- Links categories (Flat elegant SaaS flow matching reference image) -->
+      <div class="drawer-links-wrapper" style="padding-bottom: 30px;">
+        
+        <button class="nav-link-btn active" data-tab-trigger="dashboard">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span class="menu-label">Dashboard</span>
+          </span>
+        </button>
+
+        <button class="nav-link-btn" data-tab-trigger="profile">
+          <span class="nav-link-left">
+            <i class="fa-regular fa-circle-user"></i>
+            <span class="menu-label">Profile</span>
+          </span>
+        </button>
+
+        <button class="nav-link-btn" data-tab-trigger="vendors">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-store"></i>
+            <span class="menu-label">Approve Businesses</span>
+          </span>
+        </button>
+
+        <button class="nav-link-btn" data-tab-trigger="bookings">
+          <span class="nav-link-left">
+            <i class="fa-regular fa-calendar-check"></i>
+            <span class="menu-label">Booking Manager</span>
+          </span>
+        </button>
+
+        <!-- Subscriptions Dropdown -->
+        <button class="nav-link-btn" data-submenu-trigger="subscriptions">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-ticket" style="color: var(--brand-rose);"></i>
+            <span class="menu-label" style="color: var(--brand-rose); font-weight: 500;">Subscriptions</span>
+          </span>
+          <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+        </button>
+        <div class="sub-links-drawer" id="submenu-subscriptions">
+          <a class="sub-link-item" data-tab-trigger="transaction-history">Transaction History</a>
+          <a class="sub-link-item" data-tab-trigger="manage-plans">Manage Plans</a>
+        </div>
+
+        <button class="nav-link-btn" data-tab-trigger="automated-email">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-envelope-open-text"></i>
+            <span class="menu-label">Automated Email</span>
+          </span>
+        </button>
+
+        <button class="nav-link-btn" data-tab-trigger="claimed-listings">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-award"></i>
+            <span class="menu-label">Claimed Listings</span>
+          </span>
+        </button>
+
+        <!-- Venue Dropdown -->
+        <button class="nav-link-btn" data-submenu-trigger="venue">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-hotel" style="color: var(--brand-rose);"></i>
+            <span class="menu-label" style="color: var(--brand-rose); font-weight: 500;">Venue</span>
+          </span>
+          <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+        </button>
+        <div class="sub-links-drawer" id="submenu-venue">
+          <a class="sub-link-item" data-tab-trigger="venues">All Venues</a>
+          <a class="sub-link-item" onclick="window.triggerAddVenueModal()">Add Venue</a>
+        </div>
+
+        <!-- Vendor Dropdown -->
+        <button class="nav-link-btn" data-submenu-trigger="vendor">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-users-rectangle" style="color: var(--brand-rose);"></i>
+            <span class="menu-label" style="color: var(--brand-rose); font-weight: 500;">Vendor</span>
+          </span>
+          <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+        </button>
+        <div class="sub-links-drawer" id="submenu-vendor">
+          <a class="sub-link-item" data-tab-trigger="vendors">All Vendor</a>
+          <a class="sub-link-item" onclick="window.triggerAddVendorModal()">Add Vendor</a>
+        </div>
+
+        <!-- Users Dropdown -->
+        <button class="nav-link-btn" data-submenu-trigger="users">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-users" style="color: var(--brand-rose);"></i>
+            <span class="menu-label" style="color: var(--brand-rose); font-weight: 500;">Users</span>
+          </span>
+          <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+        </button>
+        <div class="sub-links-drawer" id="submenu-users">
+          <a class="sub-link-item" data-tab-trigger="users">All Users</a>
+          <a class="sub-link-item" onclick="window.triggerAddUserModal()">Add User</a>
+        </div>
+
+        <button class="nav-link-btn" data-tab-trigger="city">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-city"></i>
+            <span class="menu-label">City</span>
+          </span>
+        </button>
+
+        <button class="nav-link-btn" data-tab-trigger="regions">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-earth-asia"></i>
+            <span class="menu-label">Regions</span>
+          </span>
+        </button>
+
+        <button class="nav-link-btn" data-tab-trigger="venues-category">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-list-check"></i>
+            <span class="menu-label">Venues Category</span>
+          </span>
+        </button>
+
+        <button class="nav-link-btn" data-tab-trigger="vendors-category">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-shapes"></i>
+            <span class="menu-label">Vendors Category</span>
+          </span>
+        </button>
+
+        <button class="nav-link-btn" data-tab-trigger="send-emails">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span class="menu-label">Send Emails</span>
+          </span>
+        </button>
+
+        <!-- Send WhatsApp (circular green badge icon) -->
+        <button class="nav-link-btn" data-tab-trigger="whatsapp">
+          <span class="nav-link-left">
+            <span class="whatsapp-sidebar-icon"><i class="fa-brands fa-whatsapp"></i></span>
+            <span class="menu-label">Send WhatsApp</span>
+          </span>
+        </button>
+
+        <!-- Blogs Dropdown -->
+        <button class="nav-link-btn" data-submenu-trigger="blogs">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-pen-nib"></i>
+            <span class="menu-label">Blogs</span>
+          </span>
+          <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+        </button>
+        <div class="sub-links-drawer" id="submenu-blogs">
+          <a class="sub-link-item" data-tab-trigger="blogs">All Blogs</a>
+          <a class="sub-link-item" onclick="window.showToast('Adding new blog form is simulated.', 'info')">Add Blog</a>
+        </div>
+
+        <button class="nav-link-btn" data-tab-trigger="contact-inquiries">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-envelope"></i>
+            <span class="menu-label">Contact Inquiries</span>
+          </span>
+        </button>
+
+        <!-- Grow Business Campaigns -->
+        <button class="nav-link-btn" data-tab-trigger="grow-campaigns" style="position:relative;">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-rocket" style="color:#E11D2A;"></i>
+            <span class="menu-label" style="color:#E11D2A;font-weight:600;">Grow Campaigns</span>
+          </span>
+        </button>
+
+        <!-- WhatsApp Status -->
+        <button class="nav-link-btn" data-tab-trigger="whatsapp-status">
+          <span class="nav-link-left">
+            <span class="whatsapp-sidebar-icon"><i class="fa-brands fa-whatsapp"></i></span>
+            <span class="menu-label">WhatsApp Status</span>
+          </span>
+        </button>
+
+        <button class="nav-link-btn" id="logoutBtn" style="margin-top: 15px; border-top: 1px solid var(--border-subtle); border-radius: 0; padding-top: 15px;">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-arrow-right-from-bracket" style="color: var(--brand-rose);"></i>
+            <span class="menu-label" style="color: var(--brand-rose);">Logout</span>
+          </span>
+        </button>
+
+      </div>
+
+      <!-- Drawer Profile Footer -->
+      <div class="drawer-footer">
+        <div class="admin-badge-avatar" id="adminAvatar">A</div>
+        <div class="admin-badge-info">
+          <div style="font-weight: 700; font-size: 0.8rem; line-height: 1.1;" id="adminNameBadge">Admin User</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted);">Master Executive</div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- RIGHT PORTAL FRAME -->
+    <main class="portal-frame">
+      
+      <!-- =============================================
+           PREMIUM HEADER — WedEazzy Admin Portal
+           Matches reference: logo | greeting | actions
+      ============================================= -->
+      <header class="top-header">
+
+        <!-- LEFT: Sidebar toggle button -->
+        <button class="hdr-toggle-btn" id="sidebarCollapseBtn" title="Toggle Sidebar" aria-label="Toggle sidebar navigation">
+          <i class="fa-solid fa-bars-staggered" id="sidebarToggleIcon"></i>
+        </button>
+        <!-- Mobile hamburger (hidden on desktop) -->
+        <button class="hdr-toggle-btn" id="hamburgerBtn" title="Open Navigation" style="display: none;" aria-label="Open sidebar">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <!-- CENTRE: Greeting + Live Clock + Partner ID -->
+        <div class="header-greeting-widget" id="headerGreetingWidget" aria-live="polite">
+          <div class="header-greeting-top">
+            <span class="header-greeting-emoji" id="greetingEmoji">🌤️</span>
+            <span class="header-greeting-text" id="greetingText">Good Afternoon, Admin</span>
+          </div>
+          <div class="header-greeting-sub">
+            <span id="headerLiveClock">--:--:-- --</span>
+            <span class="hdr-divider-pipe">|</span>
+            <span class="partner-id-segment" id="headerPartnerId">Partner ID <span id="partnerIdValue" style="font-family: 'Courier New', monospace; font-weight: 600; color: var(--text-sub);">#loading...</span></span>
+          </div>
+        </div>
+
+        <!-- RIGHT: Notification bell + Theme toggle + Avatar -->
+        <div class="header-right-cluster">
+
+          <!-- Notification Bell -->
+          <button class="hdr-icon-btn" id="notifBellBtn" title="Notifications" aria-label="View notifications"
+                  onclick="window.showToast('All notifications reviewed ✓', 'success')">
+            <i class="fa-regular fa-bell"></i>
+            <span class="hdr-notif-badge" id="notifBadgeCount">3</span>
+          </button>
+
+          <!-- Dark / Light Mode Toggle -->
+          <button class="hdr-icon-btn" id="themeToggleBtn" title="Toggle theme" aria-label="Toggle dark/light mode">
+            <i class="fa-solid fa-moon" id="themeToggleIcon"></i>
+          </button>
+
+          <!-- Admin Profile Avatar + Dropdown -->
+          <div class="profile-dropdown-container">
+            <button class="hdr-avatar-btn" id="profileDropdownBtn" title="Admin menu" aria-label="Open admin menu" aria-haspopup="true"
+                    aria-expanded="false">A</button>
+
+            <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu">
+              <!-- Session info header -->
+              <div class="dropdown-session-label">
+                <div class="dropdown-session-name" id="dropdownAdminName">Admin</div>
+                <div class="dropdown-session-role">Super Administrator</div>
+              </div>
+
+              <!-- Menu items -->
+              <a href="#" class="dropdown-menu-item" role="menuitem"
+                 onclick="event.preventDefault(); document.querySelector('[data-tab-trigger=profile]')?.click(); document.getElementById('profileDropdownMenu').classList.remove('show');">
+                <i class="fa-regular fa-circle-user"></i> My Profile
+              </a>
+              <a href="#" class="dropdown-menu-item" role="menuitem"
+                 onclick="event.preventDefault(); document.querySelector('[data-tab-trigger=profile]')?.click(); document.getElementById('profileDropdownMenu').classList.remove('show');">
+                <i class="fa-solid fa-shield-halved"></i> Security
+              </a>
+              <a href="#" class="dropdown-menu-item" role="menuitem"
+                 onclick="event.preventDefault(); window.showToast('Opening system settings...', 'info');">
+                <i class="fa-solid fa-sliders"></i> Settings
+              </a>
+              <a href="#" class="dropdown-menu-item logout" id="dropdownLogoutBtn" role="menuitem">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </header>
+
+      <!-- Main SPA content injections viewport -->
+      <section class="portal-body" id="portalBody">
+        <!-- SPA view is dynamically mounted here by app.js -->
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- Loading Chart.js library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Modular Scripts -->
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/charts.js"></script>
+  <script src="assets/js/app.js"></script>
+
+  <script>
+    /**
+     * WedEazzy Admin — Header Controller
+     * Manages: greeting widget, live clock, partner ID, notifications, theme, profile dropdown
+     */
+    document.addEventListener("DOMContentLoaded", () => {
+
+      /* ── Elements ── */
+      const dropBtn        = document.getElementById("profileDropdownBtn");
+      const dropMenu       = document.getElementById("profileDropdownMenu");
+      const logoutBtn      = document.getElementById("dropdownLogoutBtn");
+      const sidebarLogout  = document.getElementById("logoutBtn");
+      const greetingEmoji  = document.getElementById("greetingEmoji");
+      const greetingText   = document.getElementById("greetingText");
+      const liveClock      = document.getElementById("headerLiveClock");
+      const partnerIdEl    = document.getElementById("partnerIdValue");
+      const dropAdminName  = document.getElementById("dropdownAdminName");
+
+      /* ── Greeting + Emoji by time of day ── */
+      function getGreeting() {
+        const h = new Date().getHours();
+        if (h >= 5  && h < 12) return { word: "Morning",   emoji: "☀️"  };
+        if (h >= 12 && h < 17) return { word: "Afternoon", emoji: "🌤️" };
+        if (h >= 17 && h < 21) return { word: "Evening",   emoji: "🌅"  };
+        return                          { word: "Night",     emoji: "🌙"  };
+      }
+
+      function updateGreeting(adminName) {
+        const { word, emoji } = getGreeting();
+        const displayName = adminName || "Admin";
+        if (greetingEmoji) greetingEmoji.textContent = emoji;
+        if (greetingText)  greetingText.textContent  = `Good ${word}, ${displayName}`;
+      }
+
+      /* ── Live clock (HH:MM:SS AM/PM) ── */
+      function tickClock() {
+        const now  = new Date();
+        let   hh   = now.getHours();
+        const mm   = String(now.getMinutes()).padStart(2, "0");
+        const ss   = String(now.getSeconds()).padStart(2, "0");
+        const ampm = hh >= 12 ? "PM" : "AM";
+        hh = hh % 12 || 12;
+        if (liveClock) liveClock.textContent = `${String(hh).padStart(2, "0")}:${mm}:${ss} ${ampm}`;
+      }
+      tickClock();
+      setInterval(tickClock, 1000);
+
+      /* ── Session — pull name, avatar letter, partner ID ── */
+      function applySession() {
+        if (!window.WedEazzyAuth) return;
+        const session = window.WedEazzyAuth.getSession();
+        if (!session) return;
+
+        const rawName  = session.name || session.email?.split("@")[0] || "Admin";
+        const letter   = session.avatarLetter || rawName.charAt(0).toUpperCase();
+        const partnerId = session.partnerId || session.id
+                          || "cmq4zjw160003g1857qk3xbr6";
+
+        // Avatar letter in button
+        if (dropBtn)       dropBtn.textContent       = letter;
+        // Dropdown name
+        if (dropAdminName) dropAdminName.textContent = rawName;
+        // Greeting text
+        updateGreeting(rawName.charAt(0).toUpperCase() + rawName.slice(1));
+        // Partner ID
+        if (partnerIdEl)   partnerIdEl.textContent   = "#" + partnerId;
+      }
+
+      // Run immediately and also after store syncs
+      applySession();
+      updateGreeting(); // fallback before session loads
+      window.addEventListener("wedeazzy_store_updated", applySession);
+
+      /* ── Profile dropdown toggle ── */
+      if (dropBtn && dropMenu) {
+        dropBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isOpen = dropMenu.classList.toggle("show");
+          dropBtn.setAttribute("aria-expanded", isOpen);
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!dropBtn.contains(e.target) && !dropMenu.contains(e.target)) {
+            dropMenu.classList.remove("show");
+            dropBtn.setAttribute("aria-expanded", "false");
+          }
+        });
+
+        // Close on Escape
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            dropMenu.classList.remove("show");
+            dropBtn.setAttribute("aria-expanded", "false");
+          }
+        });
+      }
+
+      /* ── Logout handlers ── */
+      function doLogout(e) {
+        e.preventDefault();
+        if (window.WedEazzyAuth) {
+          if (window.showToast) window.showToast("Signing out securely...", "warning");
+          setTimeout(() => window.WedEazzyAuth.logout(), 600);
+        }
+      }
+
+      if (logoutBtn)     logoutBtn.addEventListener("click", doLogout);
+      if (sidebarLogout) sidebarLogout.addEventListener("click", doLogout);
+
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secured Admin Portal - WedEazzy</title>
+  
+  <!-- Font Awesome Icons & Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/templates.css">
+
+  <style>
+    body {
+      background-color: var(--canvas-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    .login-container {
+      background-color: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      width: 440px;
+      max-width: 100%;
+      box-shadow: var(--shadow-glow);
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+      animation: mountFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes mountFade {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .login-header img {
+      height: 32px;
+      margin-bottom: 12px;
+    }
+
+    .login-header h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .login-header p {
+      color: var(--text-sub);
+      font-size: 0.82rem;
+    }
+
+    .form-stage {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      animation: stageFade 0.3s ease;
+    }
+
+    .form-stage.active {
+      display: flex;
+    }
+
+    @keyframes stageFade {
+      from { opacity: 0; transform: translateX(8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    .input-group label {
+      font-family: var(--font-head);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-sub);
+    }
+
+    .input-icon-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon-wrapper i {
+      position: absolute;
+      left: 14px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .input-icon-wrapper .premium-input {
+      width: 100%;
+      padding-left: 40px;
+      padding-right: 40px;
+      height: 44px;
+      font-size: 0.85rem;
+    }
+
+    .password-toggle-btn {
+      position: absolute;
+      right: 14px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: color 0.15s ease;
+    }
+
+    .password-toggle-btn:hover {
+      color: var(--text-main);
+    }
+
+    .form-utils {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+    }
+
+    .remember-me-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    .remember-me-wrap input {
+      accent-color: var(--brand-rose);
+      cursor: pointer;
+    }
+
+    .recovery-trigger {
+      color: var(--brand-rose);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+
+    .recovery-trigger:hover {
+      color: var(--brand-rose-hover);
+    }
+
+    /* 6-Digit OTP Blocks */
+    .otp-blocks-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .otp-input-field {
+      width: 50px;
+      height: 52px;
+      background-color: var(--canvas-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-align: center;
+      border-radius: 10px;
+      outline: none;
+      transition: all var(--transition-default);
+    }
+
+    .otp-input-field:focus {
+      border-color: var(--brand-rose);
+      box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.08);
+      background-color: var(--surface-bg);
+    }
+
+    .otp-timer-info {
+      text-align: center;
+      font-size: 0.77rem;
+      color: var(--text-sub);
+      margin-top: 10px;
+    }
+
+    .otp-timer-info strong {
+      color: var(--brand-rose);
+    }
+
+    /* Floating theme switch on login page */
+    .login-theme-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-box);
+      transition: all var(--transition-default);
+    }
+
+    .login-theme-btn:hover {
+      background-color: var(--border-subtle);
+      color: var(--text-main);
+    }
+
+    /* Loading Overlay inside Card */
+    .card-loader-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    [data-theme="dark"] .card-loader-mask {
+      background-color: rgba(15, 17, 26, 0.85);
+    }
+
+    .card-loader-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3.5px solid var(--border-color);
+      border-top-color: var(--brand-rose);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .back-to-login {
+      display: block;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-top: 10px;
+      transition: color 0.15s ease;
+    }
+
+    .back-to-login:hover {
+      color: var(--text-main);
+    }
+
+    /* Back Home styling */
+    .home-gateway-btn {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating widgets -->
+  <a href="../index.html" class="btn-premium home-gateway-btn">
+    <i class="fa-solid fa-arrow-left"></i> Home Portal
+  </a>
+
+  <!-- Toasts Alert Area -->
+  <div class="toasts-alert-dock" id="toastsDock"></div>
+
+  <!-- Login Card Container -->
+  <div class="login-container">
+    
+    <!-- Theme Switcher -->
+    <button class="login-theme-btn" id="themeToggleBtn" title="Switch Theme">
+      <i class="fa-solid fa-moon" id="themeToggleIcon"></i>
+    </button>
+
+    <!-- Card Loading Cover -->
+    <div class="card-loader-mask" id="cardLoader">
+      <div class="card-loader-spinner"></div>
+      <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-sub);" id="loaderText">Processing Security Keys...</div>
+    </div>
+
+    <!-- Header Brand Info -->
+    <div class="login-header">
+      <img src="assets/logo.png" alt="WedEazzy" class="brand-logo-img" style="height:36px; margin-bottom:14px;">
+      <h2>Secured Staff Access</h2>
+      <p id="subTitleText">Enter administrator credentials to moderate services.</p>
+    </div>
+
+    <!-- STAGE 1: Standard Credentials Forms -->
+    <form id="formCredentials" class="form-stage active">
+      <div class="input-group">
+        <label for="adminEmail">Staff Identity Email</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-regular fa-envelope"></i>
+          <input type="email" id="adminEmail" class="premium-input" placeholder="e.g. wedeazzy@gmail.com" autocomplete="email" required>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="adminPassword">Master Passphrase</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="adminPassword" class="premium-input" placeholder="••••••••••••" autocomplete="current-password" required>
+          <button type="button" class="password-toggle-btn" id="passwordToggle" title="Toggle Password">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-utils">
+        <label class="remember-me-wrap">
+          <input type="checkbox" id="rememberMe" checked>
+          <span>Keep session logged-in</span>
+        </label>
+        <a href="#" class="recovery-trigger" id="recoveryTrigger">Forgot Password?</a>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem;">
+        <i class="fa-solid fa-shield-halved"></i> Authenticate Credentials
+      </button>
+    </form>
+
+    <!-- STAGE 2: Multi-Factor OTP Lock -->
+    <form id="formOTP" class="form-stage">
+      <div class="input-group" style="text-align: center;">
+        <label style="margin-bottom: 2px;">Enter 6-Digit Verification Code</label>
+        <div style="font-size: 0.77rem; color: var(--text-sub); margin-bottom: 8px;">
+          A verification code has been dispatched to your registered email address.
+        </div>
+        
+        <div class="otp-blocks-container" id="otpBlocks">
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+        </div>
+
+        <div class="otp-timer-info">
+          Passcode expires in: <strong id="otpTimer">02:00</strong>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem; margin-top: 10px;">
+        <i class="fa-solid fa-key"></i> Verify Security OTP
+      </button>
+
+      <a href="#" class="back-to-login" id="backFromOTP"><i class="fa-solid fa-angle-left"></i> Modify Credentials</a>
+    </form>
+
+    <!-- STAGE 3: Password Recovery Support -->
+    <form id="formRecovery" class="form-stage">
+      <div class="input-group">
+        <label for="recoveryEmail">Registered Email</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-regular fa-envelope"></i>
+          <input type="email" id="recoveryEmail" class="premium-input" placeholder="wedeazzy@gmail.com" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem;">
+        <i class="fa-solid fa-paper-plane"></i> Email Security Recovery
+      </button>
+
+      <a href="#" class="back-to-login" id="backFromRecovery"><i class="fa-solid fa-angle-left"></i> Return to login form</a>
+    </form>
+
+    <!-- STAGE 4: Password Reset Form -->
+    <form id="formReset" class="form-stage">
+      <div class="input-group">
+        <label for="newPassword">New Master Passphrase</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="newPassword" class="premium-input" placeholder="Min 6 characters" required>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="confirmPassword">Confirm Passphrase</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="confirmPassword" class="premium-input" placeholder="Repeat passphrase" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem;">
+        <i class="fa-solid fa-key"></i> Update Master Passphrase
+      </button>
+
+      <a href="#" class="back-to-login" id="backFromReset"><i class="fa-solid fa-angle-left"></i> Return to login form</a>
+    </form>
+
+  </div>
+
+  <!-- Loading Authentication scripts -->
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/store.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Guard check: prevent entering login if session is active
+      if (window.WedEazzyAuth) {
+        window.WedEazzyAuth.guardLoginPage();
+      }
+
+      // 2. Elements
+      const el = {
+        html: document.documentElement,
+        themeBtn: document.getElementById("themeToggleBtn"),
+        themeIcon: document.getElementById("themeToggleIcon"),
+        loader: document.getElementById("cardLoader"),
+        loaderText: document.getElementById("loaderText"),
+        subTitle: document.getElementById("subTitleText"),
+        toastsDock: document.getElementById("toastsDock"),
+        
+        formCreds: document.getElementById("formCredentials"),
+        formOTP: document.getElementById("formOTP"),
+        formRecovery: document.getElementById("formRecovery"),
+        
+        email: document.getElementById("adminEmail"),
+        pass: document.getElementById("adminPassword"),
+        passToggle: document.getElementById("passwordToggle"),
+        rememberMe: document.getElementById("rememberMe"),
+        
+        otpBlocks: document.getElementById("otpBlocks"),
+        otpInputs: document.querySelectorAll(".otp-input-field"),
+        otpTimer: document.getElementById("otpTimer"),
+        
+        recoveryEmail: document.getElementById("recoveryEmail"),
+        
+        formReset: document.getElementById("formReset"),
+        newPass: document.getElementById("newPassword"),
+        confirmPass: document.getElementById("confirmPassword"),
+        
+        btnRecovery: document.getElementById("recoveryTrigger"),
+        btnBackFromOTP: document.getElementById("backFromOTP"),
+        btnBackFromRec: document.getElementById("backFromRecovery"),
+        btnBackFromReset: document.getElementById("backFromReset")
+      };
+
+      let timerInterval = null;
+
+      // 3. Theme toggling
+      let theme = localStorage.getItem("wedeazzy_theme") || "light";
+      el.html.setAttribute("data-theme", theme);
+      updateThemeIcon();
+
+      el.themeBtn.addEventListener("click", () => {
+        theme = theme === "light" ? "dark" : "light";
+        localStorage.setItem("wedeazzy_theme", theme);
+        el.html.setAttribute("data-theme", theme);
+        updateThemeIcon();
+        showToast("Theme changed to " + theme.toUpperCase(), "success");
+      });
+
+      function updateThemeIcon() {
+        if (theme === "dark") {
+          el.themeIcon.className = "fa-solid fa-sun";
+        } else {
+          el.themeIcon.className = "fa-solid fa-moon";
+        }
+      }
+
+      // 4. Password visibility toggle
+      el.passToggle.addEventListener("click", () => {
+        const isPass = el.pass.type === "password";
+        el.pass.type = isPass ? "text" : "password";
+        el.passToggle.querySelector("i").className = isPass ? "fa-regular fa-eye-slash" : "fa-regular fa-eye";
+      });
+
+      // 5. Toast signals spawner
+      function showToast(message, type = "info") {
+        const card = document.createElement("div");
+        card.className = `toast-alert-card toast-${type}`;
+        let icon = "fa-info-circle";
+        if (type === "success") icon = "fa-check-circle";
+        if (type === "warning") icon = "fa-exclamation-triangle";
+        if (type === "danger") icon = "fa-times-circle";
+
+        card.innerHTML = `
+          <i class="fa-solid ${icon}"></i>
+          <div class="toast-alert-text">${message}</div>
+          <button class="toast-alert-close-btn">&times;</button>
+        `;
+
+        card.querySelector(".toast-alert-close-btn").addEventListener("click", () => {
+          card.style.opacity = "0";
+          setTimeout(() => card.remove(), 300);
+        });
+
+        el.toastsDock.appendChild(card);
+        setTimeout(() => {
+          card.style.opacity = "0";
+          setTimeout(() => card.remove(), 300);
+        }, 3500);
+      }
+
+      // 6. Stages switcher
+      function switchStage(activeForm, subText) {
+        el.formCreds.classList.remove("active");
+        el.formOTP.classList.remove("active");
+        el.formRecovery.classList.remove("active");
+        el.formReset.classList.remove("active");
+        
+        activeForm.classList.add("active");
+        el.subTitle.textContent = subText;
+      }
+
+      // 7. OTP Timer routines
+      function startOTPTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        let seconds = 120;
+        
+        function updateTimer() {
+          const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+          const s = (seconds % 60).toString().padStart(2, '0');
+          el.otpTimer.textContent = `${m}:${s}`;
+          if (seconds <= 0) {
+            clearInterval(timerInterval);
+            showToast("MFA Passcode expired. Please request another session.", "warning");
+            switchStage(el.formCreds, "MFA Session expired. Please log in again.");
+          }
+          seconds--;
+        }
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      // 8. Auto Shifting and Paste Handlers in 6-digit OTP Inputs
+      el.otpInputs.forEach((input, index) => {
+        // Shift on input/keyup
+        input.addEventListener("keyup", (e) => {
+          const val = input.value;
+          if (val.length === 1 && index < el.otpInputs.length - 1) {
+            el.otpInputs[index + 1].focus();
+          }
+        });
+
+        // Handle backspace shift back
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && !input.value && index > 0) {
+            el.otpInputs[index - 1].focus();
+          }
+        });
+
+        // Premium paste handler for automatic filling
+        input.addEventListener("paste", (e) => {
+          const pastedData = (e.clipboardData || window.clipboardData).getData("text").trim();
+          if (pastedData.length === 6 && /^\d+$/.test(pastedData)) {
+            e.preventDefault();
+            pastedData.split("").forEach((char, idx) => {
+              if (el.otpInputs[idx]) {
+                el.otpInputs[idx].value = char;
+              }
+            });
+            // Focus on final box
+            el.otpInputs[5].focus();
+            showToast("Passcode pasted successfully!", "success");
+          }
+        });
+      });
+
+      // 9. FORM SUBMISSIONS
+      
+      // Step 1 Submission: Credential check
+      el.formCreds.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        el.loaderText.textContent = "Verifying Security Keys...";
+        el.loader.style.display = "flex";
+
+        try {
+          const response = await window.WedEazzyAuth.validateCredentials(el.email.value, el.pass.value);
+          el.loader.style.display = "none";
+
+          if (response.success) {
+            showToast("Credentials validated! Redirecting to MFA OTP Lock.", "success");
+            switchStage(el.formOTP, "Enter the 6-digit verification code to complete sign-in.");
+            // Reset OTP inputs
+            el.otpInputs.forEach(i => i.value = "");
+            el.otpInputs[0].focus();
+            startOTPTimer();
+          } else {
+            showToast(response.error, "danger");
+          }
+        } catch (err) {
+          el.loader.style.display = "none";
+          showToast("Authentication server encountered an unexpected block.", "danger");
+        }
+      });
+
+      // Step 2 Submission: OTP verification
+      el.formOTP.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        // Assemble code
+        let otpCode = "";
+        el.otpInputs.forEach(i => otpCode += i.value);
+
+        if (otpCode.length !== 6) {
+          showToast("Please enter complete 6-digit passcode.", "warning");
+          return;
+        }
+
+        el.loaderText.textContent = "Deploying session encryption...";
+        el.loader.style.display = "flex";
+
+        try {
+          const response = await window.WedEazzyAuth.verifyOTP(otpCode, el.rememberMe.checked);
+          el.loader.style.display = "none";
+
+          if (response.success) {
+            showToast("OTP verified! Redirecting to Dashboard...", "success");
+            
+            // Redirect cleanly
+            setTimeout(() => {
+              const target = sessionStorage.getItem("auth_redirect_target") || "dashboard.html";
+              sessionStorage.removeItem("auth_redirect_target");
+              window.location.href = target;
+            }, 600);
+          } else {
+            showToast(response.error, "danger");
+            // Clear code inputs
+            el.otpInputs.forEach(i => i.value = "");
+            el.otpInputs[0].focus();
+          }
+        } catch (err) {
+          el.loader.style.display = "none";
+          showToast("MFA authorization channel rejected verification.", "danger");
+        }
+      });
+
+      // Step 3 Submission: Forgot password recovery
+      el.formRecovery.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        el.loaderText.textContent = "Dispatching recovery links...";
+        el.loader.style.display = "flex";
+
+        try {
+          const response = await window.WedEazzyAuth.recoverPassword(el.recoveryEmail.value);
+          el.loader.style.display = "none";
+          
+          if (response.success) {
+            showToast(response.message, "success");
+            switchStage(el.formCreds, "Recovery OTP sent. Log in below.");
+          } else {
+            showToast(response.error, "danger");
+          }
+        } catch (err) {
+          el.loader.style.display = "none";
+          showToast("Password recovery pipeline is currently offline.", "danger");
+        }
+      });
+
+      // Step 4 Submission: Reset password execution
+      el.formReset.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const p1 = el.newPass.value;
+        const p2 = el.confirmPass.value;
+        if (p1 !== p2) {
+          showToast("Passphrases do not match.", "warning");
+          return;
+        }
+        if (p1.length < 6) {
+          showToast("Passphrase must be at least 6 characters.", "warning");
+          return;
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetToken = urlParams.get('token');
+        if (!resetToken) {
+          showToast("Password reset token is missing. Please request a new recovery link.", "danger");
+          return;
+        }
+
+        el.loaderText.textContent = "Updating security credentials...";
+        el.loader.style.display = "flex";
+
+        try {
+          const response = await window.WedEazzyAuth.resetPasswordWithToken(resetToken, p1);
+          el.loader.style.display = "none";
+
+          if (response.success) {
+            showToast("Master passphrase successfully updated! Redirecting to login...", "success");
+            // Clear URL params
+            window.history.replaceState({}, document.title, window.location.pathname);
+            setTimeout(() => {
+              switchStage(el.formCreds, "Enter credentials to moderate services.");
+            }, 2000);
+          } else {
+            showToast(response.error, "danger");
+          }
+        } catch (err) {
+          el.loader.style.display = "none";
+          showToast("Password reset server is offline.", "danger");
+        }
+      });
+
+      // Page anchors bindings
+      el.btnRecovery.addEventListener("click", (e) => {
+        e.preventDefault();
+        switchStage(el.formRecovery, "Enter your administrator account email to recover access.");
+      });
+
+      el.btnBackFromOTP.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (timerInterval) clearInterval(timerInterval);
+        switchStage(el.formCreds, "Enter credentials to moderate services.");
+      });
+
+      el.btnBackFromRec.addEventListener("click", (e) => {
+        e.preventDefault();
+        switchStage(el.formCreds, "Enter credentials to moderate services.");
+      });
+
+      el.btnBackFromReset.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.history.replaceState({}, document.title, window.location.pathname);
+        switchStage(el.formCreds, "Enter credentials to moderate services.");
+      });
+
+      // Check for reset action and token in URL query
+      const urlParams = new URLSearchParams(window.location.search);
+      const action = urlParams.get('action');
+      const token = urlParams.get('token');
+      if (action === 'reset' && token) {
+        switchStage(el.formReset, "Create a new master passphrase for your administrator account.");
+      }
+    });
+  </script>
+</body>
+</html>

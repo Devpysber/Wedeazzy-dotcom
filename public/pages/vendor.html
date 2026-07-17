@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#E11D2A" />
+<title id="pageTitle">Vendor Profile | WedEazzy.com</title>
+<meta name="description" id="pageDesc" content="Verified wedding vendor profile on WedEazzy.com. Get a quote on WhatsApp - zero booking fees." />
+<link rel="icon" type="image/png" href="../assets/images/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/shared.css" />
+<style>
+  body { background: var(--bg-alt); }
+  .title-block { padding: 16px 0 18px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  .title-block h1 { font-size: clamp(22px, 3vw, 30px); font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 6px; }
+  .meta-row { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
+  .breadcrumb { padding: 14px 0 0; font-size: 13px; color: var(--text-muted); }
+  .breadcrumb a { color: var(--text-muted); }
+  .breadcrumb a:hover { color: var(--red); }
+
+  .gallery { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 220px 220px; gap: 6px; border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 24px; }
+  .gallery img { width: 100%; height: 100%; object-fit: cover; }
+  .gallery .g0 { grid-row: 1 / 3; grid-column: 1; }
+
+  .pdp-layout { display: grid; grid-template-columns: 1fr 380px; gap: 26px; padding-bottom: 60px; }
+  .pdp-main section { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 16px; }
+  .pdp-main h2 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  .pdp-main p { color: var(--text-muted); line-height: 1.7; }
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .info-block { padding: 12px; background: var(--bg-alt); border-radius: 8px; }
+  .info-block strong { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .info-block span { font-size: 14px; color: var(--text); font-weight: 600; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--red-light); color: var(--red); font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; }
+
+  .booking-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; box-shadow: var(--shadow); position: sticky; top: 90px; height: fit-content; }
+  .booking-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 4px; color: var(--text); }
+  .booking-card .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .form-field { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; transition: border-color 0.2s, box-shadow 0.2s; }
+  .form-field:focus-within { border-color: var(--red); box-shadow: 0 0 0 3px rgba(225,29,42,0.12); }
+  .form-field label { display: block; font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-field input, .form-field select, .form-field textarea { border: none; outline: none; background: transparent; width: 100%; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text); padding: 4px 0 0; }
+  .form-field textarea { resize: vertical; font-weight: 500; min-height: 60px; }
+  .form-field-full { grid-column: 1 / 3; }
+  .form-error { color: #DC2626; font-size: 12px; margin-top: 6px; display: none; }
+  .form-error.show { display: block; }
+  .submit-wa { background: var(--whatsapp); color: #fff !important; width: 100%; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; margin-top: 6px; box-shadow: 0 8px 20px rgba(37,211,102,0.30); transition: all 0.2s; }
+  .submit-wa:hover { background: var(--whatsapp-dark); transform: translateY(-2px); }
+  .submit-wa svg { width: 18px; height: 18px; }
+  .secondary-call { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px; margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; color: var(--red); font-weight: 700; font-size: 13px; }
+  .secondary-call:hover { background: var(--red-light); border-color: var(--red); }
+  .trust-points { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); list-style: none; }
+  .trust-points li { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; color: var(--text-muted); }
+  .trust-points li::before { content: "✓"; color: var(--success); font-weight: 800; }
+
+  .not-found { background: #fff; border-radius: var(--radius-lg); padding: 56px 20px; text-align: center; margin: 30px 0; }
+  .not-found h2 { font-size: 22px; margin-bottom: 10px; }
+
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  @media (max-width: 980px) {
+    .pdp-layout { grid-template-columns: 1fr; }
+    .booking-card { position: static; }
+    .gallery { grid-template-rows: 200px 100px; }
+  }
+  @media (max-width: 640px) {
+    .gallery { grid-template-columns: 1fr 1fr; grid-template-rows: 200px 100px 100px; }
+    .gallery .g0 { grid-row: 1; grid-column: 1 / 3; }
+    .form-row { grid-template-columns: 1fr; }
+    .form-field-full { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="container header-inner">
+    <a href="../index.html" class="brand"><img src="../assets/images/logo.png" alt="WedEazzy" /></a>
+    <div class="header-right">
+      <a href="marketing.html" class="nav-link">List Your Business</a>
+      <a href="tel:+917498987620" class="call-link">📞 +91 74989 87620</a>
+      <a href="https://wa.me/917498987620?text=Hi%20WedEazzy!" class="header-cta" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/></svg>
+        <span>Chat</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div id="content"></div>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo"><img src="../assets/images/logo.png" alt="WedEazzy" /></div>
+        <p class="tagline">India's wedding marketplace. Hand-picked vendors. Direct WhatsApp. Zero booking fees — always.</p>
+        <div class="trust-badges">
+          <div class="trust-badge">
+            <span class="trust-badge-icon">✓</span>
+            <span>Verified Vendors</span>
+          </div>
+          <div class="trust-badge">
+            <span class="trust-badge-icon">✓</span>
+            <span>Secure Payments</span>
+          </div>
+          <div class="trust-badge">
+            <span class="trust-badge-icon">✓</span>
+            <span>Trusted by Thousands</span>
+          </div>
+          <div class="trust-badge">
+            <span class="trust-badge-icon">✓</span>
+            <span>24/7 Customer Support</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h4>Categories</h4>
+        <ul>
+          <li><a href="category.html?cat=banquet-halls">Banquet Halls</a></li>
+          <li><a href="category.html?cat=wedding-photographers">Photographers</a></li>
+          <li><a href="category.html?cat=bridal-makeup">Bridal Makeup</a></li>
+          <li><a href="category.html?cat=wedding-planners">Planners</a></li>
+          <li><a href="category.html?cat=wedding-decorators">Decorators</a></li>
+          <li><a href="category.html?cat=wedding-caterers">Caterers</a></li>
+          <li><a href="category.html?cat=pandits">Pandits</a></li>
+          <li><a href="category.html?cat=bridal-mehndi">Mehendi Artists</a></li>
+          <li><a href="category.html?cat=wedding-invitations">Wedding Cards</a></li>
+          <li><a href="category.html?cat=wedding-invitations">Invitations</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Destinations</h4>
+        <ul>
+          <li><a href="city.html?city=mumbai">Mumbai</a></li>
+          <li><a href="city.html?city=delhi-ncr">Delhi NCR</a></li>
+          <li><a href="city.html?city=goa">Goa</a></li>
+          <li><a href="city.html?city=udaipur">Udaipur</a></li>
+          <li><a href="city.html?city=jaipur">Jaipur</a></li>
+          <li><a href="city.html?city=jodhpur">Jodhpur</a></li>
+          <li><a href="city.html?city=ahmedabad">Ahmedabad</a></li>
+          <li style="margin-top: 15px;"><a href="#" style="font-weight: 600; color: #fff;">Wedding Blogs</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Newsletter &amp; App</h4>
+        <p class="newsletter-desc">Get wedding planning tips, inspiration, and exclusive vendor offers.</p>
+        <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Thank you for subscribing to the WedEazzy newsletter!'); this.reset();">
+          <input type="email" class="newsletter-input" placeholder="Your email address" required />
+          <button type="submit" class="newsletter-btn">Subscribe</button>
+        </form>
+        <div class="app-section">
+          <p class="app-desc">Plan your wedding on the go with the WedEazzy App.</p>
+          <div class="app-badges">
+            <a href="#" class="app-btn">
+              <svg viewBox="0 0 24 24">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.62.69-1.16 1.84-1.01 2.96 1.12.09 2.27-.58 2.95-1.39z"/>
+              </svg>
+              <div class="app-btn-text">
+                <span>Download on the</span>
+                <strong>App Store</strong>
+              </div>
+            </a>
+            <a href="#" class="app-btn">
+              <svg viewBox="0 0 24 24">
+                <path d="M3.25 1.75L12.5 11l-9.25 9.25C3.1 20.1 3 19.8 3 19.5V2.5c0-.3.1-.6.25-.75M13.5 12l2.75 2.75L3.8 23.3c-.3.2-.7.2-1 .05l10.7-11.35m7.25-1.5L13.5 12 3.8.7C4.1.5 4.5.5 4.8.7l15.95 9.8m.5 1.3c-.2.6-.7 1.1-1.2 1.4l-3 1.8-2.3-2.3 6.5-2.2z"/>
+              </svg>
+              <div class="app-btn-text">
+                <span>Get it on</span>
+                <strong>Google Play</strong>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-middle-grid">
+      <div class="footer-contacts">
+        <div class="contact-group">
+          <h5>For Vendors</h5>
+          <p>
+            <a href="mailto:vendors@wedeazzy.com">vendors@wedeazzy.com</a><br />
+            <a href="tel:01246812346">0124-6812346</a>
+          </p>
+        </div>
+        <div class="contact-group">
+          <h5>For Users</h5>
+          <p>
+            <a href="mailto:info@wedeazzy.com">info@wedeazzy.com</a><br />
+            <a href="tel:01246812345">0124-6812345</a>
+          </p>
+        </div>
+        <div class="social-section">
+          <h5>Follow us on</h5>
+          <div class="social-icons-row">
+            <a href="https://www.facebook.com/WedEazzy/" target="_blank" rel="noopener" class="social-icon-btn facebook" aria-label="Facebook">
+              <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href="https://www.instagram.com/wedeazzy" target="_blank" rel="noopener" class="social-icon-btn instagram" aria-label="Instagram">
+              <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051C.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+            </a>
+            <a href="https://x.com/wedeazzy" target="_blank" rel="noopener" class="social-icon-btn x-twitter" aria-label="X (Twitter)">
+              <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+          </div>
+          <svg width="0" height="0" style="position: absolute;">
+            <linearGradient id="instagram-grad-normal" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#f09433" />
+              <stop offset="25%" stop-color="#e6683c" />
+              <stop offset="50%" stop-color="#dc2743" />
+              <stop offset="75%" stop-color="#cc2366" />
+              <stop offset="100%" stop-color="#bc1888" />
+            </linearGradient>
+          </svg>
+        </div>
+      </div>
+
+      <div class="office-card">
+        <div class="office-icon">📍</div>
+        <div class="office-details">
+          <h5>Registered Office</h5>
+          <p>Shed no :- 3, Nirmal Rubber Compound, 2, IB Patel Rd, behind Upkar Hotel, next to Rocky Industrial Estate, Jay Prakash Nagar, Goregaon, Mumbai, Maharashtra 400063</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 WedEazzy.com — Wedding planning, made eazzy. Made with ❤ in India</span>
+      <div class="footer-bottom-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="#">Refund Policy</a>
+        <a href="https://wa.me/917498987620">Contact Us</a>
+        <a href="../admin-panel/login.html" style="font-weight: 600; color: #E6C462;"><span class="trust-badge-icon">🔒</span> Admin Portal</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script>
+  // ====== PASTE GOOGLE APPS SCRIPT WEBAPP URL HERE (see SETUP-GOOGLE-SHEET.md) ======
+  var LEADS_WEBAPP_URL = '';
+  // =================================================================================
+  // ====== BACKEND API (Phase 2+) - set when wedeazzy-backend is deployed ============
+  var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:4000'
+    : window.location.origin;
+  // ==================================================================================
+  var ADMIN_WA = '917498987620';
+
+  // Dual-write: send the inquiry to (a) the Node API if configured, and
+  // (b) the Google Sheet as fallback. Either failing is non-fatal.
+  function pushLeadToApi(data) {
+    if (!API_BASE) return;
+    try {
+      var token = localStorage.getItem('wedeazzy_token') || sessionStorage.getItem('wedeazzy_token');
+      var headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+      }
+      fetch(API_BASE + '/api/inquiry/public', {
+        method: 'POST', mode: 'cors', headers: headers,
+        body: JSON.stringify(data)
+      }).catch(function(){});
+    } catch (e) {}
+  }
+
+  function qs(name) { var m = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search); return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : ''; }
+  function esc(s) { return (s||'').toString().replace(/[<>&"]/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];}); }
+  function titleCase(s) { return (s||'').replace(/(^|[\s-])(\w)/g, function(_,a,b){ return a + b.toUpperCase(); }); }
+
+  var CAT_IMG = {
+    'banquet-halls': ['photo-1519741497674-611481863552','photo-1464366400600-7168b8af9bc3','photo-1530023367847-a683933f4172','photo-1519225421980-715cb0215aed','photo-1465495976277-4387d4b0b4c6'],
+    'marriage-gardens': ['photo-1465495976277-4387d4b0b4c6','photo-1469371670807-013ccf25f16a','photo-1519741497674-611481863552','photo-1519225421980-715cb0215aed','photo-1464366400600-7168b8af9bc3'],
+    'wedding-lawns': ['photo-1465495976277-4387d4b0b4c6','photo-1469371670807-013ccf25f16a','photo-1519225421980-715cb0215aed','photo-1530023367847-a683933f4172','photo-1519741497674-611481863552'],
+    'wedding-photographers': ['photo-1511795409834-ef04bbd61622','photo-1519741497674-611481863552','photo-1469371670807-013ccf25f16a','photo-1519225421980-715cb0215aed','photo-1530023367847-a683933f4172'],
+    'bridal-makeup': ['photo-1487412947147-5cebf100ffc2','photo-1591035897819-f4bdf739f446','photo-1583001931096-959e7d3b9d80','photo-1583241800698-9c2e2c0bf06d','photo-1492106087820-71f1a00d2b11'],
+    'bridal-mehndi': ['photo-1602216056096-3b40cc0c9944','photo-1611106671620-37b1eaecd55b','photo-1591035897819-f4bdf739f446','photo-1583001931096-959e7d3b9d80','photo-1492106087820-71f1a00d2b11'],
+    'wedding-planners': ['photo-1530023367847-a683933f4172','photo-1469371670807-013ccf25f16a','photo-1519225421980-715cb0215aed','photo-1519741497674-611481863552','photo-1464366400600-7168b8af9bc3'],
+    'wedding-decorators': ['photo-1519225421980-715cb0215aed','photo-1519741497674-611481863552','photo-1464366400600-7168b8af9bc3','photo-1469371670807-013ccf25f16a','photo-1530023367847-a683933f4172'],
+    'wedding-caterers': ['photo-1555244162-803834f70033','photo-1414235077428-338989a2e8c0','photo-1502998070258-dc1338445ac2','photo-1414235077428-338989a2e8c0','photo-1493676304819-0d7a8d026dcf'],
+    'wedding-invitations': ['photo-1607344645866-009c320b63e0','photo-1542665952-14513db15293','photo-1525857597365-5f6dbff2e36e','photo-1551184451-76b762941ad6','photo-1469371670807-013ccf25f16a'],
+    'wedding-entertainment': ['photo-1493676304819-0d7a8d026dcf','photo-1501281668745-f7f57925c3b4','photo-1470229722913-7c0e2dbbafd3','photo-1429962714451-bb934ecdc4ec','photo-1429962714451-bb934ecdc4ec']
+  };
+  function imgFor(v, idx) {
+    var arr = CAT_IMG[v.category_slug] || CAT_IMG['banquet-halls'];
+    var seed = (v.id || '').split('').reduce(function(a,c){return a + c.charCodeAt(0);}, 0) + (idx||0);
+    var pic = arr[seed % arr.length];
+    return 'https://images.unsplash.com/' + pic + '?w=1000&h=700&fit=crop&q=75';
+  }
+
+  function vendorWa(v, msg) {
+    var num = (v.phone && v.phone.replace(/[^0-9]/g,'').length >= 10) ? v.phone.replace(/[^0-9]/g,'') : ADMIN_WA;
+    if (num.length === 10) num = '91' + num;
+    return 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+  }
+  function adminWa(msg) {
+    return 'https://wa.me/' + ADMIN_WA + '?text=' + encodeURIComponent(msg);
+  }
+
+  var id = qs('id');
+  var vendor = null;
+  var content = document.getElementById('content');
+
+  // Render a loading state initially
+  content.innerHTML = '\
+    <div class="container">\
+      <div style="text-align:center;padding:100px 0;">\
+        <div style="border: 4px solid rgba(0,0,0,0.1); border-top: 4px solid var(--red); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>\
+        <p style="color:var(--text-muted);font-weight:600;font-size:15px;">Loading vendor details...</p>\
+      </div>\
+    </div>';
+
+  if (!id) {
+    renderNotFound();
+  } else {
+    fetch(API_BASE + '/api/public/vendors/' + encodeURIComponent(id))
+      .then(function(r) { 
+        if (!r.ok) throw new Error('Status ' + r.status);
+        return r.json(); 
+      })
+      .then(function(res) {
+        if (res.ok && res.vendor) {
+          renderVendor(res.vendor);
+        } else {
+          renderNotFound();
+        }
+      })
+      .catch(function(err) {
+        console.error('[WedEazzy] Fetch error:', err);
+        renderNotFound();
+      });
+  }
+
+  function logAnalyticsEvent(eventType) {
+    if (!API_BASE || !id) return;
+    try {
+      var campaignId = qs('campaignId') || qs('cid') || null;
+      var bodyData = {
+        vendorIdOrSlug: id,
+        eventType: eventType
+      };
+      if (campaignId) {
+        bodyData.campaignId = campaignId;
+      }
+      fetch(API_BASE + '/api/public/analytics/event', {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyData)
+      }).catch(function(){});
+    } catch (e) {}
+  }
+
+  function renderNotFound() {
+    content.innerHTML = '<div class="container"><div class="not-found"><h2>Vendor not found</h2><p>Pick a vendor from the directory to see details.</p><div style="margin-top:20px;"><a href="../index.html" style="background:#E11D2A;color:#fff;padding:12px 22px;border-radius:8px;font-weight:700;text-decoration:none;">Back to home</a></div></div></div>';
+  }
+
+  function renderVendor(v) {
+    vendor = v;
+    logAnalyticsEvent('profile_visit');
+    const titleEl = document.getElementById('pageTitle');
+    if (titleEl) {
+      titleEl.textContent = vendor.name + ' - ' + vendor.category + ' in ' + vendor.city + ' | WedEazzy.com';
+    }
+    const descEl = document.getElementById('pageDesc');
+    if (descEl) {
+      descEl.setAttribute('content', 'Book ' + vendor.name + ' (' + vendor.category + ') in ' + vendor.city + ' on WedEazzy.com. Verified, direct WhatsApp inquiry, zero booking fees.');
+    }
+
+    var imgs = [imgFor(vendor, 0), imgFor(vendor, 1), imgFor(vendor, 2), imgFor(vendor, 3), imgFor(vendor, 4)];
+    if (vendor.photos && vendor.photos.length > 0) {
+      for (var i = 0; i < 5; i++) {
+        if (vendor.photos[i]) imgs[i] = vendor.photos[i].url;
+      }
+    }
+    
+    var amenities = ['WhatsApp direct', 'Zero booking fees', 'Local team'];
+
+    // Parse everyday timings
+    var timingsHtml = '';
+    if (vendor.businessTimings) {
+      try {
+        var parsed = JSON.parse(vendor.businessTimings);
+        var days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        timingsHtml = '<section><h2>Business Hours</h2><div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap:10px; background:#F8F9FC; padding:16px; border-radius:8px; border:1px solid var(--border);">';
+        days.forEach(function(day){
+          if (parsed[day]) {
+            var t = parsed[day];
+            timingsHtml += '<div style="display:flex; flex-direction:column; font-size:12.5px;">' +
+              '<strong style="text-transform:capitalize; color:var(--text); font-size:12px;">' + day + '</strong>' +
+              '<span style="color:' + (t.open ? 'var(--text);' : '#DC2626;') + ' font-weight:600; font-size:12px; margin-top:2px;">' + (t.open ? esc(t.from) + ' - ' + esc(t.to) : 'Closed') + '</span>' +
+            '</div>';
+          }
+        });
+        timingsHtml += '</div></section>';
+      } catch (e) {
+        // Fallback for legacy string
+        timingsHtml = '<section><h2>Business Hours</h2><p style="font-size:13.5px; margin:0; font-weight:600; color:var(--text);">⏰ ' + esc(vendor.businessTimings) + '</p></section>';
+      }
+    }
+
+    // Parse business highlights
+    var highlightsHtml = '';
+    var parsedServices = [];
+    if (vendor.services) {
+      try {
+        parsedServices = typeof vendor.services === 'string' ? JSON.parse(vendor.services) : vendor.services;
+      } catch (e) {}
+    }
+    if (parsedServices && Array.isArray(parsedServices) && parsedServices.length > 0) {
+      highlightsHtml = '<section><h2>Services & Highlights</h2><div class="chip-row">' +
+        parsedServices.map(function(s){ return '<span class="chip" style="background:#FFF0F2; color:#E11D2A; border:1.5px solid var(--pink-border); font-size:12px; font-weight:700;">✓ ' + esc(s) + '</span>'; }).join('') +
+      '</div></section>';
+    }
+
+    // Parse social web links
+    var socialsHtml = '';
+    if (vendor.instagram || vendor.facebook || vendor.youtube || vendor.website || vendor.googleBusiness) {
+      socialsHtml = '<section><h2>Social & Web Presence</h2><div style="display:flex; gap:12px; flex-wrap:wrap;">';
+      if (vendor.website) {
+        socialsHtml += '<a href="' + esc(vendor.website) + '" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; border:1.5px solid var(--border); color:var(--text); text-decoration:none; font-size:13px; font-weight:600; background:#fff;">🌐 Website</a>';
+      }
+      if (vendor.instagram) {
+        socialsHtml += '<a href="' + esc(vendor.instagram) + '" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; border:1.5px solid var(--border); color:var(--text); text-decoration:none; font-size:13px; font-weight:600; background:#fff;">📸 Instagram</a>';
+      }
+      if (vendor.facebook) {
+        socialsHtml += '<a href="' + esc(vendor.facebook) + '" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; border:1.5px solid var(--border); color:var(--text); text-decoration:none; font-size:13px; font-weight:600; background:#fff;">📘 Facebook</a>';
+      }
+      if (vendor.youtube) {
+        socialsHtml += '<a href="' + esc(vendor.youtube) + '" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; border:1.5px solid var(--border); color:var(--text); text-decoration:none; font-size:13px; font-weight:600; background:#fff;">🎥 YouTube</a>';
+      }
+      if (vendor.googleBusiness) {
+        socialsHtml += '<a href="' + esc(vendor.googleBusiness) + '" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; border:1.5px solid var(--border); color:var(--text); text-decoration:none; font-size:13px; font-weight:600; background:#fff;">💼 Google Business</a>';
+      }
+      socialsHtml += '</div></section>';
+    }
+
+    content.innerHTML = '\
+      <div class="container">\
+        <div class="breadcrumb"><a href="../index.html">Home</a> &nbsp;›&nbsp; <a href="city.html?city=' + esc(vendor.city_slug) + '">' + esc(vendor.city) + '</a> &nbsp;›&nbsp; <a href="category.html?cat=' + esc(vendor.category_slug) + '&city=' + esc(vendor.city_slug) + '">' + esc(vendor.category) + '</a> &nbsp;›&nbsp; ' + esc(vendor.name) + '</div>\
+        <div class="title-block">\
+          <div>\
+            <h1>' + esc(vendor.name) + (vendor.subscriptionPlan === 'Featured' ? ' <span style="background:#ea3b3b; color:#fff; font-size:12px; font-weight:700; padding:3px 10px; border-radius:4px; margin-left:8px; display:inline-block; vertical-align:middle;">Featured</span>' : (vendor.subscriptionPlan === 'Premium' ? ' <span style="background:#3b82f6; color:#fff; font-size:12px; font-weight:700; padding:3px 10px; border-radius:4px; margin-left:8px; display:inline-block; vertical-align:middle;">Premium</span>' : '')) + '</h1>\
+            <div class="meta-row">\
+              ' + ((parseInt(vendor.rating_count, 10)||0) > 0 ? \
+                  '<span style="color:#d97706; font-size:15px; font-weight:700; margin-right:4px;">' + '★'.repeat(Math.round(vendor.rating)) + '☆'.repeat(5 - Math.round(vendor.rating)) + '</span>' +\
+                  '<strong style="color:var(--text); font-size:14px; margin-right:6px;">' + (parseFloat(vendor.rating)||0).toFixed(1) + '</strong>' +\
+                  '<span style="color:var(--text-secondary); font-size:13px; font-weight:600; margin-right:8px;">(' + vendor.rating_count + ' Reviews)</span>'\
+                  : '<span class="rating-pill" style="background:#f3f4f6;color:#79706A;">No reviews yet</span>') + '\
+              <span><strong style="color:var(--text);">' + esc(vendor.category) + '</strong></span>\
+              <span>·</span>\
+              <span>📍 ' + esc(vendor.area || vendor.city) + ', ' + esc(vendor.city) + '</span>\
+              ' + (vendor.google_cid ? '<span>·</span><a href="https://www.google.com/maps?cid=' + esc(vendor.google_cid) + '" target="_blank" rel="noopener" style="color:var(--red);font-weight:600;">View on Google Maps</a>' : '') + '\
+            </div>\
+          </div>\
+          <button class="secondary-call" onclick="navigator.share ? navigator.share({title: document.title, url: location.href}) : navigator.clipboard.writeText(location.href).then(function(){alert(\'Link copied!\');})" style="margin:0;border:1px solid var(--border);background:#fff;padding:9px 14px;font-size:13px;color:var(--text);">↗ Share</button>\
+        </div>\
+        <div class="gallery">\
+          <img class="g0" src="' + imgs[0] + '" alt="' + esc(vendor.name) + '" loading="eager">\
+          <img src="' + imgs[1] + '" alt="" loading="lazy">\
+          <img src="' + imgs[2] + '" alt="" loading="lazy">\
+          <img src="' + imgs[3] + '" alt="" loading="lazy">\
+          <img src="' + imgs[4] + '" alt="" loading="lazy">\
+        </div>\
+        <div class="pdp-layout">\
+          <div class="pdp-main">\
+            <section>\
+              <h2>About ' + esc(vendor.name) + '</h2>\
+              <p>' + esc(vendor.name) + ' is a verified ' + esc(vendor.category.toLowerCase()) + ' based in ' + esc(vendor.area || vendor.city) + ', ' + esc(vendor.city) + '. We connect couples directly with the vendor on WhatsApp - no middlemen, no commission cuts, no inflated quotes. Send your event date, guest count and budget below and the team will get back to you with availability and pricing.</p>\
+              ' + (vendor.address ? '<p style="margin-top:12px;color:var(--text);"><strong>Address:</strong> ' + esc(vendor.address) + '</p>' : '') + '\
+            </section>\
+            <section>\
+              <h2>Highlights</h2>\
+              <div class="info-grid">\
+                <div class="info-block"><strong>Category</strong><span>' + esc(vendor.category) + '</span></div>\
+                <div class="info-block"><strong>City</strong><span>' + esc(vendor.city) + '</span></div>\
+                <div class="info-block"><strong>Area</strong><span>' + esc(vendor.area || '-') + '</span></div>\
+                <div class="info-block"><strong>Pincode</strong><span>' + esc(vendor.pincode || '-') + '</span></div>\
+                <div class="info-block"><strong>Rating</strong><span>' + ((parseInt(vendor.rating_count, 10)||0) > 0 ? '★ ' + (parseFloat(vendor.rating)||0).toFixed(1) + ' / 5' : 'No reviews yet') + '</span></div>\
+                ' + (vendor.yearsExperience ? '<div class="info-block"><strong>Experience</strong><span>' + esc(vendor.yearsExperience) + ' Years</span></div>' : '') + '\
+                ' + (vendor.teamSize ? '<div class="info-block"><strong>Team Size</strong><span>' + esc(vendor.teamSize) + ' People</span></div>' : '') + '\
+                ' + (vendor.languagesSpoken ? '<div class="info-block"><strong>Languages</strong><span>' + esc(vendor.languagesSpoken) + '</span></div>' : '') + '\
+                ' + (vendor.serviceAreas ? '<div class="info-block"><strong>Service Areas</strong><span>' + esc(vendor.serviceAreas) + '</span></div>' : '') + '\
+                <div class="info-block"><strong>Destination Weddings</strong><span>' + (vendor.acceptsDestination ? 'Yes' : 'No') + '</span></div>\
+              </div>\
+            </section>\
+            ' + highlightsHtml + '\
+            ' + timingsHtml + '\
+            ' + socialsHtml + '\
+            <section>\
+              <h2>Why book via WedEazzy</h2>\
+              <div class="chip-row">' + amenities.map(function(a){return '<span class="chip">✓ '+esc(a)+'</span>';}).join('') + '</div>\
+            </section>\
+            <section id="reviewsSection"></section>\
+            ' + (vendor.google_cid ? '<section><h2>Find on Google Maps</h2><iframe loading="lazy" style="width:100%;height:300px;border:0;border-radius:10px;" src="https://www.google.com/maps?cid=' + esc(vendor.google_cid) + '&output=embed" allowfullscreen></iframe></section>' : '') + '\
+          </div>\
+          <aside>\
+            <div class="booking-card" id="inquiryForm">\
+              <h3>Get a quote on WhatsApp</h3>\
+              <p class="sub">Free · No spam · Reply within 24h</p>\
+              <form id="leadForm" onsubmit="return submitInquiry(event)" novalidate>\
+                <div class="form-row">\
+                  <div class="form-field form-field-full"><label>Your name *</label><input type="text" id="fName" required placeholder="e.g. Priya Sharma"></div>\
+                </div>\
+                <div class="form-row">\
+                  <div class="form-field"><label>WhatsApp number *</label><input type="tel" id="fPhone" required placeholder="e.g. 9876543210"></div>\
+                  <div class="form-field"><label>Email address</label><input type="email" id="fEmail" placeholder="e.g. name@example.com"></div>\
+                </div>\
+                <div class="form-row">\
+                  <div class="form-field"><label>Wedding date *</label><input type="date" id="fDate" required></div>\
+                  <div class="form-field"><label>Estimated guests *</label><select id="fGuests" required><option value="Under 100">Under 100</option><option value="100 - 300" selected>100 - 300</option><option value="300 - 500">300 - 500</option><option value="500 - 1000">500 - 1000</option><option value="1000+">1000+</option></select></div>\
+                </div>\
+                <div class="form-row">\
+                  <div class="form-field"><label>Estimated Budget (Couple)</label><input type="text" id="fBudget" placeholder="e.g. ₹5,000,000"></div>\
+                  <div class="form-field"><label>Discussion on Call?</label><select id="fCallDiscussion"><option value="no" selected>No call request</option><option value="yes">Yes, schedule a call</option></select></div>\
+                </div>\
+                <div class="form-row">\
+                  <div class="form-field form-field-full"><label>Requirements / Message</label><textarea id="fNotes" placeholder="Any specific requirements (decor theme, food preferences, travel, rooms, etc.)..."></textarea></div>\
+                </div>\
+                <div class="form-error" id="formError"></div>\
+                <button type="submit" class="submit-wa">\
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/></svg>\
+                  Send Inquiry on WhatsApp\
+                </button>\
+                <a href="tel:+917498987620" class="secondary-call">📞 Or call WedEazzy +91 74989 87620</a>\
+              </form>\
+              <ul class="trust-points">\
+                <li>All inquiries handled by the WedEazzy team</li>\
+                <li>Free for couples · No booking fees</li>\
+                <li>We connect you to the vendor on WhatsApp</li>\
+              </ul>\
+            </div>\
+          </aside>\
+        </div>\
+      </div>';
+    renderReviewsList('newest');
+  }
+
+  function pushLeadToSheet(data) {
+    if (!LEADS_WEBAPP_URL) return;
+    try {
+      var body = new URLSearchParams();
+      Object.keys(data).forEach(function(k){ body.append(k, data[k] == null ? '' : String(data[k])); });
+      body.append('userAgent', navigator.userAgent || '');
+      body.append('page', location.pathname || 'vendor.html');
+      fetch(LEADS_WEBAPP_URL, { method: 'POST', mode: 'no-cors', body: body }).catch(function(){});
+    } catch (e) {}
+  }
+
+  function submitInquiry(ev) {
+    ev.preventDefault();
+    var name   = document.getElementById('fName').value.trim();
+    var phone  = document.getElementById('fPhone').value.trim();
+    var email  = document.getElementById('fEmail').value.trim();
+    var date   = document.getElementById('fDate').value;
+    var guests = document.getElementById('fGuests').value;
+    var budget = document.getElementById('fBudget').value;
+    var notes  = document.getElementById('fNotes').value.trim();
+    var err    = document.getElementById('formError');
+
+    if (!name || name.length < 2) { err.textContent = 'Please enter your name.'; err.classList.add('show'); return false; }
+    if (!phone || phone.replace(/[^0-9]/g,'').length < 10) { err.textContent = 'Please enter a valid 10-digit WhatsApp number.'; err.classList.add('show'); return false; }
+    if (!date) { err.textContent = 'Please pick an event date.'; err.classList.add('show'); return false; }
+    err.classList.remove('show');
+
+    logAnalyticsEvent('whatsapp_click');
+
+    var msg = "*New Wedding Inquiry - WedEazzy.com*\n\n" +
+      "*Vendor:* " + vendor.name + "\n" +
+      "*Category:* " + vendor.category + "\n" +
+      "*City:* " + vendor.city + "\n\n" +
+      "*Couple/Name:* " + name + "\n" +
+      "*Phone:* " + phone + "\n" +
+      (email ? "*Email:* " + email + "\n" : "") +
+      "*Event Date:* " + date + "\n" +
+      "*Guests:* " + guests + "\n" +
+      (budget ? "*Budget:* " + budget + "\n" : "") +
+      (notes ? "\n*Notes:* " + notes + "\n" : "") +
+      "\nPlease share availability, packages and pricing. Thanks!\n\n-- via WedEazzy.com";
+
+    pushLeadToSheet({
+      leadType: 'Vendor Inquiry',
+      name: name, phone: phone, email: email,
+      vendorName: vendor.name, vendorId: vendor.id,
+      category: vendor.category, city: vendor.city,
+      vendorPhone: vendor.phone || '',
+      eventDate: date, guestCount: guests, budget: budget,
+      notes: notes,
+      source: 'vendor_form:' + vendor.id
+    });
+
+    // Also dual-write to the Node API (admin sees it on the live dashboard,
+    // gets a WhatsApp alert, and the inquiry lands in MySQL).
+    pushLeadToApi({
+      vendorId: vendor.id,
+      name: name, phone: phone, email: email,
+      eventDate: date, guests: guests, budget: budget,
+      notes: notes,
+    });
+
+    // All inquiries route to WedEazzy admin only. Team verifies & forwards to the vendor.
+    window.location.href = adminWa(msg);
+    return false;
+  }
+
+  window.sortReviews = function(sortBy) {
+    renderReviewsList(sortBy);
+  };
+
+  function renderReviewsList(sortBy) {
+    var reviews = (vendor.reviews || []).slice();
+    if (sortBy === 'highest') {
+      reviews.sort(function(a, b) {
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+    } else if (sortBy === 'lowest') {
+      reviews.sort(function(a, b) {
+        if (a.rating !== b.rating) return a.rating - b.rating;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+    } else {
+      reviews.sort(function(a, b) {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      });
+    }
+
+    var reviewsHtml = '';
+    if (reviews.length > 0) {
+      reviewsHtml = '<div style="display:flex; flex-direction:column; gap:16px;">' + 
+        reviews.map(function(r) {
+          var ratingStars = '';
+          for (var i = 0; i < 5; i++) {
+            ratingStars += i < Math.floor(r.rating) ? '★' : '☆';
+          }
+          var dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : 'Recent';
+          return '\
+            <div style="background:#F8F9FC; padding:16px; border-radius:8px; border:1px solid var(--border);">\
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">\
+                <strong style="color:var(--text); font-size:14px;">' + esc(r.name) + '</strong>\
+                <span style="font-size:11px; color:var(--text-muted);">' + esc(dateStr) + '</span>\
+              </div>\
+              <div style="color:#D97706; font-size:12px; margin-bottom:6px; letter-spacing:1px;">' + ratingStars + '</div>\
+              <p style="font-size:13px; color:var(--text-secondary); margin:0; line-height:1.5; white-space:pre-wrap;">' + esc(r.text) + '</p>\
+            </div>\
+          ';
+        }).join('') + '</div>';
+    } else {
+      reviewsHtml = '<p style="color:var(--text-muted); font-size:13px; margin:0;">No reviews yet.</p>';
+    }
+
+    var container = document.getElementById('reviewsSection');
+    if (container) {
+      container.innerHTML = '\
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">\
+          <h2 style="margin:0; font-size:18px; font-weight:700;">Customer Reviews</h2>\
+          <select id="reviewSort" onchange="window.sortReviews(this.value)" style="padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:12px; font-weight:600; color:var(--text-secondary); background:white;">\
+            <option value="newest" ' + (sortBy === 'newest' ? 'selected' : '') + '>Newest</option>\
+            <option value="highest" ' + (sortBy === 'highest' ? 'selected' : '') + '>Highest Rating</option>\
+            <option value="lowest" ' + (sortBy === 'lowest' ? 'selected' : '') + '>Lowest Rating</option>\
+          </select>\
+        </div>\
+        ' + reviewsHtml + '\
+      ';
+    }
+  }
+</script>
+
+  <!-- Premium Glassmorphic Support Concierge Chat -->
+  <script src="../js/support-widget.js"></script>
+</body>
+</html>

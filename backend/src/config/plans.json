@@ -1,0 +1,26 @@
+{
+  "Free": {
+    "price": 0,
+    "maxPhotos": 4,
+    "maxBusinesses": 1,
+    "reportsAccess": false,
+    "insightsAccess": false,
+    "description": "Basic listing visibility. Max 4 gallery photos. Standard search placement."
+  },
+  "Premium": {
+    "price": 2999,
+    "maxPhotos": 5,
+    "maxBusinesses": 3,
+    "reportsAccess": true,
+    "insightsAccess": false,
+    "description": "Higher search ranking. Max 10 gallery photos. Reports access."
+  },
+  "Featured": {
+    "price": 5999,
+    "maxPhotos": 10,
+    "maxBusinesses": 7,
+    "reportsAccess": true,
+    "insightsAccess": true,
+    "description": "Highest search ranking. Max 15 photos. Exclusive category/pincode locks. Advanced insights."
+  }
+}
