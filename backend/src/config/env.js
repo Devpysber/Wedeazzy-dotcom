@@ -79,6 +79,22 @@ if (env.JWT_SECRET.includes('please_change_this') && env.NODE_ENV === 'productio
 if (env.OTP_DEBUG_LOG && env.NODE_ENV === 'production') {
   throw new Error('[SECURITY] Refusing to boot in production with OTP_DEBUG_LOG=true — this logs generated OTPs to the console and returns them in API responses, leaking one-time codes. Set OTP_DEBUG_LOG=false.');
 }
+
+// Leftover localhost values are the #1 cause of "works locally, login breaks
+// once deployed": they get silently CORS-blocked or rejected by Google rather
+// than throwing anywhere near the actual point of failure. Fail fast instead.
+const LOCALHOST_RE = /localhost|127\.0\.0\.1/i;
+if (env.NODE_ENV === 'production') {
+  if (LOCALHOST_RE.test(env.PUBLIC_BASE_URL)) {
+    throw new Error(`Refusing to boot in production with PUBLIC_BASE_URL still set to "${env.PUBLIC_BASE_URL}". Set it to the real deployed domain (e.g. https://yourdomain.com).`);
+  }
+  if (env.FRONTEND_ORIGIN.length === 0 || env.FRONTEND_ORIGIN.some(o => LOCALHOST_RE.test(o))) {
+    throw new Error(`Refusing to boot in production with FRONTEND_ORIGIN unset or pointing at localhost (got: "${env.FRONTEND_ORIGIN.join(',')}"). Set it to the real deployed frontend domain(s), comma-separated. Leaving this wrong silently CORS-blocks every login request from the browser.`);
+  }
+  if (env.GOOGLE.clientId && LOCALHOST_RE.test(env.GOOGLE.callbackUrl)) {
+    throw new Error(`Refusing to boot in production with GOOGLE_CALLBACK_URL still set to "${env.GOOGLE.callbackUrl}" while Google OAuth is configured. Set it to the real deployed domain's callback URL and register that same URL in Google Cloud Console.`);
+  }
+}
 if (!env.SMTP.user && env.NODE_ENV === 'production') {
   getLogger().warn('[env] SMTP_USER is not set — email OTP and notification flows will use console fallback.');
 }
