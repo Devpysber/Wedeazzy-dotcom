@@ -42,4 +42,7 @@ router.post('/users', ctrl.createUser);
 router.post('/bookings', ctrl.createBooking);
 router.put('/plans', ctrl.updatePlans);
 
+router.get('/email-campaigns', ctrl.listEmailCampaigns);
+router.post('/email-campaigns', ctrl.createEmailCampaign);
+
 module.exports = router;

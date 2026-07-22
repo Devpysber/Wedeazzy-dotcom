@@ -8,12 +8,18 @@ const prisma = require('../config/db');
 const { HttpError } = require('../middleware/error');
 const { slugify, uniqueSlug } = require('../utils/slug');
 const { sanitizeFields } = require('../utils/sanitize');
+const { sendMail } = require('../services/email.service');
+const logger = require('../config/logger');
 const paymentController = require('./payment.controller');
 const refundTransaction = paymentController.refundTransaction;
 const cancelVendorSubscription = paymentController.cancelVendorSubscription;
 
 // Valid enum values for validation
 const VALID_BOOKING_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed'];
+const VALID_EMAIL_SEGMENTS = ['all', 'vendors', 'couples'];
+// Hostinger's shared SMTP enforces a low hourly send cap; this spacing keeps a
+// campaign well under it even for a few hundred recipients.
+const EMAIL_BROADCAST_DELAY_MS = 400;
 
 /**
  * Lenient phone formatter shared by admin-created vendor/venue records: keeps
@@ -549,6 +555,111 @@ async function updatePlans(req, res, next) {
   }
 }
 
+/**
+ * Escapes HTML special characters so admin-authored broadcast text can't
+ * break the surrounding email markup.
+ */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * Sends one campaign's emails in the background, spaced out to respect
+ * Hostinger SMTP's hourly send cap. Runs after the HTTP response has already
+ * gone out, so failures here only update the campaign row, not the request.
+ */
+async function runEmailBroadcast(campaignId, recipients, subject, body) {
+  const html = `<div style="font-family: sans-serif; white-space: pre-wrap;">${escapeHtml(body)}</div>`;
+  let sentCount = 0;
+  let failedCount = 0;
+
+  for (const to of recipients) {
+    try {
+      const result = await sendMail({ to, subject, html, text: body });
+      if (result.ok) sentCount += 1;
+      else failedCount += 1;
+    } catch (err) {
+      failedCount += 1;
+      logger.error({ err, to, campaignId }, 'Broadcast email failed to send');
+    }
+    await new Promise((resolve) => setTimeout(resolve, EMAIL_BROADCAST_DELAY_MS));
+  }
+
+  await prisma.emailCampaign.update({
+    where: { id: campaignId },
+    data: {
+      sentCount,
+      failedCount,
+      status: failedCount === 0 ? 'completed' : (sentCount === 0 ? 'failed' : 'partial'),
+    },
+  }).catch((err) => logger.error({ err, campaignId }, 'Failed to update email campaign status'));
+}
+
+/**
+ * Admin: create and dispatch a bulk email broadcast to a segmented audience.
+ * Responds immediately with the created campaign; actual sending happens in
+ * the background since a few hundred recipients can take minutes at a
+ * rate-limit-safe pace.
+ */
+async function createEmailCampaign(req, res, next) {
+  try {
+    const { name, segment, subject, body } = req.body || {};
+
+    if (!name || !subject || !body) {
+      throw new HttpError(400, 'Campaign name, subject, and body are required', 'ERR_INPUT');
+    }
+    if (!VALID_EMAIL_SEGMENTS.includes(segment)) {
+      throw new HttpError(400, `Segment must be one of: ${VALID_EMAIL_SEGMENTS.join(', ')}`, 'ERR_INPUT');
+    }
+
+    const where = { email: { not: null } };
+    if (segment === 'vendors') where.role = 'vendor';
+    else if (segment === 'couples') where.role = 'couple';
+    else where.role = { not: 'admin' }; // "all" = every marketing-eligible account, not internal admins
+
+    const recipients = await prisma.user.findMany({ where, select: { email: true } });
+    const emails = recipients.map((r) => r.email).filter(Boolean);
+
+    const campaign = await prisma.emailCampaign.create({
+      data: {
+        name,
+        segment,
+        subject,
+        body,
+        totalRecipients: emails.length,
+        status: 'sending',
+      },
+    });
+
+    res.status(201).json({ ok: true, campaign });
+
+    // Fire-and-forget: don't make the admin's request wait on the full send.
+    runEmailBroadcast(campaign.id, emails, subject, body).catch((err) =>
+      logger.error({ err, campaignId: campaign.id }, 'Email broadcast run crashed')
+    );
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: list recent bulk email campaigns for the history panel.
+ */
+async function listEmailCampaigns(req, res, next) {
+  try {
+    const campaigns = await prisma.emailCampaign.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    res.json({ ok: true, campaigns });
+  } catch (e) {
+    next(e);
+  }
+}
+
 module.exports = {
   getAnalytics,
   getVendors,
@@ -566,5 +677,7 @@ module.exports = {
   cancelVendorSubscription,
   deleteVendor,
   updateVendorSubscription,
-  updatePlans
+  updatePlans,
+  createEmailCampaign,
+  listEmailCampaigns,
 };

@@ -449,3 +449,21 @@ model Review {
   @@index([vendorId, createdAt])
 }
 
+// ---------- ADMIN BULK EMAIL BROADCASTS ----------
+model EmailCampaign {
+  id              String   @id @default(cuid())
+  name            String
+  segment         String                                       // "all" | "vendors" | "couples"
+  subject         String
+  body            String   @db.Text
+  totalRecipients Int      @default(0) @map("total_recipients")
+  sentCount       Int      @default(0) @map("sent_count")
+  failedCount     Int      @default(0) @map("failed_count")
+  status          String   @default("sending")                 // "sending" | "completed" | "failed"
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("email_campaigns")
+  @@index([createdAt])
+}
+

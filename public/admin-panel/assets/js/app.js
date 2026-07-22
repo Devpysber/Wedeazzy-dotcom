@@ -1550,6 +1550,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render SEND EMAILS campaign
   function renderSendEmails(store) {
+    const segmentLabels = {
+      all: 'All Accounts (Couples & Vendors)',
+      vendors: 'Registered Wedding Vendors Only',
+      couples: 'Couples Planning Weddings Only',
+    };
+    const statusLabels = {
+      sending: { text: 'SENDING…', color: '#C9A33A' },
+      completed: { text: 'DELIVERED', color: '#10b981' },
+      partial: { text: 'PARTIALLY DELIVERED', color: '#f59e0b' },
+      failed: { text: 'FAILED', color: '#dc2626' },
+    };
+
+    function renderHistoryLogs(campaigns) {
+      if (!campaigns || campaigns.length === 0) {
+        return `<p style="font-size: 0.8rem; color: var(--text-sub);">No campaigns dispatched yet.</p>`;
+      }
+      return campaigns.map(c => {
+        const status = statusLabels[c.status] || statusLabels.sending;
+        const date = new Date(c.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+        return `
+          <div style="border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; background-color: var(--canvas-bg);">
+            <div style="display: flex; justify-content: space-between; font-size: 0.77rem; margin-bottom: 4px;">
+              <strong>${escapeHtmlUi(c.name)}</strong>
+              <span style="color: ${status.color}; font-weight: bold;">${status.text}</span>
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-sub);">Subject: ${escapeHtmlUi(c.subject)}</p>
+            <div style="display: flex; gap: 16px; font-size: 0.68rem; color: var(--text-muted); margin-top: 6px;">
+              <span>Sent: ${c.sentCount}/${c.totalRecipients} (${segmentLabels[c.segment] || c.segment})</span>
+              ${c.failedCount > 0 ? `<span>Failed: ${c.failedCount}</span>` : ''}
+              <span>Fires: ${date}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtmlUi(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
     el.portalBody.innerHTML = `
       <div class="spa-tab-wrapper">
         <div class="locator-breadcrumb">
@@ -1563,7 +1603,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <h3 style="font-size: 1.15rem; font-weight: 800;"><i class="fa-regular fa-paper-plane" style="color: var(--brand-rose);"></i> Bulk Email Campaign Broadcast</h3>
               <p>Configure custom HTML news blasts and promotional letters to segmented users.</p>
             </div>
-            
+
             <form id="formBulkEmail" style="display: flex; flex-direction: column; gap: 14px;">
               <div class="modal-form-group">
                 <label>Campaign Nickname</label>
@@ -1589,18 +1629,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <textarea id="emailBody" class="premium-input" style="height: 120px; resize: none;" placeholder="Write body text content here..." required></textarea>
               </div>
 
-              <!-- Progress bar simulator -->
-              <div id="emailBroadcastProgressWrapper" style="display: none; margin-top: 10px;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-sub); margin-bottom: 4px;">
-                  <span>Sending campaign...</span>
-                  <span id="emailProgressPercent">0%</span>
-                </div>
-                <div style="background-color: var(--border-subtle); border-radius: 6px; height: 10px; overflow: hidden; width: 100%;">
-                  <div id="emailProgressBar" style="background-color: var(--brand-rose); height: 100%; width: 0%; transition: width 0.1s linear;"></div>
-                </div>
-              </div>
+              <div id="emailBroadcastStatus" style="display: none; margin-top: 10px; font-size: 0.75rem; color: var(--text-sub);"></div>
 
-              <button class="btn-premium btn-premium-rose" type="button" onclick="window.triggerEmailBroadcast()" style="justify-content: center; margin-top: 10px;">
+              <button class="btn-premium btn-premium-rose" type="button" id="btnDispatchBroadcast" onclick="window.triggerEmailBroadcast()" style="justify-content: center; margin-top: 10px;">
                 <i class="fa-solid fa-paper-plane"></i> Dispatch Email Broadcast
               </button>
             </form>
@@ -1612,45 +1643,43 @@ document.addEventListener("DOMContentLoaded", () => {
               <h3 style="font-size: 1.15rem; font-weight: 800;">Campaign History Logs</h3>
               <p>Delivery markers for recently dispatched emails.</p>
             </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto;">
-              <div style="border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; background-color: var(--canvas-bg);">
-                <div style="display: flex; justify-content: space-between; font-size: 0.77rem; margin-bottom: 4px;">
-                  <strong>Premium Venue Upgrade Offers</strong>
-                  <span style="color: #10b981; font-weight: bold;">DELIVERED</span>
-                </div>
-                <p style="font-size: 0.72rem; color: var(--text-sub);">Subject: Make Your Wedding Hall Shine in Pincode Searches!</p>
-                <div style="display: flex; gap: 16px; font-size: 0.68rem; color: var(--text-muted); margin-top: 6px;">
-                  <span>Sent: 288 Vendors</span>
-                  <span>Opens: 194 (67%)</span>
-                  <span>Fires: May 26, 2026</span>
-                </div>
-              </div>
 
-              <div style="border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; background-color: var(--canvas-bg);">
-                <div style="display: flex; justify-content: space-between; font-size: 0.77rem; margin-bottom: 4px;">
-                  <strong>WedEazzy Planner Launch Blast</strong>
-                  <span style="color: #10b981; font-weight: bold;">DELIVERED</span>
-                </div>
-                <p style="font-size: 0.72rem; color: var(--text-sub);">Subject: Your Wedding Todo list is ready! Start matching planners.</p>
-                <div style="display: flex; gap: 16px; font-size: 0.68rem; color: var(--text-muted); margin-top: 6px;">
-                  <span>Sent: 1,490 Couples</span>
-                  <span>Opens: 923 (62%)</span>
-                  <span>Fires: May 20, 2026</span>
-                </div>
-              </div>
+            <div id="emailHistoryLogs" style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto;">
+              <p style="font-size: 0.8rem; color: var(--text-sub);">Loading campaign history…</p>
             </div>
           </div>
         </div>
       </div>
     `;
 
-    window.triggerEmailBroadcast = function() {
+    window.loadEmailCampaignHistory = async function() {
+      const container = document.getElementById('emailHistoryLogs');
+      try {
+        const auth = window.WedEazzyAuth;
+        const token = auth ? auth.getToken() : null;
+        const res = await fetch('/api/admin/email-campaigns', {
+          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        const data = await res.json();
+        if (container) {
+          container.innerHTML = data.ok ? renderHistoryLogs(data.campaigns) : `<p style="font-size: 0.8rem; color: var(--text-sub);">Could not load campaign history.</p>`;
+        }
+      } catch (e) {
+        if (container) container.innerHTML = `<p style="font-size: 0.8rem; color: var(--text-sub);">Could not load campaign history.</p>`;
+      }
+    };
+    window.loadEmailCampaignHistory();
+
+    window.triggerEmailBroadcast = async function() {
       const emailCampaignName = document.getElementById("emailCampaignName");
+      const emailSegment = document.getElementById("emailSegment");
       const emailSubject = document.getElementById("emailSubject");
       const emailBody = document.getElementById("emailBody");
+      const statusEl = document.getElementById("emailBroadcastStatus");
+      const btn = document.getElementById("btnDispatchBroadcast");
 
       const name = emailCampaignName ? emailCampaignName.value : "";
+      const segment = emailSegment ? emailSegment.value : "all";
       const sub = emailSubject ? emailSubject.value : "";
       const body = emailBody ? emailBody.value : "";
 
@@ -1659,29 +1688,39 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const wrapper = document.getElementById("emailBroadcastProgressWrapper");
-      const bar = document.getElementById("emailProgressBar");
-      const text = document.getElementById("emailProgressPercent");
+      if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+      if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Dispatching…'; }
 
-      if (wrapper) wrapper.style.display = "block";
-      let progress = 0;
-      
-      const interval = setInterval(() => {
-        progress += 4;
-        if (progress > 100) {
-          progress = 100;
-          clearInterval(interval);
-          
-          showToast(`Successfully broadcast campaign "${name}"!`, "success");
-          
+      try {
+        const auth = window.WedEazzyAuth;
+        const token = auth ? auth.getToken() : null;
+        const res = await fetch('/api/admin/email-campaigns', {
+          method: 'POST',
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : '',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name, segment, subject: sub, body })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          showToast(`Broadcasting "${name}" to ${data.campaign.totalRecipients} recipient(s)!`, "success");
           if (emailCampaignName) emailCampaignName.value = "";
           if (emailSubject) emailSubject.value = "";
           if (emailBody) emailBody.value = "";
-          if (wrapper) wrapper.style.display = "none";
+          if (statusEl) statusEl.style.display = 'none';
+          window.loadEmailCampaignHistory();
+        } else {
+          showToast('Broadcast failed: ' + (data.error || data.message || 'Unknown error'), 'danger');
+          if (statusEl) statusEl.style.display = 'none';
         }
-        if (bar) bar.style.width = `${progress}%`;
-        if (text) text.innerText = `${progress}%`;
-      }, 50);
+      } catch (e) {
+        showToast('Error: ' + e.message, 'danger');
+        if (statusEl) statusEl.style.display = 'none';
+      } finally {
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+      }
     };
   }
 
