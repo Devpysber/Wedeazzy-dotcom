@@ -278,6 +278,72 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.showToast = showToast; // Export globally
 
+  // Notification bell: live feed assembled server-side from pending vendors,
+  // unactioned inquiries, and unconfirmed bookings (no separate notifications
+  // table). Available globally since the bell lives in the header on every tab.
+  function timeAgo(dateStr) {
+    const seconds = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  }
+
+  const notifIcons = {
+    vendor_approval: 'fa-store',
+    inquiry: 'fa-envelope',
+    booking: 'fa-calendar-check',
+  };
+
+  window.goToNotificationTab = function(tab) {
+    document.getElementById('notifDropdownMenu')?.classList.remove('show');
+    document.getElementById('notifBellBtn')?.setAttribute('aria-expanded', 'false');
+    document.querySelector(`[data-tab-trigger="${tab}"]`)?.click();
+  };
+
+  window.loadNotifications = async function() {
+    const itemsEl = document.getElementById('notifDropdownItems');
+    const badgeEl = document.getElementById('notifBadgeCount');
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const res = await fetch('/api/admin/notifications', {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json();
+
+      if (badgeEl) {
+        if (data.ok && data.count > 0) {
+          badgeEl.textContent = data.count > 99 ? '99+' : String(data.count);
+          badgeEl.style.display = 'flex';
+        } else {
+          badgeEl.style.display = 'none';
+        }
+      }
+
+      if (!itemsEl) return;
+      if (!data.ok || !data.items || data.items.length === 0) {
+        itemsEl.innerHTML = `<div class="dropdown-menu-item" style="justify-content: center; color: var(--text-muted);">All caught up ✓</div>`;
+        return;
+      }
+
+      itemsEl.innerHTML = data.items.map(item => `
+        <button class="dropdown-menu-item" role="menuitem" onclick="window.goToNotificationTab('${item.tab}')" style="align-items: flex-start;">
+          <i class="fa-solid ${notifIcons[item.type] || 'fa-bell'}" style="margin-top: 2px;"></i>
+          <span style="display: flex; flex-direction: column; gap: 1px;">
+            <span style="color: var(--text-main); font-weight: 600;">${item.title}</span>
+            ${item.subtitle ? `<span style="font-size: 0.72rem;">${item.subtitle}</span>` : ''}
+            <span style="font-size: 0.68rem; color: var(--text-muted);">${timeAgo(item.createdAt)}</span>
+          </span>
+        </button>
+      `).join('');
+    } catch (e) {
+      if (itemsEl) itemsEl.innerHTML = `<div class="dropdown-menu-item" style="justify-content: center; color: var(--text-muted);">Could not load notifications.</div>`;
+    }
+  };
+
   // 6. SPA Loader & Transitions (SaaS pulse frames)
   async function mountTab(tabId) {
     state.activeTab = tabId;
@@ -1476,13 +1542,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render VENDORS CATEGORY
   function renderVendorsCategory(store) {
-    const cats = [
-      { name: "Wedding Photographers", slug: "wedding-photographers", count: 4 },
-      { name: "Bridal Makeup Artists", slug: "bridal-makeup-artists", count: 3 },
-      { name: "Catering Services", slug: "catering-services", count: 2 },
-      { name: "Mehendi Designers", slug: "mehendi-designers", count: 2 },
-      { name: "Decorators & Stage Lights", slug: "decorators-stage-lights", count: 2 }
-    ];
+    function renderCategoryRows(cats) {
+      if (!cats || cats.length === 0) {
+        return `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">No categories yet.</td></tr>`;
+      }
+      return cats.map((c, idx) => `
+        <tr>
+          <td><strong>#SC-${300 + idx}</strong></td>
+          <td><strong>${c.name}</strong></td>
+          <td><code>/${c.slug}</code></td>
+          <td><span class="interactive-pill-badge" style="font-size: 0.7rem; border-color: rgba(59, 130, 246, 0.15); color: var(--brand-blue);">${c.count} Professional Tenders</span></td>
+          <td style="text-align: right;">
+            <button class="row-action-icon-btn row-action-reject" onclick="window.deleteVendorCategory('${c.slug}')"><i class="fa-solid fa-trash-can"></i></button>
+          </td>
+        </tr>
+      `).join("");
+    }
 
     el.portalBody.innerHTML = `
       <div class="spa-tab-wrapper">
@@ -1496,10 +1571,10 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 14px;">
               <h3 style="font-size: 1.1rem; font-weight: 800;">Register Service Category</h3>
             </div>
-            <form onsubmit="event.preventDefault(); window.showToast('Vendor category added successfully!', 'success');" style="display: flex; flex-direction: column; gap: 12px;">
+            <form id="formAddVendorCategory" style="display: flex; flex-direction: column; gap: 12px;">
               <div class="modal-form-group">
                 <label>Category Label</label>
-                <input type="text" class="premium-input" placeholder="e.g. Wedding Choreographers" required />
+                <input type="text" id="newVendorCategoryName" class="premium-input" placeholder="e.g. Wedding Choreographers" required />
               </div>
               <button class="btn-premium btn-premium-rose" type="submit" style="justify-content: center; margin-top: 10px; width: 100%;">
                 <i class="fa-solid fa-plus"></i> Add Service Category
@@ -1527,18 +1602,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     <th style="text-align: right;">Action</th>
                   </tr>
                 </thead>
-                <tbody>
-                  ${cats.map((c, idx) => `
-                    <tr>
-                      <td><strong>#SC-${300 + idx}</strong></td>
-                      <td><strong>${c.name}</strong></td>
-                      <td><code>/${c.slug}</code></td>
-                      <td><span class="interactive-pill-badge" style="font-size: 0.7rem; border-color: rgba(59, 130, 246, 0.15); color: var(--brand-blue);">${c.count} Professional Tenders</span></td>
-                      <td style="text-align: right;">
-                        <button class="row-action-icon-btn row-action-reject" onclick="window.showToast('Category deleted.', 'warning')"><i class="fa-solid fa-trash-can"></i></button>
-                      </td>
-                    </tr>
-                  `).join("")}
+                <tbody id="vendorCategoryRows">
+                  <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1546,6 +1611,75 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
     `;
+
+    window.loadVendorCategories = async function() {
+      const tbody = document.getElementById('vendorCategoryRows');
+      try {
+        const auth = window.WedEazzyAuth;
+        const token = auth ? auth.getToken() : null;
+        const res = await fetch('/api/admin/vendor-categories', {
+          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        const data = await res.json();
+        if (tbody) tbody.innerHTML = data.ok ? renderCategoryRows(data.categories) : `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Could not load categories.</td></tr>`;
+      } catch (e) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Could not load categories.</td></tr>`;
+      }
+    };
+    window.loadVendorCategories();
+
+    window.deleteVendorCategory = async function(slug) {
+      try {
+        const auth = window.WedEazzyAuth;
+        const token = auth ? auth.getToken() : null;
+        const res = await fetch(`/api/admin/vendor-categories/${slug}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('Category deleted.', 'success');
+          window.loadVendorCategories();
+        } else {
+          showToast(data.error || 'Could not delete category', 'danger');
+        }
+      } catch (e) {
+        showToast('Error: ' + e.message, 'danger');
+      }
+    };
+
+    const form = document.getElementById('formAddVendorCategory');
+    if (form) {
+      form.onsubmit = async function(event) {
+        event.preventDefault();
+        const input = document.getElementById('newVendorCategoryName');
+        const name = input ? input.value.trim() : '';
+        if (!name) return;
+
+        try {
+          const auth = window.WedEazzyAuth;
+          const token = auth ? auth.getToken() : null;
+          const res = await fetch('/api/admin/vendor-categories', {
+            method: 'POST',
+            headers: {
+              'Authorization': token ? `Bearer ${token}` : '',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            showToast('Vendor category added successfully!', 'success');
+            if (input) input.value = '';
+            window.loadVendorCategories();
+          } else {
+            showToast(data.error || 'Could not add category', 'danger');
+          }
+        } catch (e) {
+          showToast('Error: ' + e.message, 'danger');
+        }
+      };
+    }
   }
 
   // Render SEND EMAILS campaign
@@ -1726,11 +1860,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render BLOGS dashboard
   function renderBlogs(store) {
-    const articles = [
-      { id: "BL-101", title: "10 Most Beautiful Beachfront Banquets in Mumbai", count: 884, likes: 212, date: "May 25, 2026" },
-      { id: "BL-102", title: "Catering Menu Trends for Luxury Indian Weddings", count: 412, likes: 98, date: "May 23, 2026" },
-      { id: "BL-103", title: "Complete Checklist: How to Pair Wedding Photographers", count: 1202, likes: 310, date: "May 18, 2026" }
-    ];
+    function fmtDate(d) {
+      return d ? new Date(d).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    }
+
+    function renderBlogRows(blogs) {
+      if (!blogs || blogs.length === 0) {
+        return `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">No articles yet.</td></tr>`;
+      }
+      return blogs.map(b => `
+        <tr>
+          <td><strong>#${b.id.slice(-6).toUpperCase()}</strong></td>
+          <td><strong>${b.title}</strong></td>
+          <td><i class="fa-regular fa-clock"></i> ${fmtDate(b.publishedAt)}</td>
+          <td><strong>${b.views.toLocaleString()} Views</strong></td>
+          <td><span style="color: var(--brand-rose);"><i class="fa-solid fa-heart"></i> ${b.likes}</span></td>
+          <td>
+            ${b.status === 'published'
+              ? `<span class="status-pill status-confirmed"><span class="status-bullet-dot"></span> Live</span>`
+              : `<span class="status-pill status-pending"><span class="status-bullet-dot"></span> Draft</span>`}
+          </td>
+          <td style="text-align: right;">
+            <button class="row-action-icon-btn" onclick="window.triggerBlogEditor('${b.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
+          </td>
+        </tr>
+      `).join("");
+    }
 
     el.portalBody.innerHTML = `
       <div class="spa-tab-wrapper">
@@ -1762,24 +1917,8 @@ document.addEventListener("DOMContentLoaded", () => {
                   <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
-              <tbody>
-                ${articles.map(art => `
-                  <tr>
-                    <td><strong>#${art.id}</strong></td>
-                    <td><strong>${art.title}</strong></td>
-                    <td><i class="fa-regular fa-clock"></i> ${art.date}</td>
-                    <td><strong>${art.count.toLocaleString()} Views</strong></td>
-                    <td><span style="color: var(--brand-rose);"><i class="fa-solid fa-heart"></i> ${art.likes}</span></td>
-                    <td>
-                      <span class="status-pill status-confirmed">
-                        <span class="status-bullet-dot"></span> Live
-                      </span>
-                    </td>
-                    <td style="text-align: right;">
-                      <button class="row-action-icon-btn" onclick="window.showToast('Loading draft...', 'success')"><i class="fa-solid fa-pen-to-square"></i></button>
-                    </td>
-                  </tr>
-                `).join("")}
+              <tbody id="blogRows">
+                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Loading...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1787,28 +1926,94 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    window.triggerBlogEditor = function() {
+    window.loadAdminBlogs = async function() {
+      const tbody = document.getElementById('blogRows');
+      try {
+        const auth = window.WedEazzyAuth;
+        const token = auth ? auth.getToken() : null;
+        const res = await fetch('/api/admin/blogs', {
+          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        const data = await res.json();
+        if (tbody) tbody.innerHTML = data.ok ? renderBlogRows(data.blogs) : `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Could not load articles.</td></tr>`;
+      } catch (e) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Could not load articles.</td></tr>`;
+      }
+    };
+    window.loadAdminBlogs();
+
+    // blogId is undefined for a fresh draft, or an existing blog's id to edit it.
+    window.triggerBlogEditor = async function(blogId) {
+      let existing = null;
+      if (blogId) {
+        const auth = window.WedEazzyAuth;
+        const token = auth ? auth.getToken() : null;
+        const res = await fetch('/api/admin/blogs', { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+        const data = await res.json();
+        existing = data.ok ? data.blogs.find(b => b.id === blogId) : null;
+      }
+
       const bodyHTML = `
-        <form style="display: flex; flex-direction: column; gap: 12px;">
+        <form id="formBlogEditor" style="display: flex; flex-direction: column; gap: 12px;">
           <div class="modal-form-group">
             <label>SEO Article Title</label>
-            <input type="text" class="premium-input" placeholder="e.g. Planning a destination wedding under budget..." required />
+            <input type="text" id="blogTitle" class="premium-input" placeholder="e.g. Planning a destination wedding under budget..." value="${existing ? existing.title.replace(/"/g, '&quot;') : ''}" required />
           </div>
           <div class="modal-form-group">
             <label>SEO Meta Description Tag</label>
-            <input type="text" class="premium-input" placeholder="Brief summary for Google search pages..." required />
+            <input type="text" id="blogMeta" class="premium-input" placeholder="Brief summary for Google search pages..." value="${existing ? existing.metaDescription.replace(/"/g, '&quot;') : ''}" required />
           </div>
           <div class="modal-form-group">
             <label>Blog Content Text</label>
-            <textarea class="premium-input" style="height: 120px; resize: none;" placeholder="Write article content here..."></textarea>
+            <textarea id="blogContent" class="premium-input" style="height: 120px; resize: none;" placeholder="Write article content here...">${existing ? existing.content : ''}</textarea>
           </div>
         </form>
       `;
+
+      const saveBlog = async (publish) => {
+        const title = document.getElementById('blogTitle')?.value.trim();
+        const metaDescription = document.getElementById('blogMeta')?.value.trim();
+        const content = document.getElementById('blogContent')?.value.trim();
+        if (!title || !metaDescription || !content) {
+          showToast('Please fill all fields first!', 'danger');
+          return;
+        }
+
+        try {
+          const auth = window.WedEazzyAuth;
+          const token = auth ? auth.getToken() : null;
+          const url = existing ? `/api/admin/blogs/${existing.id}` : '/api/admin/blogs';
+          const method = existing ? 'PATCH' : 'POST';
+          const payload = existing
+            ? { title, metaDescription, content, status: publish ? 'published' : existing.status }
+            : { title, metaDescription, content, publish };
+
+          const res = await fetch(url, {
+            method,
+            headers: { 'Authorization': token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.ok) {
+            showToast(publish ? 'Article published!' : 'Saved as draft.', 'success');
+            window.closeModal();
+            window.loadAdminBlogs();
+          } else {
+            showToast(data.error || 'Could not save article', 'danger');
+          }
+        } catch (e) {
+          showToast('Error: ' + e.message, 'danger');
+        }
+      };
+      window.__saveBlogDraft = () => saveBlog(false);
+      window.__saveBlogPublish = () => saveBlog(true);
+
       const footerHTML = `
         <button class="btn-premium" onclick="window.closeModal()">Close</button>
-        <button class="btn-premium btn-premium-rose" onclick="window.closeModal(); window.showToast('SEO blog post queued successfully!', 'success');">Publish Article</button>
+        <button class="btn-premium" onclick="window.__saveBlogDraft()">Save as Draft</button>
+        <button class="btn-premium btn-premium-rose" onclick="window.__saveBlogPublish()">${existing && existing.status === 'published' ? 'Save Changes' : 'Publish Article'}</button>
       `;
-      openModal("Draft SEO Blog Article", bodyHTML, footerHTML);
+      openModal(existing ? "Edit SEO Blog Article" : "Draft SEO Blog Article", bodyHTML, footerHTML);
     };
   }
 

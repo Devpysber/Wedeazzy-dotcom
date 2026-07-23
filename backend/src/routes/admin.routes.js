@@ -45,4 +45,14 @@ router.put('/plans', ctrl.updatePlans);
 router.get('/email-campaigns', ctrl.listEmailCampaigns);
 router.post('/email-campaigns', ctrl.createEmailCampaign);
 
+router.get('/vendor-categories', ctrl.listVendorCategories);
+router.post('/vendor-categories', ctrl.createVendorCategory);
+router.delete('/vendor-categories/:slug', ctrl.deleteVendorCategory);
+
+router.get('/notifications', ctrl.getNotifications);
+
+router.get('/blogs', ctrl.adminListBlogs);
+router.post('/blogs', ctrl.createBlog);
+router.patch('/blogs/:id', ctrl.updateBlog);
+
 module.exports = router;

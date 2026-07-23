@@ -572,11 +572,21 @@
         <div class="header-right-cluster">
 
           <!-- Notification Bell -->
-          <button class="hdr-icon-btn" id="notifBellBtn" title="Notifications" aria-label="View notifications"
-                  onclick="window.showToast('All notifications reviewed ✓', 'success')">
-            <i class="fa-regular fa-bell"></i>
-            <span class="hdr-notif-badge" id="notifBadgeCount">3</span>
-          </button>
+          <div class="profile-dropdown-container">
+            <button class="hdr-icon-btn" id="notifBellBtn" title="Notifications" aria-label="View notifications" aria-haspopup="true" aria-expanded="false">
+              <i class="fa-regular fa-bell"></i>
+              <span class="hdr-notif-badge" id="notifBadgeCount" style="display: none;">0</span>
+            </button>
+
+            <div class="profile-dropdown-menu" id="notifDropdownMenu" role="menu" style="width: 320px;">
+              <div class="dropdown-session-label">
+                <div class="dropdown-session-name">Notifications</div>
+              </div>
+              <div id="notifDropdownItems" style="max-height: 340px; overflow-y: auto;">
+                <div class="dropdown-menu-item" style="justify-content: center; color: var(--text-muted);">Loading...</div>
+              </div>
+            </div>
+          </div>
 
           <!-- Dark / Light Mode Toggle -->
           <button class="hdr-icon-btn" id="themeToggleBtn" title="Toggle theme" aria-label="Toggle dark/light mode">
@@ -732,6 +742,35 @@
           }
         });
       }
+
+      /* ── Notification bell dropdown toggle ── */
+      const notifBtn  = document.getElementById("notifBellBtn");
+      const notifMenu = document.getElementById("notifDropdownMenu");
+      if (notifBtn && notifMenu) {
+        notifBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isOpen = notifMenu.classList.toggle("show");
+          notifBtn.setAttribute("aria-expanded", isOpen);
+          if (isOpen && window.loadNotifications) window.loadNotifications();
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!notifBtn.contains(e.target) && !notifMenu.contains(e.target)) {
+            notifMenu.classList.remove("show");
+            notifBtn.setAttribute("aria-expanded", "false");
+          }
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            notifMenu.classList.remove("show");
+            notifBtn.setAttribute("aria-expanded", "false");
+          }
+        });
+      }
+
+      // Populate the badge count as soon as the page loads, not just on open.
+      if (window.loadNotifications) window.loadNotifications();
 
       /* ── Logout handlers ── */
       function doLogout(e) {

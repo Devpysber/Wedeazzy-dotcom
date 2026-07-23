@@ -467,3 +467,21 @@ model EmailCampaign {
   @@index([createdAt])
 }
 
+// ---------- SEO BLOG ARTICLES ----------
+model Blog {
+  id              String    @id @default(cuid())
+  title           String
+  slug            String    @unique
+  metaDescription String    @map("meta_description")
+  content         String    @db.Text
+  status          String    @default("draft")                    // "draft" | "published"
+  views           Int       @default(0)
+  likes           Int       @default(0)
+  publishedAt     DateTime? @map("published_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("blogs")
+  @@index([status, publishedAt])
+}
+

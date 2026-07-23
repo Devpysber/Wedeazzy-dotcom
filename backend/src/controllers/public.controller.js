@@ -333,11 +333,50 @@ async function addVendorReview(req, res, next) {
   }
 }
 
+/**
+ * Public: list published SEO blog articles (newest first).
+ */
+async function getBlogs(req, res, next) {
+  try {
+    const blogs = await prisma.blog.findMany({
+      where: { status: 'published' },
+      orderBy: { publishedAt: 'desc' },
+      select: { title: true, slug: true, metaDescription: true, publishedAt: true, views: true, likes: true },
+      take: 100,
+    });
+    res.json({ ok: true, blogs });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Public: single published blog article by slug. Increments the view
+ * counter shown in the admin dashboard's "Organic Clicks" column.
+ */
+async function getBlogBySlug(req, res, next) {
+  try {
+    const { slug } = req.params;
+    const blog = await prisma.blog.findUnique({ where: { slug } });
+    if (!blog || blog.status !== 'published') {
+      throw new HttpError(404, 'Blog article not found', 'ERR_NOT_FOUND');
+    }
+
+    await prisma.blog.update({ where: { slug }, data: { views: { increment: 1 } } }).catch(() => {});
+
+    res.json({ ok: true, blog });
+  } catch (e) {
+    next(e);
+  }
+}
+
 module.exports = {
   getVendors,
   getVendorByIdOrSlug,
   getMetadata,
   logAnalyticsEvent,
   getPlans,
-  addVendorReview
+  addVendorReview,
+  getBlogs,
+  getBlogBySlug,
 };

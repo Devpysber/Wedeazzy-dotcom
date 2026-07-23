@@ -10,6 +10,7 @@ const { slugify, uniqueSlug } = require('../utils/slug');
 const { sanitizeFields } = require('../utils/sanitize');
 const { sendMail } = require('../services/email.service');
 const logger = require('../config/logger');
+const { getVendorCategories, saveVendorCategories } = require('../config/vendorCategoriesConfig');
 const paymentController = require('./payment.controller');
 const refundTransaction = paymentController.refundTransaction;
 const cancelVendorSubscription = paymentController.cancelVendorSubscription;
@@ -660,6 +661,212 @@ async function listEmailCampaigns(req, res, next) {
   }
 }
 
+/**
+ * Admin: list vendor service categories, with live "active listing" counts
+ * pulled from real Vendor records (the category list itself is a small,
+ * rarely-changing curated taxonomy stored in a JSON config file, same
+ * pattern as Manage Plans, rather than its own DB table).
+ */
+async function listVendorCategories(req, res, next) {
+  try {
+    const categories = getVendorCategories();
+    const counts = await prisma.vendor.groupBy({
+      by: ['categorySlug'],
+      _count: { categorySlug: true },
+    });
+    const countBySlug = Object.fromEntries(counts.map((c) => [c.categorySlug, c._count.categorySlug]));
+
+    res.json({
+      ok: true,
+      categories: categories.map((c) => ({ ...c, count: countBySlug[c.slug] || 0 })),
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: register a new vendor service category.
+ */
+async function createVendorCategory(req, res, next) {
+  try {
+    const { name } = req.body || {};
+    if (!name || !name.trim()) {
+      throw new HttpError(400, 'Category label is required', 'ERR_INPUT');
+    }
+
+    const categories = getVendorCategories();
+    const slug = slugify(name.trim());
+    if (categories.some((c) => c.slug === slug)) {
+      throw new HttpError(400, 'A category with this name already exists', 'ERR_DUPLICATE');
+    }
+
+    categories.push({ name: name.trim(), slug });
+    saveVendorCategories(categories);
+
+    res.status(201).json({ ok: true, category: { name: name.trim(), slug, count: 0 } });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: remove a vendor service category. Refuses if vendors currently use
+ * it, so deleting a category never silently orphans live listings.
+ */
+async function deleteVendorCategory(req, res, next) {
+  try {
+    const { slug } = req.params;
+    const categories = getVendorCategories();
+    const exists = categories.find((c) => c.slug === slug);
+    if (!exists) {
+      throw new HttpError(404, 'Category not found', 'ERR_NOT_FOUND');
+    }
+
+    const inUseCount = await prisma.vendor.count({ where: { categorySlug: slug } });
+    if (inUseCount > 0) {
+      throw new HttpError(400, `Cannot delete: ${inUseCount} vendor(s) are still listed under this category`, 'ERR_IN_USE');
+    }
+
+    saveVendorCategories(categories.filter((c) => c.slug !== slug));
+    res.json({ ok: true, message: 'Category deleted successfully' });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: live notification feed assembled from existing tables (no separate
+ * notifications table) - vendors awaiting approval, unactioned inquiries,
+ * and unconfirmed bookings. Sorted newest-first, capped for the dropdown.
+ */
+async function getNotifications(req, res, next) {
+  try {
+    const [pendingVendors, newInquiries, pendingBookings] = await Promise.all([
+      prisma.vendor.findMany({
+        where: { isVerified: false },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { id: true, businessName: true, createdAt: true },
+      }),
+      prisma.inquiry.findMany({
+        where: { status: 'new' },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { id: true, name: true, createdAt: true, vendor: { select: { businessName: true } } },
+      }),
+      prisma.booking.findMany({
+        where: { status: 'pending' },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { id: true, eventDate: true, createdAt: true, vendor: { select: { businessName: true } } },
+      }),
+    ]);
+
+    const items = [
+      ...pendingVendors.map((v) => ({
+        type: 'vendor_approval',
+        title: 'New business awaiting approval',
+        subtitle: v.businessName,
+        createdAt: v.createdAt,
+        tab: 'vendors',
+      })),
+      ...newInquiries.map((i) => ({
+        type: 'inquiry',
+        title: `New inquiry from ${i.name}`,
+        subtitle: i.vendor ? `For ${i.vendor.businessName}` : '',
+        createdAt: i.createdAt,
+        tab: 'contact-inquiries',
+      })),
+      ...pendingBookings.map((b) => ({
+        type: 'booking',
+        title: 'New booking pending confirmation',
+        subtitle: b.vendor ? b.vendor.businessName : '',
+        createdAt: b.createdAt,
+        tab: 'bookings',
+      })),
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ ok: true, items: items.slice(0, 20), count: items.length });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: list all blog articles regardless of status (drafts included),
+ * for the Blogs dashboard table.
+ */
+async function adminListBlogs(req, res, next) {
+  try {
+    const blogs = await prisma.blog.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
+    res.json({ ok: true, blogs });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: draft (or publish immediately) a new SEO blog article.
+ */
+async function createBlog(req, res, next) {
+  try {
+    const { title, metaDescription, content, publish } = req.body || {};
+    if (!title || !title.trim()) throw new HttpError(400, 'SEO article title is required', 'ERR_INPUT');
+    if (!metaDescription || !metaDescription.trim()) throw new HttpError(400, 'SEO meta description is required', 'ERR_INPUT');
+    if (!content || !content.trim()) throw new HttpError(400, 'Blog content is required', 'ERR_INPUT');
+
+    const slug = await uniqueSlug(prisma, 'blog', title);
+    const shouldPublish = !!publish;
+
+    const blog = await prisma.blog.create({
+      data: {
+        title: title.trim(),
+        slug,
+        metaDescription: metaDescription.trim(),
+        content: content.trim(),
+        status: shouldPublish ? 'published' : 'draft',
+        publishedAt: shouldPublish ? new Date() : null,
+      },
+    });
+
+    res.status(201).json({ ok: true, blog });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: edit an existing blog article's fields, and/or toggle its
+ * published state (setting publishedAt the first time it goes live).
+ */
+async function updateBlog(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { title, metaDescription, content, status } = req.body || {};
+
+    const existing = await prisma.blog.findUnique({ where: { id } });
+    if (!existing) throw new HttpError(404, 'Blog article not found', 'ERR_NOT_FOUND');
+
+    const data = {};
+    if (title !== undefined) data.title = title.trim();
+    if (metaDescription !== undefined) data.metaDescription = metaDescription.trim();
+    if (content !== undefined) data.content = content.trim();
+    if (status !== undefined) {
+      if (!['draft', 'published'].includes(status)) {
+        throw new HttpError(400, 'Status must be draft or published', 'ERR_INPUT');
+      }
+      data.status = status;
+      if (status === 'published' && !existing.publishedAt) data.publishedAt = new Date();
+    }
+
+    const blog = await prisma.blog.update({ where: { id }, data });
+    res.json({ ok: true, blog });
+  } catch (e) {
+    next(e);
+  }
+}
+
 module.exports = {
   getAnalytics,
   getVendors,
@@ -680,4 +887,11 @@ module.exports = {
   updatePlans,
   createEmailCampaign,
   listEmailCampaigns,
+  listVendorCategories,
+  createVendorCategory,
+  deleteVendorCategory,
+  getNotifications,
+  adminListBlogs,
+  createBlog,
+  updateBlog,
 };

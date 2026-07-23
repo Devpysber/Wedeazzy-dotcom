@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#E11D2A" />
+<title id="pageTitle">Wedding Blog | WedEazzy.com</title>
+<meta name="description" id="pageDesc" content="Wedding planning tips and inspiration from WedEazzy." />
+<link rel="icon" type="image/png" href="../assets/images/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../css/shared.css" />
+<style>
+  .main { padding: 32px 0 56px; }
+  .article-wrap { max-width: 760px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 36px; }
+  .article-wrap h1 { font-family: var(--serif); font-size: clamp(24px, 3.4vw, 34px); font-weight: 700; line-height: 1.25; margin-bottom: 14px; color: var(--text); }
+  .article-meta { display: flex; gap: 16px; font-size: 13px; color: var(--text-muted); margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .article-body { font-size: 16px; line-height: 1.8; color: var(--text); white-space: pre-wrap; }
+  .back-link { display: inline-block; margin-bottom: 18px; font-size: 13.5px; font-weight: 600; color: var(--red); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="container header-inner">
+    <a href="../index.html" class="brand"><img src="../assets/images/logo.png" alt="WedEazzy" /></a>
+    <div class="header-right">
+      <a href="../index.html#cities" class="nav-link">Cities</a>
+      <a href="marketing.html" class="nav-link">List Your Business</a>
+      <a href="tel:+917498987620" class="call-link">📞 +91 74989 87620</a>
+      <a href="https://wa.me/917498987620?text=Hi%20WedEazzy!" class="header-cta" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/></svg>
+        <span>Chat</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <a href="blogs.html" class="back-link">← Back to Wedding Blog</a>
+    <div class="article-wrap" id="articleWrap">
+      <p style="color:var(--text-muted);">Loading article…</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom">
+      <span>© 2026 WedEazzy.com — Wedding planning, made eazzy. Made with ❤ in India</span>
+      <div class="footer-bottom-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="https://wa.me/917498987620">Contact Us</a>
+        <a href="../admin-panel/login.html" style="font-weight: 600; color: #E6C462;"><span class="trust-badge-icon">🔒</span> Admin Portal</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:4000'
+    : window.location.origin;
+
+  function qs(name) { var m = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search); return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : ''; }
+  function escapeHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function fmtDate(d) {
+    return new Date(d).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  var slug = qs('slug');
+  var wrap = document.getElementById('articleWrap');
+
+  function renderNotFound() {
+    wrap.innerHTML = '<h1>Article not found</h1><p style="color:var(--text-muted);">This article may have been unpublished or the link is incorrect.</p>';
+  }
+
+  if (!slug) {
+    renderNotFound();
+  } else {
+    fetch(API_BASE + '/api/public/blogs/' + encodeURIComponent(slug))
+      .then(function(r) {
+        if (!r.ok) throw new Error('Status ' + r.status);
+        return r.json();
+      })
+      .then(function(res) {
+        if (!res.ok || !res.blog) { renderNotFound(); return; }
+        var b = res.blog;
+        document.getElementById('pageTitle').textContent = b.title + ' | WedEazzy.com';
+        document.getElementById('pageDesc').setAttribute('content', b.metaDescription);
+        wrap.innerHTML =
+          '<h1>' + escapeHtml(b.title) + '</h1>' +
+          '<div class="article-meta"><span>' + fmtDate(b.publishedAt) + '</span><span>' + (b.views + 1) + ' views</span></div>' +
+          '<div class="article-body">' + escapeHtml(b.content) + '</div>';
+      })
+      .catch(function() { renderNotFound(); });
+  }
+</script>
+
+</body>
+</html>
