@@ -1,0 +1,23 @@
+{
+  "name": "wedeazzy-platform",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm run dev --prefix backend",
+    "build": "npm install --prefix backend --production && node backend/node_modules/prisma/build/index.js generate --schema=backend/prisma/schema.prisma",
+    "postinstall": "npm install --prefix backend --production && node backend/node_modules/prisma/build/index.js generate --schema=backend/prisma/schema.prisma",
+    "start": "node backend/src/server.js",
+    "seed:admin": "npm run seed:admin --prefix backend",
+    "seed:vendors": "npm run seed:vendors --prefix backend",
+    "install:backend": "npm install --prefix backend",
+    "prisma:gen": "npm run prisma:gen --prefix backend",
+    "prisma:deploy": "npm run prisma:deploy --prefix backend",
+    "prisma:migrate": "npm run prisma:migrate --prefix backend"
+  },
+  "prisma": {
+    "schema": "backend/prisma/schema.prisma"
+  }
+}

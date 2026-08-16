@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.wedeazzy.com/</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/marketing.html</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/privacy.html</loc><priority>0.3</priority></url>
+  <url><loc>https://www.wedeazzy.com/terms.html</loc><priority>0.3</priority></url>
+
+  <!-- Cities (top 7 by data volume) -->
+  <url><loc>https://www.wedeazzy.com/city.html?city=mumbai</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=delhi-ncr</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=goa</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=jaipur</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=udaipur</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=jodhpur</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=ahmedabad</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=bengaluru</loc><priority>0.8</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=hyderabad</loc><priority>0.8</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=chennai</loc><priority>0.8</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=pune</loc><priority>0.8</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=kolkata</loc><priority>0.8</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=lucknow</loc><priority>0.7</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=kochi</loc><priority>0.7</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=agra</loc><priority>0.7</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=gurgaon</loc><priority>0.7</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=indore</loc><priority>0.7</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=surat</loc><priority>0.7</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=nagpur</loc><priority>0.7</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=vadodara</loc><priority>0.7</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=chandigarh</loc><priority>0.7</priority></url>
+  <url><loc>https://www.wedeazzy.com/city.html?city=dehradun</loc><priority>0.7</priority></url>
+
+  <!-- Categories -->
+  <url><loc>https://www.wedeazzy.com/category.html?cat=banquet-halls</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=wedding-photographers</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=bridal-makeup</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=wedding-planners</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=wedding-decorators</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=wedding-caterers</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=bridal-mehndi</loc><priority>0.8</priority></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=wedding-invitations</loc><priority>0.8</priority></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=wedding-entertainment</loc><priority>0.8</priority></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=marriage-gardens</loc><priority>0.8</priority></url>
+  <url><loc>https://www.wedeazzy.com/category.html?cat=wedding-lawns</loc><priority>0.8</priority></url>
+</urlset>

@@ -1,0 +1,49 @@
+# --- Dependencies ---
+node_modules/
+**/node_modules/
+
+# --- Secrets / environment (NEVER commit) ---
+.env
+.env.*
+**/.env
+**/.env.*
+# keep the placeholder templates only
+!.env.example
+!**/.env.example
+
+# --- Runtime / generated ---
+**/uploads/
+!**/uploads/.gitkeep
+**/kyc-private/
+!**/kyc-private/.gitkeep
+# Staged CSV imports awaiting confirmation. These hold real business contact
+# data (names, phone numbers, email addresses) parsed out of an admin's upload
+# and must never be committed. Swept automatically after 6 hours.
+**/import-staging/
+!**/import-staging/.gitkeep
+**/baileys-auth/
+!**/baileys-auth/.gitkeep
+**/logs/
+!**/logs/.gitkeep
+.data/
+**/.data/
+*.log
+
+# --- Keys / certs / DB dumps (never commit) ---
+*.pem
+*.key
+*.p12
+*.pfx
+*.sql
+*.sql.gz
+*.dump
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# redundant local deploy-copy artifact (not needed in repo)
+/wedeazzy-production-deploy/
+/wedeazzy-production-ready.zip

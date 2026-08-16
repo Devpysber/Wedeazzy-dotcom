@@ -1,0 +1,29 @@
+{
+  "whatsapp_leads": {
+    "plans": [
+      { "days": 10, "label": "10 Days", "price": 4999 },
+      { "days": 20, "label": "20 Days", "price": 8999 },
+      { "days": 30, "label": "30 Days", "price": 13999, "recommended": true, "original": 15999 },
+      { "days": 90, "label": "3 Months", "price": 34999, "original": 41997 },
+      { "days": 0, "label": "Custom Campaign", "price": 20000, "custom": true }
+    ]
+  },
+  "more_leads": {
+    "plans": [
+      { "days": 10, "label": "10 Days", "price": 8999 },
+      { "days": 20, "label": "20 Days", "price": 16999 },
+      { "days": 30, "label": "30 Days", "price": 23999, "recommended": true, "original": 26997 },
+      { "days": 90, "label": "3 Months", "price": 59999, "original": 71997 },
+      { "days": 0, "label": "Custom Campaign", "price": 30000, "custom": true }
+    ]
+  },
+  "website_sales": {
+    "plans": [
+      { "days": 10, "label": "10 Days", "price": 20000 },
+      { "days": 20, "label": "20 Days", "price": 37999 },
+      { "days": 30, "label": "30 Days", "price": 52999, "recommended": true, "original": 59997 },
+      { "days": 90, "label": "3 Months", "price": 139999, "original": 159997 },
+      { "days": 0, "label": "Custom Campaign", "price": 50000, "custom": true }
+    ]
+  }
+}

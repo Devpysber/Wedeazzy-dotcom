@@ -1,0 +1,21 @@
+node_modules/
+baileys-auth/
+.env
+.env.local
+.env.development
+.env.production
+# Keep .env.example tracked (placeholders only)
+!.env.example
+# Ignore all uploaded images (user content lives on a volume/object storage in
+# production, NOT in the repo) — but keep the folder itself via .gitkeep.
+uploads/*
+!uploads/.gitkeep
+# Private vendor KYC documents (registration certs, GST, ID proofs) — never
+# committed, same reasoning as uploads/ above.
+kyc-private/*
+!kyc-private/.gitkeep
+.data/
+# Staged CSV imports awaiting admin confirmation — contains real business
+# contact data parsed from an upload. Never commit.
+import-staging/*
+!import-staging/.gitkeep

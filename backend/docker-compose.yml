@@ -1,0 +1,45 @@
+# WedEazzy backend - local dev stack.
+# Hostinger VPS: run the same compose file in /opt/wedeazzy/, swap the `app`
+# image for the built one, put Nginx + Certbot in front (see DEPLOY.md).
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wedeazzy
+      MYSQL_USER: wedeazzy
+      # No hardcoded fallback on purpose — a weak default here (e.g. the old
+      # "changeme"/"changemeroot") is a real exposed credential if this file
+      # is ever run as-is in production. Set these in a root-level .env next
+      # to this compose file (docker compose reads it automatically) before
+      # running `docker compose up`.
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in a .env file next to docker-compose.yml}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in a .env file next to docker-compose.yml}
+    # No host port publish by default — the `app` service reaches `db` over
+    # the internal compose network via DATABASE_URL=mysql://...@db:3306/...
+    # Publishing 3306:3306 exposes MySQL to the internet on any VPS that
+    # doesn't have a firewall in front of Docker's port mapping (Docker's
+    # iptables rules bypass most host firewalls). Uncomment only for local
+    # debugging with a DB client, and never on a public-facing host.
+    # ports:
+    #   - "127.0.0.1:3306:3306"
+    volumes:
+      - ./.data/mysql:/var/lib/mysql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on: [db]
+    env_file: .env
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./baileys-auth:/app/baileys-auth
+      - ./uploads:/app/uploads
+    command: sh -c "npx prisma migrate deploy && node src/server.js"

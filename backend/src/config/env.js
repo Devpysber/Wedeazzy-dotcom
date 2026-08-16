@@ -1,0 +1,123 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+
+const env = {
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  PORT: (() => {
+    const p = process.env.PORT || '4000';
+    return /^\d+$/.test(p) ? parseInt(p, 10) : p;
+  })(),
+  PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || 'http://localhost:4000',
+  FRONTEND_ORIGIN: (process.env.FRONTEND_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean),
+
+  DATABASE_URL: process.env.DATABASE_URL,
+
+  JWT_SECRET: process.env.JWT_SECRET || 'dev-only-change-me',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '30d',
+
+  OTP_TTL_MIN: parseInt(process.env.OTP_TTL_MIN || '5', 10),
+  OTP_MAX_PER_HOUR: parseInt(process.env.OTP_MAX_PER_HOUR || '5', 10),
+  OTP_LENGTH: parseInt(process.env.OTP_LENGTH || '6', 10),
+  OTP_DEBUG_LOG: String(process.env.OTP_DEBUG_LOG || 'false').toLowerCase() === 'true',
+  OTP_FALLBACK_ENABLED: String(process.env.OTP_FALLBACK_ENABLED || 'false').toLowerCase() === 'true',
+
+  BAILEYS_AUTH_DIR: process.env.BAILEYS_AUTH_DIR || './baileys-auth',
+  WA_MAX_RECONNECT_ATTEMPTS: parseInt(process.env.WA_MAX_RECONNECT_ATTEMPTS || '10', 10),
+  WA_RECONNECT_BASE_MS: parseInt(process.env.WA_RECONNECT_BASE_MS || '3000', 10),
+  WA_RETRY_MAX_ATTEMPTS: parseInt(process.env.WA_RETRY_MAX_ATTEMPTS || '3', 10),
+  WA_RETRY_BACKOFF_MS: parseInt(process.env.WA_RETRY_BACKOFF_MS || '300000', 10), // 5 min default
+
+  ADMIN_PHONES: (process.env.ADMIN_PHONES || '').split(',').map(s => s.trim()).filter(Boolean),
+
+  // Notification recipients — configurable, never hardcoded in senders.
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
+  SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || '',
+
+  UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads',
+  MAX_UPLOAD_MB: parseInt(process.env.MAX_UPLOAD_MB || '5', 10),
+
+  // --- SMTP Email ---
+  SMTP: {
+    host: process.env.SMTP_HOST || 'smtp.hostinger.com',
+    port: parseInt(process.env.SMTP_PORT || '465', 10),
+    secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE.toLowerCase() === 'true' : (parseInt(process.env.SMTP_PORT || '465', 10) === 465),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'WedEazzy <info@wedeazzy.com>',
+  },
+
+  // --- Google Sheet CSV Source ---
+  GOOGLE_SHEET_CSV_URL: process.env.GOOGLE_SHEET_CSV_URL || 'https://docs.google.com/spreadsheets/d/1CwsdKKUYXZQBcVTHnbCsN72MiM9lIUSxl9mP9PTnVlA/export?format=csv&gid=0',
+
+  // --- Google OAuth ---
+  GOOGLE: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:4000/google/callback',
+  },
+
+  RAZORPAY: {
+    keyId:         process.env.RAZORPAY_KEY_ID     || '',
+    keySecret:     process.env.RAZORPAY_KEY_SECRET  || '',
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
+  },
+
+  // --- NVIDIA NIM (public FAQ chatbot free-text fallback) ---
+  NVIDIA_NIM_API_KEY: process.env.NVIDIA_NIM_API_KEY || '',
+};
+
+// Lazy-load logger to avoid circular dependency during env initialization.
+//
+// The try/catch alone was not enough: config/logger requires this module at its
+// own line 2, so whenever logger is the FIRST of the pair to be loaded, this
+// require() resolves to logger's *partially initialised* exports — an empty
+// object — rather than throwing. Calling .warn() on it then died with
+// "getLogger(...).warn is not a function" and took the whole process down at
+// require time. server.js happens to require env before logger, which masked
+// this, but any other entry point (a script, a test, a controller loaded in
+// isolation) hit it. Verify the shape before trusting it.
+function getLogger() {
+  try {
+    const log = require('./logger');
+    return log && typeof log.warn === 'function' ? log : console;
+  } catch {
+    return console;
+  }
+}
+
+if (!env.DATABASE_URL && env.NODE_ENV !== 'test') {
+  getLogger().warn('[env] DATABASE_URL is not set — database connections will fail');
+}
+if (env.JWT_SECRET === 'dev-only-change-me' && env.NODE_ENV === 'production') {
+  throw new Error('Refusing to boot in production with the default JWT_SECRET. Set a strong JWT_SECRET in .env.');
+}
+if (env.JWT_SECRET.includes('please_change_this') && env.NODE_ENV === 'production') {
+  throw new Error('Refusing to boot in production with a placeholder JWT_SECRET. Generate a secure secret.');
+}
+if (env.OTP_DEBUG_LOG && env.NODE_ENV === 'production') {
+  throw new Error('[SECURITY] Refusing to boot in production with OTP_DEBUG_LOG=true — this logs generated OTPs to the console and returns them in API responses, leaking one-time codes. Set OTP_DEBUG_LOG=false.');
+}
+
+// Leftover localhost values are the #1 cause of "works locally, login breaks
+// once deployed": they get silently CORS-blocked or rejected by Google rather
+// than throwing anywhere near the actual point of failure. Fail fast instead.
+const LOCALHOST_RE = /localhost|127\.0\.0\.1/i;
+if (env.NODE_ENV === 'production') {
+  if (LOCALHOST_RE.test(env.PUBLIC_BASE_URL)) {
+    throw new Error(`Refusing to boot in production with PUBLIC_BASE_URL still set to "${env.PUBLIC_BASE_URL}". Set it to the real deployed domain (e.g. https://yourdomain.com).`);
+  }
+  if (env.FRONTEND_ORIGIN.length === 0 || env.FRONTEND_ORIGIN.some(o => LOCALHOST_RE.test(o))) {
+    throw new Error(`Refusing to boot in production with FRONTEND_ORIGIN unset or pointing at localhost (got: "${env.FRONTEND_ORIGIN.join(',')}"). Set it to the real deployed frontend domain(s), comma-separated. Leaving this wrong silently CORS-blocks every login request from the browser.`);
+  }
+  if (env.GOOGLE.clientId && LOCALHOST_RE.test(env.GOOGLE.callbackUrl)) {
+    throw new Error(`Refusing to boot in production with GOOGLE_CALLBACK_URL still set to "${env.GOOGLE.callbackUrl}" while Google OAuth is configured. Set it to the real deployed domain's callback URL and register that same URL in Google Cloud Console.`);
+  }
+}
+if (!env.SMTP.user && env.NODE_ENV === 'production') {
+  getLogger().warn('[env] SMTP_USER is not set — email OTP and notification flows will use console fallback.');
+}
+if (env.ADMIN_PHONES.length === 0) {
+  getLogger().warn('[env] ADMIN_PHONES is empty — no admin WhatsApp notifications will be sent for new inquiries.');
+}
+
+module.exports = env;

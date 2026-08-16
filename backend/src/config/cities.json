@@ -1,0 +1,9 @@
+[
+  { "name": "Mumbai", "slug": "mumbai", "state": "MH" },
+  { "name": "Bangalore", "slug": "bangalore", "state": "KA" },
+  { "name": "Pune", "slug": "pune", "state": "MH" },
+  { "name": "Delhi", "slug": "delhi", "state": "DL" },
+  { "name": "Goa", "slug": "goa", "state": "GA" },
+  { "name": "Kolkata", "slug": "kolkata", "state": "WB" },
+  { "name": "Chennai", "slug": "chennai", "state": "TN" }
+]

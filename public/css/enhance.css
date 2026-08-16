@@ -1,0 +1,359 @@
+/**
+ * WedEazzy — Public Site Enhancement Layer
+ * ========================================
+ * Loaded AFTER css/shared.css on every public page. Adds the motion,
+ * mobile-navigation and responsive refinements that pair with
+ * js/wedeazzy-enhance.js, without editing the existing stylesheets.
+ *
+ * All colour comes from the tokens already defined in shared.css (--red is now
+ * the logo's "e" red, #DC1F30), so the brand stays defined in one place.
+ */
+
+:root {
+  --wz-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --wz-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --wz-dur: 0.5s;
+}
+
+/* Reduced motion wins over everything below. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .wz-reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* ============================================================
+   1. SCROLL REVEAL
+   ============================================================ */
+.wz-reveal {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  transition: opacity var(--wz-dur) var(--wz-ease),
+              transform var(--wz-dur) var(--wz-ease);
+  will-change: opacity, transform;
+}
+.wz-revealed {
+  opacity: 1;
+  transform: none;
+}
+/* Once revealed, drop the hint so long pages don't hold hundreds of layers. */
+.wz-revealed { will-change: auto; }
+
+/* ============================================================
+   2. HEADER
+   ============================================================ */
+.header {
+  transition: box-shadow 0.3s var(--wz-ease),
+              background-color 0.3s var(--wz-ease),
+              height 0.3s var(--wz-ease);
+}
+.header.wz-scrolled {
+  box-shadow: 0 6px 24px rgba(80, 40, 20, 0.09);
+  background: rgba(251, 247, 242, 0.98);
+}
+[data-theme="dark"] .header.wz-scrolled { background: rgba(20, 18, 22, 0.98); }
+
+.header-right a.nav-link {
+  position: relative;
+  transition: color 0.2s var(--wz-ease), background-color 0.2s var(--wz-ease);
+}
+/* Underline grows from the centre on hover. */
+.header-right a.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  right: 50%;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--red);
+  transition: left 0.25s var(--wz-ease), right 0.25s var(--wz-ease);
+}
+.header-right a.nav-link:hover::after { left: 13px; right: 13px; }
+
+/* ============================================================
+   3. MOBILE NAVIGATION
+   ============================================================ */
+.wz-nav-toggle {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.wz-nav-toggle:hover { border-color: var(--red); }
+.wz-nav-toggle span {
+  display: block;
+  width: 19px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--black);
+  transition: transform 0.3s var(--wz-ease), opacity 0.2s ease;
+}
+.wz-nav-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.wz-nav-toggle.active span:nth-child(2) { opacity: 0; }
+.wz-nav-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.wz-nav-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(27, 27, 31, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--wz-ease);
+}
+.wz-nav-scrim.show { opacity: 1; pointer-events: auto; }
+
+.wz-nav-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(320px, 86vw);
+  /* dvh so an iOS Safari toolbar appearing mid-scroll doesn't clip the panel */
+  height: 100dvh;
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  box-shadow: -18px 0 48px rgba(80, 40, 20, 0.18);
+  z-index: 999;
+  transform: translateX(103%);
+  transition: transform 0.34s var(--wz-ease);
+  padding: 78px 20px 28px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wz-nav-panel.show { transform: translateX(0); }
+
+/* The panel receives clones of the real header links, so style by element
+   rather than by a class the markup may not have. */
+.wz-nav-panel > a,
+.wz-nav-panel > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--black);
+  background: none;
+  border: none;
+  text-align: left;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.wz-nav-panel > a:hover,
+.wz-nav-panel > button:hover {
+  background: var(--blush);
+  color: var(--red-dark);
+  transform: translateX(3px);
+}
+/* Keep the WhatsApp CTA visually primary inside the drawer. */
+.wz-nav-panel > .header-cta {
+  justify-content: center;
+  margin-top: 10px;
+  color: #fff !important;
+}
+.wz-nav-panel > a.nav-link::after { display: none; }
+
+@media (max-width: 820px) {
+  .wz-nav-toggle { display: flex; }
+  /* index.html uses .header-nav, the shared.css pages use .header-right. */
+  .header-right, .header-nav { display: none !important; }
+  .header-inner { justify-content: space-between; }
+}
+
+/* ============================================================
+   4. BACK TO TOP
+   ============================================================ */
+.wz-to-top {
+  position: fixed;
+  left: 22px;
+  bottom: 96px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--red);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 90;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(12px) scale(0.9);
+  pointer-events: none;
+  transition: all 0.28s var(--wz-ease);
+}
+.wz-to-top.show { opacity: 1; transform: none; pointer-events: auto; }
+.wz-to-top:hover {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(220, 31, 48, 0.32);
+}
+
+/* The FAQ chatbot launcher already occupies bottom-left at 24px; lift the
+   back-to-top button clear of it rather than overlapping. */
+@media (max-width: 640px) {
+  .wz-to-top { left: 14px; bottom: 92px; width: 40px; height: 40px; }
+}
+
+/* ============================================================
+   5. IMAGE FADE-IN
+   ============================================================ */
+.wz-img-fade { opacity: 0; transition: opacity 0.55s var(--wz-ease); }
+.wz-img-in { opacity: 1; }
+
+/* ============================================================
+   6. CARD & BUTTON MICRO-INTERACTIONS
+   ============================================================ */
+.vendor-card,
+.category-card,
+.city-card,
+.blog-card {
+  transition: transform 0.3s var(--wz-ease),
+              box-shadow 0.3s var(--wz-ease),
+              border-color 0.3s var(--wz-ease);
+  will-change: transform;
+}
+.vendor-card:hover,
+.category-card:hover,
+.city-card:hover,
+.blog-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Zoom the card's own image on hover, without letting it escape the radius. */
+.vendor-card, .category-card, .city-card, .blog-card { overflow: hidden; }
+.vendor-card img, .category-card img, .city-card img, .blog-card img {
+  transition: transform 0.55s var(--wz-ease);
+}
+.vendor-card:hover img,
+.category-card:hover img,
+.city-card:hover img,
+.blog-card:hover img { transform: scale(1.055); }
+
+.btn-primary, .header-cta, .float-wa {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s var(--wz-ease), box-shadow 0.2s var(--wz-ease), background-color 0.2s ease;
+}
+.btn-primary:active, .header-cta:active { transform: scale(0.975); }
+
+/* Ripple ink injected by wedeazzy-enhance.js */
+.wz-ink {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  transform: scale(0);
+  animation: wzInk 0.6s var(--wz-ease) forwards;
+  pointer-events: none;
+}
+@keyframes wzInk {
+  to { transform: scale(2.4); opacity: 0; }
+}
+
+/* Visible keyboard focus across the public site. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ============================================================
+   7. RESPONSIVE REFINEMENTS (tablet & phone)
+   ============================================================ */
+@media (max-width: 1024px) {
+  .container { padding: 0 18px; }
+}
+
+@media (max-width: 820px) {
+  .header-inner { height: 64px; }
+  .brand img { height: 38px; }
+  .page-hero { padding: 26px 0 30px; }
+}
+
+@media (max-width: 640px) {
+  body { font-size: 15px; }
+  .container { padding: 0 14px; }
+
+  .page-hero h1 { font-size: clamp(21px, 6vw, 28px); }
+  .page-hero p { font-size: 13.5px; }
+
+  /* The WhatsApp pill and the two chat launchers all live along the bottom
+     edge on mobile; shrink the pill so they can coexist. */
+  .float-wa {
+    bottom: 16px;
+    right: 14px;
+    padding: 11px 16px;
+    font-size: 13px;
+  }
+
+  /* Collapse the marketing grids to a single column. Deliberately an explicit
+     list rather than a [class*="-grid"] wildcard with !important: that would
+     also capture the vendor/couple dashboard grids (form-grid-premium,
+     metrics-grid, payment-methods-grid, …) which share this stylesheet, and
+     silently override layouts this change has no business touching. */
+  .hero-grid, .value-grid, .steps-grid, .testi-grid, .role-grid,
+  .plan-grid, .logos-grid, .info-grid, .city-grid, .blog-grid,
+  .cat-circle-grid, .cat-bride-grid, .cat-groom-grid,
+  .pre-wedding-grid, .footer-middle-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Any horizontally-scrolling strip gets momentum + snap instead of a
+     cramped wrap. */
+  .scroll-row, .chips-row, .filter-row {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .scroll-row::-webkit-scrollbar,
+  .chips-row::-webkit-scrollbar,
+  .filter-row::-webkit-scrollbar { display: none; }
+  .scroll-row > *, .chips-row > *, .filter-row > * { scroll-snap-align: start; }
+
+  /* Comfortable tap targets. */
+  .btn-primary, .header-cta, .call-link { min-height: 44px; }
+
+  table { font-size: 13px; }
+}
+
+/* Tablet portrait: two columns reads better than one full-width column. */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .city-grid, .blog-grid, .cat-circle-grid,
+  .cat-bride-grid, .cat-groom-grid, .value-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Prevent any single element from forcing a horizontal scrollbar on phones —
+   the most common cause of the "page is slightly wider than the screen" feel. */
+@media (max-width: 640px) {
+  html, body { overflow-x: hidden; max-width: 100%; }
+  img, video, iframe, table { max-width: 100%; }
+}
