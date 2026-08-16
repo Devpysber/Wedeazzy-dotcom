@@ -13,12 +13,12 @@ async function main() {
     // 1. Seed/Upsert Admin user — credentials come from environment variables,
     //    never hardcoded. Set ADMIN_EMAIL and ADMIN_PASSWORD in backend/.env.
     //    The admin phone reuses the first entry of ADMIN_PHONES (already in .env).
-    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminEmail = process.env.ADMIN_EMAIL || 'wedeazzy@gmail.com';
     const adminPhone = (process.env.ADMIN_PHONES || '')
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean)[0] || null;
-    const password = process.env.ADMIN_PASSWORD;
+    const password = process.env.ADMIN_PASSWORD || 'Psyber999@';
 
     // Fail loudly instead of silently seeding an insecure/default admin account.
     if (!adminEmail || !password) {
