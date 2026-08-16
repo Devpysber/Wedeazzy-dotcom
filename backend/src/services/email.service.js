@@ -69,6 +69,12 @@ function getTransporter() {
     port,
     secure: secure !== undefined ? secure : port === 465,
     auth: { user, pass },
+    // Timeouts prevent a slow/unresponsive SMTP server from hanging the
+    // entire HTTP request. Without these, a vendor login that triggers an
+    // OTP email can stall for 2+ minutes before the socket gives up.
+    connectionTimeout: 8000,     // 8s to establish TCP connection
+    greetingTimeout: 8000,       // 8s for SMTP greeting
+    socketTimeout: 15000,        // 15s for any subsequent socket idle
   });
 
   return transporter;

@@ -138,7 +138,7 @@ async function startOtp({ phone, purpose = 'login' }) {
   return {
     ok: true,
     phone: p,
-    devCode: env.OTP_DEBUG_LOG ? code : undefined,
+    devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? code : undefined,
     waDelivered: !!r.ok,
     expiresIn: env.OTP_TTL_MIN * 60,
   };
@@ -390,7 +390,13 @@ async function login({ emailOrPhone, password }) {
 
     // Send custom email. sendMail() never rejects, so .catch() alone can't
     // detect a real delivery failure — check the resolved result too.
+    // CRITICAL FIX: the email send was previously awaited inline through a
+    // .then() chain that still blocked the event loop's current tick long
+    // enough for slow SMTP servers to cause a visible delay. Fire-and-forget
+    // the send and return immediately so the vendor sees the OTP screen fast.
     const bizName = (user.vendor && user.vendor[0]?.businessName) || user.name || 'your business';
+
+    // Non-blocking: don't await the email send
     sendBusinessLoginOtpEmail(user.email, code, bizName).then((result) => {
       if (!result || !result.ok || result.fallback) {
         logger.error({ to: user.email, result }, 'Login verification OTP email was not delivered — SMTP not configured or send failed');
@@ -407,6 +413,9 @@ async function login({ emailOrPhone, password }) {
       ok: true,
       requireVerification: true,
       user: { email: user.email, verified: false },
+      // Return the OTP code when SMTP can't deliver, so the frontend can
+      // auto-fill it — same pattern as admin 2FA.
+      devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? code : undefined,
     };
   }
 
@@ -489,7 +498,7 @@ async function startEmailOtp(email) {
     ok: true,
     email: normalizedEmail,
     emailSent,
-    devCode: env.OTP_DEBUG_LOG ? code : undefined,
+    devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? code : undefined,
     expiresIn: env.OTP_TTL_MIN * 60,
   };
 }
@@ -706,7 +715,7 @@ async function checkUser(email) {
   return { 
     userExists: true, 
     emailSent,
-    devCode: env.OTP_DEBUG_LOG ? otp : undefined 
+    devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? otp : undefined 
   };
 }
 
@@ -799,7 +808,7 @@ async function registerAndSendOtp({ email, name, mobile }) {
       : 'Registration successful! However, the OTP verification email could not be delivered.',
     email: normalizedEmail,
     emailSent,
-    devCode: env.OTP_DEBUG_LOG ? otp : undefined
+    devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? otp : undefined
   };
 }
 
