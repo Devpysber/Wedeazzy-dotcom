@@ -127,6 +127,7 @@ router.put('/grow-campaigns-pricing', ctrl.updateGrowCampaignsPricing);
 
 router.get('/email-campaigns', ctrl.listEmailCampaigns);
 router.post('/email-campaigns', ctrl.createEmailCampaign);
+router.get('/email-campaigns/recipient-count', ctrl.getEmailRecipientCount);
 
 router.get('/vendor-categories', ctrl.listVendorCategories);
 router.post('/vendor-categories', ctrl.createVendorCategory);

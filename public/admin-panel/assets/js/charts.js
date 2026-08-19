@@ -228,18 +228,38 @@ const WedEazzyCharts = {
   initBookingTrendsChart(canvas) {
     const ctx = canvas.getContext("2d");
     const colors = this.getThemeColors();
+    const store = window.WedEazzyStore ? window.WedEazzyStore.get() : {};
 
     const gradient = ctx.createLinearGradient(0, 0, 0, 240);
     gradient.addColorStop(0, colors.brandGoldLight);
     gradient.addColorStop(1, colors.brandGoldFade);
 
+    // Build last-8-month buckets from real booking data
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const now = new Date();
+    const buckets = [];
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({ label: monthNames[d.getMonth()], year: d.getFullYear(), month: d.getMonth(), count: 0 });
+    }
+    if (store.bookings && store.bookings.length) {
+      store.bookings.forEach(b => {
+        const bd = new Date(b.createdAt || b.eventDate);
+        if (!isNaN(bd)) {
+          const bkt = buckets.find(bk => bk.year === bd.getFullYear() && bk.month === bd.getMonth());
+          if (bkt) bkt.count++;
+        }
+      });
+    }
+    const hasRealData = buckets.some(b => b.count > 0);
+
     window.activeCharts["bookingTrends"] = new Chart(ctx, {
       type: "line",
       data: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"],
+        labels: buckets.map(b => b.label),
         datasets: [{
-          label: "Bookings — Sample Data",
-          data: [15, 24, 20, 32, 45, 52, 60, 68],
+          label: hasRealData ? "Bookings" : "Bookings — Sample Data",
+          data: hasRealData ? buckets.map(b => b.count) : [15, 24, 20, 32, 45, 52, 60, 68],
           borderColor: colors.brandGold,
           borderWidth: 3,
           backgroundColor: gradient,
@@ -283,21 +303,24 @@ const WedEazzyCharts = {
     const colors = this.getThemeColors();
     const store = window.WedEazzyStore.get();
 
-    let verified = 0;
+    let verified = store.stats?.verifiedVendors || 0;
     let unclaimed = 0;
     let requested = 0;
 
-    store.venues.forEach(v => {
-      if (v.claims === "Verified Owner") verified++;
-      else if (v.claims === "Claim Requested") requested++;
-      else unclaimed++;
-    });
-
-    store.vendors.forEach(v => {
-      if (v.claims === "Verified Owner") verified++;
-      else if (v.claims === "Claim Requested") requested++;
-      else unclaimed++;
-    });
+    // Use real stats from analytics if available, otherwise compute from store lists
+    if (verified === 0 || !store.stats?.verifiedVendors) {
+      verified = 0;
+      const all = [...(store.venues||[]), ...(store.vendors||[])];
+      all.forEach(v => {
+        if (v.claims === "Verified Owner") verified++;
+        else if (v.claims === "Claim Requested") requested++;
+        else unclaimed++;
+      });
+    } else {
+      const total = store.stats.vendorsCount || 0;
+      requested = store.stats.businessClaims || 0;
+      unclaimed = Math.max(0, total - verified - requested);
+    }
 
     window.activeCharts["listingClaims"] = new Chart(ctx, {
       type: "polarArea",

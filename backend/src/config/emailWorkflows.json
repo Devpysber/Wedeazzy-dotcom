@@ -1,7 +1,27 @@
 {
-  "welcome-otp": { "name": "Vendor Registration Welcome", "enabled": true, "customHtml": null },
-  "couple-otp": { "name": "Couple OTP Login Sign-In", "enabled": true, "customHtml": null },
-  "inquiry-forward": { "name": "Inquiry Forwarded to Partner", "enabled": true, "customHtml": null },
-  "booking-confirm": { "name": "Booking Confirmed Milestone", "enabled": true, "customHtml": null },
-  "user-suspend": { "name": "Account Suspension Warnings", "enabled": true, "customHtml": null }
+  "welcome-otp": {
+    "name": "Vendor Registration Welcome",
+    "enabled": false,
+    "customHtml": null
+  },
+  "couple-otp": {
+    "name": "Couple OTP Login Sign-In",
+    "enabled": true,
+    "customHtml": null
+  },
+  "inquiry-forward": {
+    "name": "Inquiry Forwarded to Partner",
+    "enabled": true,
+    "customHtml": null
+  },
+  "booking-confirm": {
+    "name": "Booking Confirmed Milestone",
+    "enabled": true,
+    "customHtml": null
+  },
+  "user-suspend": {
+    "name": "Account Suspension Warnings",
+    "enabled": true,
+    "customHtml": null
+  }
 }

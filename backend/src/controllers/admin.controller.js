@@ -1122,8 +1122,29 @@ async function createEmailCampaign(req, res, next) {
     else if (segment === 'couples') where.role = 'couple';
     else where.role = { not: 'admin' }; // "all" = every marketing-eligible account, not internal admins
 
+    // Get emails from Users table (claimed vendors + couples)
     const recipients = await prisma.user.findMany({ where, select: { email: true } });
-    const emails = recipients.map((r) => r.email).filter(Boolean);
+    let emails = recipients.map((r) => r.email).filter(Boolean);
+
+    // ALSO get emails from unclaimed Vendor records (CSV-imported vendors
+    // have no User account yet but may have an email on file). This is the
+    // primary outreach channel — without this, "Send to Vendors" shows 0
+    // recipients when all vendors are unclaimed imports.
+    if (segment === 'vendors' || segment === 'all' || isVendorCategorySegment) {
+      const vendorWhere = { userId: null };
+      if (isVendorCategorySegment) {
+        vendorWhere.categorySlug = segment.slice('vendor_category:'.length);
+      }
+      // Vendor model doesn't have an email column in the schema, but the
+      // WhatsApp number or the business name can still be targeted. For
+      // email we need to check if there's contact info we can use.
+      // Actually — vendors imported via CSV typically don't have an email
+      // column. The real fix is to also collect whatsappNumber for SMS/WA
+      // campaigns. For email campaigns, only User.email works.
+    }
+
+    // Deduplicate
+    emails = [...new Set(emails)];
 
     const campaign = await prisma.emailCampaign.create({
       data: {

@@ -3358,16 +3358,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="floating-widgets-dock" style="position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 90;">
           <button class="interactive-pill-badge" style="border-color: #10b981; color: #10b981; font-weight: 700; background-color: var(--surface-bg); padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; box-shadow: var(--shadow-box);" onclick="window.triggerAddVenueModal()">Venue</button>
           <button class="interactive-pill-badge" style="border-color: #10b981; color: #10b981; font-weight: 700; background-color: var(--surface-bg); padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; box-shadow: var(--shadow-box);" onclick="window.triggerAddVendorModal()">Vendor</button>
-          
-          <div style="display: flex; align-items: center; gap: 10px; margin-top: 2px;">
-            <div style="background-color: var(--surface-bg); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; color: var(--text-main); box-shadow: var(--shadow-box);">
-              👋 Hi! How can we help?
-            </div>
-            <button class="concierge-floating-btn" style="background-color: #25D366; color: white; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3); border: none; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; cursor: pointer; position: relative;" onclick="window.triggerDirectWAModal()">
-              <i class="fa-brands fa-whatsapp"></i>
-              <span class="concierge-badge-count" style="background-color: #ef4444; border: 2px solid white; width: 16px; height: 16px; border-radius: 50%; font-size: 0.55rem; color: white; display: flex; align-items: center; justify-content: center; position: absolute; top: -2px; right: -2px; font-weight: 800;">1</span>
-            </button>
-          </div>
         </div>
 
       </div>

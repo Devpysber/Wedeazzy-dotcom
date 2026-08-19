@@ -1877,103 +1877,112 @@
       </div>
 
       <!-- International Destinations -->
-      <div style="margin-top:36px;margin-bottom:16px;">
-        <h3 style="font-family:'Inter',sans-serif;font-size:clamp(18px,2.5vw,24px);font-weight:700;color:#DC1F30;margin-bottom:4px;">
-          Expanding Horizons: Explore our new global locations
-        </h3>
-        <div style="width:100%;height:1px;background:linear-gradient(90deg,#DC1F30 0%,#f3ebeb 30%);margin-top:8px;"></div>
-      </div>
+      <div style="margin-top:40px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+          <div>
+            <h3 style="font-family:'Inter',sans-serif;font-size:clamp(18px,2.5vw,22px);font-weight:800;color:#1a1a1a;margin:0 0 4px;">
+              Expanding Horizons
+            </h3>
+            <p style="font-size:13.5px;color:#79706A;margin:0;">Explore our global locations across 3 regions</p>
+          </div>
+        </div>
 
-      <!-- Row labels -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:8px;">
-        <div style="font-size:13px;font-weight:700;color:#DC1F30;text-transform:uppercase;letter-spacing:0.05em;">North America</div>
-        <div style="font-size:13px;font-weight:700;color:#DC1F30;text-transform:uppercase;letter-spacing:0.05em;">Europe &amp; Oceania 🌏</div>
-        <div style="font-size:13px;font-weight:700;color:#DC1F30;text-transform:uppercase;letter-spacing:0.05em;">Middle East</div>
-      </div>
+        <style>
+          .intl-region { margin-bottom: 28px; }
+          .intl-region-label { font-size: 11px; font-weight: 800; color: #DC1F30; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+          .intl-region-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(220,31,48,0.2), transparent); }
+          .intl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+          .intl-card { background: #fff; border: 1px solid #F0E8E0; border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform 0.18s ease, box-shadow 0.18s ease; will-change: transform; }
+          .intl-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px -8px rgba(80,40,20,0.14); }
+          .intl-card-flag { height: 80px; display: grid; place-items: center; font-size: 3rem; position: relative; overflow: hidden; }
+          .intl-card-body { padding: 12px 14px 14px; }
+          .intl-card-name { font-size: 14px; font-weight: 800; color: #1a1a1a; margin: 0 0 6px; }
+          .intl-card-desc { font-size: 11.5px; color: #79706A; margin: 0 0 8px; line-height: 1.4; }
+          .intl-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+          .intl-chip { padding: 2px 8px; border-radius: 20px; background: #FBF7F2; border: 1px solid #E8DFD4; color: #3A3530; font-size: 10.5px; font-weight: 600; }
+        </style>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;">
-
-        <!-- USA -->
-        <div style="background:#fff;border-radius:16px;border:1px solid #f3ebeb;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px -8px rgba(80,40,20,0.12)';" onmouseout="this.style.transform='none';this.style.boxShadow='none';">
-          <div style="display:flex;gap:0;">
-            <div style="width:120px;min-height:100px;background:linear-gradient(135deg,#1a237e,#283593);display:grid;place-items:center;font-size:42px;flex-shrink:0;">🇺🇸</div><img style="display:none;" alt="USA" style="width:120px;height:auto;object-fit:cover;" loading="lazy" />
-            <div style="padding:14px;flex:1;">
-              <div style="font-size:15px;font-weight:800;color:#DC1F30;margin-bottom:4px;">🇺🇸 USA</div>
-              <div style="font-size:12.5px;color:#6B6574;line-height:1.45;">Iconic Cities &amp; Coastal Venues.</div>
-              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;">
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">New York</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Los Angeles</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Miami</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Chicago</span>
+        <!-- North America -->
+        <div class="intl-region">
+          <div class="intl-region-label">🌎 North America</div>
+          <div class="intl-grid">
+            <div class="intl-card" onclick="window.location.href='pages/category.html?country=usa'">
+              <div class="intl-card-flag" style="background:linear-gradient(135deg,#0d47a1 0%,#1565c0 50%,#b71c1c 100%);">🇺🇸</div>
+              <div class="intl-card-body">
+                <p class="intl-card-name">United States</p>
+                <p class="intl-card-desc">Iconic cities & coastal venues</p>
+                <div class="intl-chips">
+                  <span class="intl-chip">New York</span>
+                  <span class="intl-chip">Los Angeles</span>
+                  <span class="intl-chip">Miami</span>
+                  <span class="intl-chip">Chicago</span>
+                </div>
+              </div>
+            </div>
+            <div class="intl-card" onclick="window.location.href='pages/category.html?country=canada'">
+              <div class="intl-card-flag" style="background:linear-gradient(135deg,#b71c1c 0%,#ef5350 50%,#b71c1c 100%);">🇨🇦</div>
+              <div class="intl-card-body">
+                <p class="intl-card-name">Canada</p>
+                <p class="intl-card-desc">CN Tower & coastal venues</p>
+                <div class="intl-chips">
+                  <span class="intl-chip">Toronto</span>
+                  <span class="intl-chip">Vancouver</span>
+                  <span class="intl-chip">Montreal</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- UK -->
-        <div style="background:#fff;border-radius:16px;border:1px solid #f3ebeb;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px -8px rgba(80,40,20,0.12)';" onmouseout="this.style.transform='none';this.style.boxShadow='none';">
-          <div style="display:flex;gap:0;">
-            <div style="width:120px;min-height:100px;background:linear-gradient(135deg,#1b5e20,#2e7d32);display:grid;place-items:center;font-size:42px;flex-shrink:0;">🇬🇧</div><img style="display:none;" alt="UK" style="width:120px;height:auto;object-fit:cover;" loading="lazy" />
-            <div style="padding:14px;flex:1;">
-              <div style="font-size:15px;font-weight:800;color:#DC1F30;margin-bottom:4px;">🇬🇧 UK</div>
-              <div style="font-size:12.5px;color:#6B6574;line-height:1.45;">Iconic Cities &amp; Coastal Venues.</div>
-              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;">
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">London</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Birmingham</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Manchester</span>
+        <!-- Europe & Oceania -->
+        <div class="intl-region">
+          <div class="intl-region-label">🌏 Europe & Oceania</div>
+          <div class="intl-grid">
+            <div class="intl-card" onclick="window.location.href='pages/category.html?country=uk'">
+              <div class="intl-card-flag" style="background:linear-gradient(135deg,#1a237e 0%,#283593 50%,#c62828 100%);">🇬🇧</div>
+              <div class="intl-card-body">
+                <p class="intl-card-name">United Kingdom</p>
+                <p class="intl-card-desc">Heritage estates & manor houses</p>
+                <div class="intl-chips">
+                  <span class="intl-chip">London</span>
+                  <span class="intl-chip">Birmingham</span>
+                  <span class="intl-chip">Manchester</span>
+                </div>
+              </div>
+            </div>
+            <div class="intl-card" onclick="window.location.href='pages/category.html?country=australia'">
+              <div class="intl-card-flag" style="background:linear-gradient(135deg,#0d47a1 0%,#1976d2 60%,#283593 100%);">🇦🇺</div>
+              <div class="intl-card-body">
+                <p class="intl-card-name">Australia</p>
+                <p class="intl-card-desc">Opera House & coastal venues</p>
+                <div class="intl-chips">
+                  <span class="intl-chip">Sydney</span>
+                  <span class="intl-chip">Melbourne</span>
+                  <span class="intl-chip">Brisbane</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- UAE -->
-        <div style="background:#fff;border-radius:16px;border:1px solid #f3ebeb;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px -8px rgba(80,40,20,0.12)';" onmouseout="this.style.transform='none';this.style.boxShadow='none';">
-          <div style="display:flex;gap:0;">
-            <div style="width:120px;min-height:100px;background:linear-gradient(135deg,#b71c1c,#c62828);display:grid;place-items:center;font-size:42px;flex-shrink:0;">🇦🇪</div><img style="display:none;" alt="UAE" style="width:120px;height:auto;object-fit:cover;" loading="lazy" />
-            <div style="padding:14px;flex:1;">
-              <div style="font-size:15px;font-weight:800;color:#DC1F30;margin-bottom:4px;">🇦🇪 UAE</div>
-              <div style="font-size:12.5px;color:#6B6574;line-height:1.45;">Iconic Cities &amp; Coastal Venues.</div>
-              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;">
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Dubai</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Abu Dhabi</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Sharjah</span>
+        <!-- Middle East -->
+        <div class="intl-region">
+          <div class="intl-region-label">🌍 Middle East</div>
+          <div class="intl-grid">
+            <div class="intl-card" onclick="window.location.href='pages/category.html?country=uae'">
+              <div class="intl-card-flag" style="background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 40%,#b71c1c 100%);">🇦🇪</div>
+              <div class="intl-card-body">
+                <p class="intl-card-name">UAE</p>
+                <p class="intl-card-desc">Luxury desert & skyline venues</p>
+                <div class="intl-chips">
+                  <span class="intl-chip">Dubai</span>
+                  <span class="intl-chip">Abu Dhabi</span>
+                  <span class="intl-chip">Sharjah</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Canada -->
-        <div style="background:#fff;border-radius:16px;border:1px solid #f3ebeb;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px -8px rgba(80,40,20,0.12)';" onmouseout="this.style.transform='none';this.style.boxShadow='none';">
-          <div style="display:flex;gap:0;">
-            <div style="width:120px;min-height:100px;background:linear-gradient(135deg,#b71c1c,#d32f2f);display:grid;place-items:center;font-size:42px;flex-shrink:0;">🇨🇦</div><img style="display:none;" alt="Canada" style="width:120px;height:auto;object-fit:cover;" loading="lazy" />
-            <div style="padding:14px;flex:1;">
-              <div style="font-size:15px;font-weight:800;color:#DC1F30;margin-bottom:4px;">🇨🇦 Canada</div>
-              <div style="font-size:12.5px;color:#6B6574;line-height:1.45;">CN Tower &amp; Coastal Venues.</div>
-              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;">
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Toronto</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Vancouver</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Montreal</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Australia -->
-        <div style="background:#fff;border-radius:16px;border:1px solid #f3ebeb;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px -8px rgba(80,40,20,0.12)';" onmouseout="this.style.transform='none';this.style.boxShadow='none';">
-          <div style="display:flex;gap:0;">
-            <div style="width:120px;min-height:100px;background:linear-gradient(135deg,#0d47a1,#1565c0);display:grid;place-items:center;font-size:42px;flex-shrink:0;">🇦🇺</div><img style="display:none;" alt="Australia" style="width:120px;height:auto;object-fit:cover;" loading="lazy" />
-            <div style="padding:14px;flex:1;">
-              <div style="font-size:15px;font-weight:800;color:#DC1F30;margin-bottom:4px;">🇦🇺 Australia</div>
-              <div style="font-size:12.5px;color:#6B6574;line-height:1.45;">Opera House &amp; Coastal Venues.</div>
-              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;">
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Sydney</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Melbourne</span>
-                <span style="padding:3px 8px;border-radius:6px;background:#DC1F30;color:#fff;font-size:10px;font-weight:700;">Brisbane</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   </div>
@@ -2761,15 +2770,7 @@
 </div>
 
 <script>
-  // Dynamic header class on scroll
-  window.addEventListener('scroll', () => {
-    const header = document.querySelector('.header');
-    if (window.scrollY > 20) {
-      header.classList.add('scrolled');
-    } else {
-      header.classList.remove('scrolled');
-    }
-  });
+  // Header scroll handled by wedeazzy-enhance.js (rAF-throttled, passive listener)
 
   function doSearch() {
     var cat = document.getElementById('hCat').value;
