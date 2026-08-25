@@ -37,6 +37,10 @@ node_modules/
 *.sql
 *.sql.gz
 *.dump
+# ...but Prisma migrations ARE source and must be committed. Without this the
+# blanket *.sql above silently swallows them, `migrate deploy` finds nothing to
+# apply, and a fresh deploy comes up with an empty database.
+!**/prisma/migrations/**/*.sql
 
 # --- OS / editor ---
 .DS_Store
