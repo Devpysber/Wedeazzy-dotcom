@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Sign In - WedEazzy</title>
+  
+  <!-- Font Awesome Icons & Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/admin-panel/assets/css/variables.css">
+  <link rel="stylesheet" href="/admin-panel/assets/css/templates.css">
+
+  <style>
+    body {
+      background-color: var(--canvas-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    .login-container {
+      background-color: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      width: 440px;
+      max-width: 100%;
+      box-shadow: var(--shadow-glow);
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+      animation: mountFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes mountFade {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .login-header img {
+      height: 32px;
+      margin-bottom: 12px;
+    }
+
+    .login-header h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .login-header p {
+      color: var(--text-sub);
+      font-size: 0.82rem;
+    }
+
+    .form-stage {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      animation: stageFade 0.3s ease;
+    }
+
+    .form-stage.active {
+      display: flex;
+    }
+
+    @keyframes stageFade {
+      from { opacity: 0; transform: translateX(8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    .input-group label {
+      font-family: var(--font-head);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-sub);
+    }
+
+    .input-icon-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon-wrapper i {
+      position: absolute;
+      left: 14px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .input-icon-wrapper .premium-input {
+      width: 100%;
+      padding-left: 40px;
+      padding-right: 40px;
+      height: 44px;
+      font-size: 0.85rem;
+    }
+
+    .password-toggle-btn {
+      position: absolute;
+      right: 14px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: color 0.15s ease;
+    }
+
+    .password-toggle-btn:hover {
+      color: var(--text-main);
+    }
+
+    .form-utils {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+    }
+
+    .remember-me-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    .remember-me-wrap input {
+      accent-color: var(--brand-rose);
+      cursor: pointer;
+    }
+
+    .recovery-trigger {
+      color: var(--brand-rose);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+
+    .recovery-trigger:hover {
+      color: var(--brand-rose-hover);
+    }
+
+    /* 6-Digit OTP Blocks */
+    .otp-blocks-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .otp-input-field {
+      width: 50px;
+      height: 52px;
+      background-color: var(--canvas-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-align: center;
+      border-radius: 10px;
+      outline: none;
+      transition: all var(--transition-default);
+    }
+
+    .otp-input-field:focus {
+      border-color: var(--brand-rose);
+      box-shadow: 0 0 0 3px rgba(220, 31, 48, 0.08);
+      background-color: var(--surface-bg);
+    }
+
+    .otp-timer-info {
+      text-align: center;
+      font-size: 0.77rem;
+      color: var(--text-sub);
+      margin-top: 10px;
+    }
+
+    .otp-timer-info strong {
+      color: var(--brand-rose);
+    }
+
+    /* Floating theme switch on login page */
+    .login-theme-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: var(--surface-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-box);
+      transition: all var(--transition-default);
+    }
+
+    .login-theme-btn:hover {
+      background-color: var(--border-subtle);
+      color: var(--text-main);
+    }
+
+    /* Loading Overlay inside Card */
+    .card-loader-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    [data-theme="dark"] .card-loader-mask {
+      background-color: rgba(15, 17, 26, 0.85);
+    }
+
+    .card-loader-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3.5px solid var(--border-color);
+      border-top-color: var(--brand-rose);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .back-to-login {
+      display: block;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-top: 10px;
+      transition: color 0.15s ease;
+    }
+
+    .back-to-login:hover {
+      color: var(--text-main);
+    }
+
+    /* Back Home styling */
+    .home-gateway-btn {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating widgets -->
+  <a href="../index.html" class="btn-premium home-gateway-btn">
+    <i class="fa-solid fa-arrow-left"></i> Home Portal
+  </a>
+
+  <!-- Toasts Alert Area -->
+  <div class="toasts-alert-dock" id="toastsDock"></div>
+
+  <!-- Login Card Container -->
+  <div class="login-container">
+    
+    <!-- Theme Switcher -->
+    <button class="login-theme-btn" id="themeToggleBtn" title="Switch Theme">
+      <i class="fa-solid fa-moon" id="themeToggleIcon"></i>
+    </button>
+
+    <!-- Card Loading Cover -->
+    <div class="card-loader-mask" id="cardLoader">
+      <div class="card-loader-spinner"></div>
+      <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-sub);" id="loaderText">Processing Security Keys...</div>
+    </div>
+
+    <!-- Header Brand Info -->
+    <div class="login-header">
+      <img src="/assets/images/logo.png" alt="WedEazzy" class="brand-logo-img" style="height:36px; margin-bottom:14px;">
+      <h2>Vendor Sign In</h2>
+      <p id="subTitleText">Sign in with your registered business email to manage your listing, leads and bookings.</p>
+    </div>
+
+    <!-- STAGE 1: Standard Credentials Forms -->
+    <form id="formCredentials" class="form-stage active">
+      <div class="input-group">
+        <label for="adminEmail">Email Address</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-regular fa-envelope"></i>
+          <input type="email" id="adminEmail" class="premium-input" placeholder="e.g. you@yourbusiness.com" autocomplete="email" required>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="adminPassword">Password</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="adminPassword" class="premium-input" placeholder="••••••••••••" autocomplete="current-password" required>
+          <button type="button" class="password-toggle-btn" id="passwordToggle" title="Toggle Password">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-utils">
+        <label class="remember-me-wrap">
+          <input type="checkbox" id="rememberMe" checked>
+          <span>Keep session logged-in</span>
+        </label>
+        <a href="#" class="recovery-trigger" id="recoveryTrigger">Forgot Password?</a>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem;">
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In to Account
+      </button>
+    </form>
+
+    <!-- STAGE 2: Email Verification OTP -->
+    <form id="formOTP" class="form-stage">
+      <div class="input-group" style="text-align: center;">
+        <label style="margin-bottom: 2px;">Enter 6-Digit Verification Code</label>
+        <div style="font-size: 0.77rem; color: var(--text-sub); margin-bottom: 8px;" id="otpHelperText">
+          Your email address is not verified yet. We have sent a 6-digit code to your registered business email — enter it to finish signing in.
+        </div>
+        
+        <div class="otp-blocks-container" id="otpBlocks">
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+          <input type="text" maxlength="1" class="otp-input-field" required>
+        </div>
+
+        <div class="otp-timer-info">
+          Passcode expires in: <strong id="otpTimer">02:00</strong>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem; margin-top: 10px;">
+        <i class="fa-solid fa-key"></i> Verify & Continue
+      </button>
+
+      <a href="#" class="back-to-login" id="backFromOTP"><i class="fa-solid fa-angle-left"></i> Modify Credentials</a>
+    </form>
+
+    <!-- STAGE 3: Password Recovery Support -->
+    <form id="formRecovery" class="form-stage">
+      <div class="input-group">
+        <label for="recoveryEmail">Registered Business Email</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-regular fa-envelope"></i>
+          <input type="email" id="recoveryEmail" class="premium-input" placeholder="you@yourbusiness.com" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem;">
+        <i class="fa-solid fa-paper-plane"></i> Send Reset Link
+      </button>
+
+      <a href="#" class="back-to-login" id="backFromRecovery"><i class="fa-solid fa-angle-left"></i> Return to login form</a>
+    </form>
+
+    <!-- STAGE 4: Password Reset Form -->
+    <form id="formReset" class="form-stage">
+      <div class="input-group">
+        <label for="newPassword">New Password</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="newPassword" class="premium-input" placeholder="Min 6 characters" required>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <div class="input-icon-wrapper">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="confirmPassword" class="premium-input" placeholder="Repeat password" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem;">
+        <i class="fa-solid fa-key"></i> Update Password
+      </button>
+
+      <a href="#" class="back-to-login" id="backFromReset"><i class="fa-solid fa-angle-left"></i> Return to login form</a>
+    </form>
+
+  </div>
+
+  <!--
+    Vendor-only authentication. This page deliberately does NOT load
+    /admin-panel/assets/js/auth.js — that module is admin-specific (its
+    guardLoginPage() redirects to the admin dashboard and its verifyOTP()
+    posts to /api/auth/admin/verify-2fa), so pulling it in here would both
+    misroute vendors and put the admin 2FA endpoint behind a public link.
+    Nothing on this page ever calls an /api/auth/admin/* route.
+  -->
+  <script>
+    (function () {
+      "use strict";
+
+      var el = {
+        loader:      document.getElementById("cardLoader"),
+        loaderText:  document.getElementById("loaderText"),
+        subTitle:    document.getElementById("subTitleText"),
+        formCreds:   document.getElementById("formCredentials"),
+        formOTP:     document.getElementById("formOTP"),
+        formRecovery:document.getElementById("formRecovery"),
+        formReset:   document.getElementById("formReset"),
+        email:       document.getElementById("adminEmail"),
+        pass:        document.getElementById("adminPassword"),
+        rememberMe:  document.getElementById("rememberMe"),
+        recoveryEmail: document.getElementById("recoveryEmail"),
+        newPassword: document.getElementById("newPassword"),
+        confirmPassword: document.getElementById("confirmPassword"),
+        passwordToggle: document.getElementById("passwordToggle"),
+        recoveryTrigger: document.getElementById("recoveryTrigger"),
+        backFromOTP: document.getElementById("backFromOTP"),
+        backFromRecovery: document.getElementById("backFromRecovery"),
+        backFromReset: document.getElementById("backFromReset"),
+        themeBtn:    document.getElementById("themeToggleBtn"),
+        themeIcon:   document.getElementById("themeToggleIcon"),
+        otpTimer:    document.getElementById("otpTimer"),
+        otpInputs:   document.querySelectorAll(".otp-input-field")
+      };
+
+      var pendingEmail = null;   // set when the backend asks for email verification
+      var timerHandle  = null;
+
+      // ---------- helpers ----------
+
+      function busy(on, text) {
+        if (text) el.loaderText.textContent = text;
+        el.loader.style.display = on ? "flex" : "none";
+      }
+
+      function showToast(message, type) {
+        var host = document.getElementById("vendorToastHost");
+        if (!host) {
+          host = document.createElement("div");
+          host.id = "vendorToastHost";
+          host.style.cssText = "position:fixed;left:24px;bottom:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;";
+          document.body.appendChild(host);
+        }
+        var colors = { success: "#1a7f4b", danger: "#c62030", warning: "#a8720d", info: "#1f4e8c" };
+        var toast = document.createElement("div");
+        toast.style.cssText =
+          "display:flex;align-items:center;gap:10px;max-width:380px;padding:14px 16px;border-radius:10px;" +
+          "background:#fff;color:#1a1a1a;font-size:0.85rem;font-weight:600;line-height:1.35;" +
+          "box-shadow:0 8px 24px rgba(0,0,0,0.16);border-left:4px solid " + (colors[type] || colors.info) + ";";
+        var label = document.createElement("span");
+        label.textContent = message;               // textContent, never innerHTML — server messages are untrusted
+        toast.appendChild(label);
+        host.appendChild(toast);
+        setTimeout(function () { toast.remove(); }, 6000);
+      }
+
+      function switchStage(activeForm, subText) {
+        [el.formCreds, el.formOTP, el.formRecovery, el.formReset].forEach(function (f) {
+          if (f) f.classList.remove("active");
+        });
+        if (activeForm) activeForm.classList.add("active");
+        if (subText) el.subTitle.textContent = subText;
+      }
+
+      function storeVendorToken(token) {
+        // Mirror the key names the vendor dashboard already reads.
+        sessionStorage.setItem("wedeazzy_token", token);
+        sessionStorage.setItem("wedeazzy_vendor_token", token);
+        if (el.rememberMe && el.rememberMe.checked) {
+          localStorage.setItem("wedeazzy_token", token);
+          localStorage.setItem("wedeazzy_vendor_token", token);
+        }
+      }
+
+      function goToDashboard(user) {
+        if (user && user.mustChangePassword) {
+          showToast("First login detected. Redirecting to set your password…", "info");
+          setTimeout(function () { window.location.href = "change-password.html"; }, 800);
+          return;
+        }
+        showToast("Login successful! Opening your vendor dashboard…", "success");
+        setTimeout(function () { window.location.href = "bdashboard.html"; }, 800);
+      }
+
+      // Reads a JSON body defensively: a 502/504 from the host, or Passenger
+      // returning an HTML error page, makes response.json() throw — without
+      // this the page would report a bare "Unexpected token <" to the vendor.
+      async function readJson(response) {
+        try { return await response.json(); }
+        catch (_) { return null; }
+      }
+
+      function startOtpTimer() {
+        var remaining = 120;
+        clearInterval(timerHandle);
+        timerHandle = setInterval(function () {
+          remaining -= 1;
+          var m = String(Math.floor(remaining / 60)).padStart(2, "0");
+          var s = String(remaining % 60).padStart(2, "0");
+          if (el.otpTimer) el.otpTimer.textContent = m + ":" + s;
+          if (remaining <= 0) {
+            clearInterval(timerHandle);
+            showToast("The code has expired. Please sign in again to get a new one.", "warning");
+            switchStage(el.formCreds, "Sign in with your registered business email to manage your listing, leads and bookings.");
+          }
+        }, 1000);
+      }
+
+      // ---------- theme toggle ----------
+
+      var savedTheme = localStorage.getItem("wedeazzy_theme") || "light";
+      document.documentElement.setAttribute("data-theme", savedTheme);
+      if (el.themeIcon) el.themeIcon.className = savedTheme === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+      if (el.themeBtn) {
+        el.themeBtn.addEventListener("click", function () {
+          var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          localStorage.setItem("wedeazzy_theme", next);
+          el.themeIcon.className = next === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+        });
+      }
+
+      // ---------- password visibility ----------
+
+      if (el.passwordToggle) {
+        el.passwordToggle.addEventListener("click", function () {
+          var showing = el.pass.type === "text";
+          el.pass.type = showing ? "password" : "text";
+          el.passwordToggle.querySelector("i").className = showing ? "fa-regular fa-eye" : "fa-regular fa-eye-slash";
+        });
+      }
+
+      // ---------- OTP box navigation ----------
+
+      el.otpInputs.forEach(function (input, index) {
+        input.addEventListener("input", function () {
+          input.value = input.value.replace(/\D/g, "").slice(0, 1);
+          if (input.value && index < el.otpInputs.length - 1) el.otpInputs[index + 1].focus();
+        });
+        input.addEventListener("keydown", function (e) {
+          if (e.key === "Backspace" && !input.value && index > 0) el.otpInputs[index - 1].focus();
+        });
+        input.addEventListener("paste", function (e) {
+          e.preventDefault();
+          var digits = (e.clipboardData || window.clipboardData).getData("text").replace(/\D/g, "").slice(0, 6);
+          digits.split("").forEach(function (ch, i) { if (el.otpInputs[i]) el.otpInputs[i].value = ch; });
+          if (digits.length) el.otpInputs[Math.min(digits.length, 5)].focus();
+        });
+      });
+
+      // ---------- stage 1: credentials ----------
+
+      el.formCreds.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        busy(true, "Verifying your credentials…");
+
+        try {
+          var res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: el.email.value.trim(), password: el.pass.value })
+          });
+          var data = await readJson(res);
+          busy(false);
+
+          if (res.status >= 500) {
+            showToast("The login service is unavailable right now (server error). This is not a password problem — please try again shortly.", "danger");
+            return;
+          }
+
+          if (!res.ok) {
+            showToast((data && data.message) || "Invalid email or password.", "danger");
+            return;
+          }
+
+          // Unverified account: the backend issues no token and mails a code
+          // instead. Handle it here rather than treating it as a login failure.
+          if (data && data.requireVerification) {
+            pendingEmail = (data.user && data.user.email) || el.email.value.trim().toLowerCase();
+            switchStage(el.formOTP, "One more step — confirm your email address.");
+            el.otpInputs.forEach(function (i) { i.value = ""; });
+            if (data.devCode) {
+              data.devCode.split("").forEach(function (ch, i) { if (el.otpInputs[i]) el.otpInputs[i].value = ch; });
+              showToast("Email delivery is unavailable, so the code was filled in for you.", "warning");
+            } else {
+              showToast("We sent a 6-digit code to " + pendingEmail + ".", "success");
+              el.otpInputs[0].focus();
+            }
+            startOtpTimer();
+            return;
+          }
+
+          if (!data || !data.token || !data.user) {
+            showToast("Unexpected response from the login service. Please try again.", "danger");
+            return;
+          }
+
+          // This page signs in vendors only. An admin account authenticating
+          // here is sent to the admin portal instead of being handed a vendor
+          // session — the admin flow requires its own 2FA step.
+          if (data.user.role !== "vendor") {
+            showToast("This account is not a vendor account. Redirecting you to the correct portal…", "info");
+            setTimeout(function () { window.location.href = "/admin"; }, 1200);
+            return;
+          }
+
+          storeVendorToken(data.token);
+          goToDashboard(data.user);
+        } catch (err) {
+          busy(false);
+          showToast("Could not reach the login service. Check your connection and try again.", "danger");
+        }
+      });
+
+      // ---------- stage 2: email verification ----------
+
+      el.formOTP.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        var code = "";
+        el.otpInputs.forEach(function (i) { code += i.value; });
+        if (code.length !== 6) {
+          showToast("Please enter the complete 6-digit code.", "warning");
+          return;
+        }
+
+        busy(true, "Confirming your code…");
+        try {
+          var res = await fetch("/api/auth/email/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: pendingEmail, code: code })
+          });
+          var data = await readJson(res);
+          busy(false);
+
+          if (!res.ok || !data || !data.token) {
+            showToast((data && data.message) || "That code was not accepted. Please check your email and try again.", "danger");
+            el.otpInputs.forEach(function (i) { i.value = ""; });
+            el.otpInputs[0].focus();
+            return;
+          }
+
+          clearInterval(timerHandle);
+          storeVendorToken(data.token);
+          goToDashboard(data.user);
+        } catch (err) {
+          busy(false);
+          showToast("Could not reach the verification service. Please try again.", "danger");
+        }
+      });
+
+      // ---------- stage 3: forgot password ----------
+
+      el.recoveryTrigger.addEventListener("click", function (e) {
+        e.preventDefault();
+        switchStage(el.formRecovery, "Enter your registered business email and we'll send you a reset link.");
+      });
+
+      el.formRecovery.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        busy(true, "Sending reset instructions…");
+        try {
+          var res = await fetch("/api/auth/forgot-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: el.recoveryEmail.value.trim().toLowerCase() })
+          });
+          await readJson(res);
+          busy(false);
+          // Always the same message: revealing whether an address is registered
+          // turns this endpoint into an account-enumeration oracle.
+          showToast("If that email is registered, a password reset link is on its way.", "success");
+          switchStage(el.formCreds, "Sign in with your registered business email to manage your listing, leads and bookings.");
+        } catch (err) {
+          busy(false);
+          showToast("Could not reach the recovery service. Please try again.", "danger");
+        }
+      });
+
+      // ---------- stage 4: reset password (reached via emailed ?token=) ----------
+
+      var resetToken = new URLSearchParams(window.location.search).get("token");
+      if (resetToken) {
+        switchStage(el.formReset, "Choose a new password for your vendor account.");
+      }
+
+      el.formReset.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        var p1 = el.newPassword.value;
+        var p2 = el.confirmPassword.value;
+
+        if (p1 !== p2) {
+          showToast("The two passwords do not match.", "warning");
+          return;
+        }
+
+        busy(true, "Updating your password…");
+        try {
+          var res = await fetch("/api/auth/reset-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: resetToken, newPassword: p1 })
+          });
+          var data = await readJson(res);
+          busy(false);
+
+          if (!res.ok) {
+            showToast((data && data.message) || "That reset link is invalid or has expired.", "danger");
+            return;
+          }
+          showToast("Password updated. You can sign in now.", "success");
+          // Drop the token from the URL so a refresh doesn't replay it.
+          window.history.replaceState({}, document.title, window.location.pathname);
+          resetToken = null;
+          switchStage(el.formCreds, "Sign in with your registered business email to manage your listing, leads and bookings.");
+        } catch (err) {
+          busy(false);
+          showToast("Could not reach the reset service. Please try again.", "danger");
+        }
+      });
+
+      // ---------- back links ----------
+
+      function backToCredentials(e) {
+        e.preventDefault();
+        clearInterval(timerHandle);
+        switchStage(el.formCreds, "Sign in with your registered business email to manage your listing, leads and bookings.");
+      }
+      if (el.backFromOTP)      el.backFromOTP.addEventListener("click", backToCredentials);
+      if (el.backFromRecovery) el.backFromRecovery.addEventListener("click", backToCredentials);
+      if (el.backFromReset)    el.backFromReset.addEventListener("click", backToCredentials);
+
+      // Card starts covered by the loader mask in the markup — clear it.
+      busy(false);
+    })();
+  </script>
+</body>
+</html>

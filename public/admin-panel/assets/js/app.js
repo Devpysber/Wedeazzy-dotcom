@@ -3,6 +3,91 @@
  * Connects the state store, charts drawer, auth blocks, and UI elements.
  */
 
+// Global Country Scope State & Helpers (Top-Level Scope)
+window.WedEazzyCountryScope = localStorage.getItem('wedeazzy_country_scope') || 'all';
+
+window.matchesCountryScope = function(v, scope) {
+  if (!v) return true;
+  if (!scope || String(scope).toLowerCase() === 'all') return true;
+  const s = String(scope).toUpperCase();
+
+  const rawCountry = String(v.country || '').trim().toUpperCase();
+  const rawCode = String(v.countryCode || '').trim().toUpperCase();
+  const rawLoc = String(v.location || v.address || '').trim().toUpperCase();
+
+  let vendorCode = rawCode;
+  if (!vendorCode) {
+    if (rawCountry.includes('USA') || rawCountry.includes('UNITED STATES') || rawCountry === 'US') vendorCode = 'US';
+    else if (rawCountry.includes('UK') || rawCountry.includes('UNITED KINGDOM') || rawCountry === 'GB') vendorCode = 'GB';
+    else if (rawCountry.includes('UAE') || rawCountry.includes('EMIRATES') || rawCountry === 'AE') vendorCode = 'AE';
+    else if (rawCountry.includes('CANADA') || rawCountry === 'CA') vendorCode = 'CA';
+    else if (rawCountry.includes('AUSTRALIA') || rawCountry === 'AU') vendorCode = 'AU';
+    else if (rawCountry.includes('INDIA') || rawCountry === 'IN') vendorCode = 'IN';
+    else if (rawLoc.includes('USA') || rawLoc.includes('UNITED STATES')) vendorCode = 'US';
+    else if (rawLoc.includes('UNITED KINGDOM')) vendorCode = 'GB';
+    else if (rawLoc.includes('EMIRATES') || rawLoc.includes('DUBAI')) vendorCode = 'AE';
+    else vendorCode = 'IN';
+  }
+
+  if (s === 'IN' || s === 'INDIA') return vendorCode === 'IN';
+  if (s === 'AE' || s === 'UAE') return vendorCode === 'AE';
+  if (s === 'GB' || s === 'UK') return vendorCode === 'GB';
+  if (s === 'US' || s === 'USA') return vendorCode === 'US';
+  if (s === 'CA' || s === 'CANADA') return vendorCode === 'CA';
+  if (s === 'AU' || s === 'AUSTRALIA') return vendorCode === 'AU';
+
+  return vendorCode === s || rawCode === s;
+};
+
+window.renderAdminCountryScopeHeader = function(title = "Country Scope & Filter", subtitle = "Filter platform management data dynamically") {
+  const rawScope = window.WedEazzyCountryScope || 'all';
+  const currentScope = rawScope.toUpperCase();
+  return `
+    <div style="display: flex; align-items: center; justify-content: space-between; background: var(--surface-bg); padding: 14px 20px; border-radius: 14px; border: 1px solid var(--border-color); margin-bottom: 20px; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(220, 31, 48, 0.1); color: var(--brand-rose); display: flex; align-items: center; justify-content: center; font-size: 1.15rem;">
+          🌐
+        </div>
+        <div>
+          <div style="font-size: 0.92rem; font-weight: 800; color: var(--text-main);">${title}</div>
+          <div style="font-size: 0.76rem; color: var(--text-sub);">${subtitle}</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-sub);">Country Scope:</label>
+        <select class="global-country-select" style="background: var(--surface-subtle); color: var(--text-main); border: 1.5px solid var(--border-color); font-weight: 800; font-size: 0.84rem; padding: 7px 14px; border-radius: 10px; cursor: pointer; outline: none;"
+          onchange="window.handleGlobalCountryChange(this.value)">
+          <option value="all" ${currentScope === 'ALL' ? 'selected' : ''}>🌐 All Countries (Global Platform)</option>
+          <option value="IN" ${currentScope === 'IN' ? 'selected' : ''}>🇮🇳 India (INR ₹)</option>
+          <option value="AE" ${currentScope === 'AE' ? 'selected' : ''}>🇦🇪 UAE (AED)</option>
+          <option value="GB" ${currentScope === 'GB' ? 'selected' : ''}>🇬🇧 UK (GBP £)</option>
+          <option value="US" ${currentScope === 'US' ? 'selected' : ''}>🇺🇸 USA (USD $)</option>
+          <option value="CA" ${currentScope === 'CA' ? 'selected' : ''}>🇨🇦 Canada (CAD CA$)</option>
+          <option value="AU" ${currentScope === 'AU' ? 'selected' : ''}>🇦🇺 Australia (AUD A$)</option>
+        </select>
+      </div>
+    </div>
+  `;
+};
+
+window.handleGlobalCountryChange = function(code) {
+  const cleanCode = (code || 'all').toString();
+  window.WedEazzyCountryScope = cleanCode;
+  localStorage.setItem('wedeazzy_country_scope', cleanCode);
+
+  document.querySelectorAll('.global-country-select, #globalAdminCountrySelect, #biCountryFilter, #crmCountryScopeSelect').forEach(select => {
+    if (select) select.value = cleanCode;
+  });
+
+  const label = cleanCode.toLowerCase() === 'all' ? 'All Countries 🌍' : (cleanCode.toUpperCase() === 'IN' ? 'India 🇮🇳' : (cleanCode.toUpperCase() === 'US' ? 'USA 🇺🇸' : (cleanCode.toUpperCase() === 'GB' ? 'UK 🇬🇧' : (cleanCode.toUpperCase() === 'AE' ? 'UAE 🇦🇪' : (cleanCode.toUpperCase() === 'CA' ? 'Canada 🇨🇦' : (cleanCode.toUpperCase() === 'AU' ? 'Australia 🇦🇺' : cleanCode))))));
+  if (typeof window.showToast === 'function') {
+    window.showToast(`Global admin scope set to: ${label}`, 'info');
+  }
+  if (typeof window.renderActiveView === 'function') {
+    window.renderActiveView();
+  }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   // 1. Guard check before launching application
   if (window.WedEazzyAuth) {
@@ -33,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // multi-thousand-row HTML string and setting it via innerHTML is a long
   // synchronous main-thread block. Slicing to a page keeps each render fast
   // regardless of how large the underlying dataset (e.g. 13,000+ vendors) is.
-  const LIST_PAGE_SIZE = 50;
+  let LIST_PAGE_SIZE = 15;
 
   /**
    * Filters `list` by `searchTerm` using `matchText(item)` for the haystack,
@@ -117,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "claimed-listings", "city", "regions", "venues-category", "vendors-category",
     "send-emails", "blogs", "contact-inquiries", "whatsapp-status", "grow-campaigns",
     "grow-pricing", "vendor-crm-dashboard", "invitations", "blacklisted",
-    "import-listings"
+    "import-listings", "countries", "locations"
   ];
 
   function tabFromHash() {
@@ -707,8 +792,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function renderActiveView() {
+  window.renderActiveView = function renderActiveView() {
+    window.WedEazzyCountryScope = localStorage.getItem('wedeazzy_country_scope') || 'all';
     const store = window.WedEazzyStore.get();
+
+    // Sync topbar country select element value
+    const topSelect = document.getElementById('globalAdminCountrySelect');
+    if (topSelect && topSelect.value !== window.WedEazzyCountryScope) {
+      topSelect.value = window.WedEazzyCountryScope;
+    }
 
     // The Approve Businesses views were rebuilt in assets/js/crm.js (KPI decks,
     // charts, filter bars, CSV import). Delegate to that module when it is
@@ -726,9 +818,39 @@ document.addEventListener("DOMContentLoaded", () => {
         case "invitations":          return CRM.renderInvitations(store);
         case "claimed-listings":     return CRM.renderClaimedListings(store);
         case "import-listings":      return CRM.renderImportListings(store);
+        case "countries":            return CRM.renderCountries(store);
+        case "city":
+        case "locations":            return CRM.renderLocations(store);
         default: break;
       }
     }
+
+    async function populateGlobalCountrySelector() {
+      try {
+        const data = await apiFetch('/api/admin/countries');
+        const countries = data.countries || [];
+        const savedScope = localStorage.getItem('wedeazzy_country_scope') || 'all';
+        window.WedEazzyCountryScope = savedScope;
+
+        const selectors = document.querySelectorAll('.global-country-select, #globalAdminCountrySelect, #biCountryFilter, #crmCountryScopeSelect');
+
+        selectors.forEach(select => {
+          if (!select) return;
+          select.innerHTML = `
+            <option value="all" ${savedScope.toLowerCase() === 'all' ? 'selected' : ''}>🌍 All Countries (Global Platform)</option>
+            ${countries.map(c => `
+              <option value="${c.code}" ${savedScope.toUpperCase() === c.code.toUpperCase() ? 'selected' : ''}>
+                ${c.flag || '🌐'} ${c.name} (${c.code})
+              </option>
+            `).join('')}
+          `;
+          select.value = savedScope;
+        });
+      } catch (err) {
+        console.warn('Failed to populate country selector:', err);
+      }
+    }
+    populateGlobalCountrySelector();
 
     if (state.activeTab === "dashboard") {
       renderDashboard(store);
@@ -743,7 +865,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (state.activeTab === "whatsapp") {
       renderWhatsApp(store);
     } else if (state.activeTab === "reports") {
-      renderReports(store);
+      mountTab("dashboard");
+      return;
     } else if (state.activeTab === "settings") {
       renderSettings(store);
     } else if (state.activeTab === "profile") {
@@ -868,9 +991,86 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  // Render TRANSACTION HISTORY
+  // Render TRANSACTION HISTORY & SUBSCRIPTIONS INTELLIGENCE
   function renderTransactionHistory(store) {
-    const txns = (store.payments || []).map((t) => {
+    const selectedCountry = window.WedEazzyCountryScope || state.biFilters.countryCode || 'all';
+    const isGlobal = selectedCountry.toLowerCase() === 'all';
+
+    // Scoped Data Arrays
+    const rawVendors = store.vendors || [];
+    const scopedVendors = isGlobal ? rawVendors : rawVendors.filter(v => (v.countryCode || 'IN').toUpperCase() === selectedCountry.toUpperCase());
+
+    const rawTxns = store.payments || [];
+    const scopedTxns = isGlobal ? rawTxns : rawTxns.filter(t => (t.countryCode || 'IN').toUpperCase() === selectedCountry.toUpperCase());
+
+    // 1. Total Subscription Revenue & Total Plans Sold
+    const successTxns = scopedTxns.filter(t => t.status === 'success');
+    const totalRev = successTxns.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const totalPlansSold = successTxns.length;
+
+    // 2. Most Purchased Plan from actual paid transactions
+    const planCounts = {};
+    successTxns.forEach(t => {
+      let planName = 'Standard';
+      if (t.purpose) {
+        if (t.purpose.includes('subscription:')) {
+          planName = t.purpose.replace('subscription:', '') + ' Plan';
+        } else if (t.purpose.includes('campaign:')) {
+          planName = 'Grow Ad Boost';
+        } else {
+          planName = t.purpose;
+        }
+      }
+      planCounts[planName] = (planCounts[planName] || 0) + 1;
+    });
+
+    let topPlanName = 'None';
+    let maxPlanCount = 0;
+    Object.keys(planCounts).forEach(p => {
+      if (planCounts[p] > maxPlanCount) {
+        maxPlanCount = planCounts[p];
+        topPlanName = p;
+      }
+    });
+
+    // 3. Top Purchasing Category from actual paid vendor transactions
+    const catCounts = {};
+    successTxns.forEach(t => {
+      const vendor = rawVendors.find(v => (v.userId && v.userId === t.userId) || (v.id && v.id === t.vendorId));
+      if (vendor && vendor.category) {
+        catCounts[vendor.category] = (catCounts[vendor.category] || 0) + 1;
+      }
+    });
+
+    let topCategory = 'None';
+    let maxCatCount = 0;
+    Object.keys(catCounts).forEach(c => {
+      if (catCounts[c] > maxCatCount) {
+        maxCatCount = catCounts[c];
+        topCategory = c;
+      }
+    });
+
+    // 4. Top Purchasing City from actual paid vendor transactions
+    const cityCounts = {};
+    successTxns.forEach(t => {
+      const vendor = rawVendors.find(v => (v.userId && v.userId === t.userId) || (v.id && v.id === t.vendorId));
+      const cName = vendor ? (vendor.city || vendor.address) : null;
+      if (cName) {
+        cityCounts[cName] = (cityCounts[cName] || 0) + 1;
+      }
+    });
+
+    let topCity = 'None';
+    let maxCityCount = 0;
+    Object.keys(cityCounts).forEach(c => {
+      if (cityCounts[c] > maxCityCount) {
+        maxCityCount = cityCounts[c];
+        topCity = c;
+      }
+    });
+
+    const txns = scopedTxns.map((t) => {
       const createdDate = new Date(t.createdAt);
       const dateFormatted = createdDate.toLocaleDateString('en-IN', {
         day: '2-digit',
@@ -899,6 +1099,66 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="spa-tab-wrapper">
         <div class="locator-breadcrumb">
           <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Subscriptions Ledger</span>
+        </div>
+
+        <!-- EXECUTIVE SUBSCRIPTION STAT CARDS GRID (5 CARDS) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 20px;">
+
+          <!-- Card 1: Total Revenue -->
+          <div class="panel-card" style="padding: 16px; background: #FFFFFF; border-left: 3px solid #E52B3A;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #667085;">Total Revenue</div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: #182033; margin-top: 6px;">₹${totalRev.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div style="font-size: 0.68rem; color: #667085; margin-top: 4px;"><i class="fa-solid fa-credit-card" style="color: #E52B3A;"></i> ${successTxns.length} paid transactions</div>
+          </div>
+
+          <!-- Card 2: Total Plans Sold -->
+          <div class="panel-card" style="padding: 16px; background: #FFFFFF; border-left: 3px solid #10B981;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #667085;">Total Plans Sold</div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: #182033; margin-top: 6px;">${totalPlansSold.toLocaleString('en-IN')}</div>
+            <div style="font-size: 0.68rem; color: #667085; margin-top: 4px;"><i class="fa-solid fa-circle-check" style="color: #10B981;"></i> Paid subscriptions & boosts</div>
+          </div>
+
+          <!-- Card 3: Most Purchased Plan -->
+          <div class="panel-card" style="padding: 16px; background: #FFFFFF; border-left: 3px solid #3B82F6;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #667085;">Most Purchased Plan</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: ${topPlanName === 'None' ? '#94a3b8' : '#182033'}; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escHtml(topPlanName)}</div>
+            <div style="font-size: 0.68rem; color: #667085; margin-top: 4px;"><i class="fa-solid fa-crown" style="color: #F59E0B;"></i> ${maxPlanCount} ${maxPlanCount === 1 ? 'subscription bought' : 'subscriptions bought'}</div>
+          </div>
+
+          <!-- Card 4: Most Purchasing Category -->
+          <div class="panel-card" style="padding: 16px; background: #FFFFFF; border-left: 3px solid #8B5CF6;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #667085;">Most Purchasing Category</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: ${topCategory === 'None' ? '#94a3b8' : '#182033'}; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escHtml(topCategory)}</div>
+            <div style="font-size: 0.68rem; color: #667085; margin-top: 4px;"><i class="fa-solid fa-layer-group" style="color: #8B5CF6;"></i> ${maxCatCount} ${maxCatCount === 1 ? 'plan purchased' : 'plans purchased'}</div>
+          </div>
+
+          <!-- Card 5: Most Purchasing City -->
+          <div class="panel-card" style="padding: 16px; background: #FFFFFF; border-left: 3px solid #F59E0B;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #667085;">Most Purchasing City</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: ${topCity === 'None' ? '#94a3b8' : '#182033'}; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escHtml(topCity)}</div>
+            <div style="font-size: 0.68rem; color: #667085; margin-top: 4px;"><i class="fa-solid fa-location-dot" style="color: #F59E0B;"></i> ${maxCityCount} ${maxCityCount === 1 ? 'plan purchased' : 'plans purchased'}</div>
+          </div>
+
+        </div>
+
+        <!-- COUNTRY-WISE SUBSCRIPTION OVERVIEW BAR -->
+        <div class="panel-card" style="padding: 16px 20px; background: #182033; color: #FFFFFF; margin-bottom: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #E52B3A; letter-spacing: 0.05em;">Country-Wise Subscription Overview</div>
+            <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 2px;">Active Scope: <strong style="color: #ffffff;">${selectedCountry === 'all' ? '🌎 Global Marketplace' : selectedCountry.toUpperCase()}</strong> — ${scopedTxns.length} transaction records logged</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label for="subCountrySelect" style="font-size: 0.75rem; color: #cbd5e1; font-weight: 600;">Filter Country:</label>
+            <select id="subCountrySelect" class="premium-select" style="background: #0f172a; color: #ffffff; border-color: rgba(255,255,255,0.2); font-size: 0.8rem; padding: 6px 12px; border-radius: 8px;">
+              <option value="all" ${selectedCountry === 'all' ? 'selected' : ''}>🌎 All Countries</option>
+              <option value="IN" ${selectedCountry === 'IN' ? 'selected' : ''}>🇮🇳 India</option>
+              <option value="AE" ${selectedCountry === 'AE' ? 'selected' : ''}>🇦🇪 UAE</option>
+              <option value="GB" ${selectedCountry === 'GB' ? 'selected' : ''}>🇬🇧 UK</option>
+              <option value="US" ${selectedCountry === 'US' ? 'selected' : ''}>🇺🇸 USA</option>
+              <option value="CA" ${selectedCountry === 'CA' ? 'selected' : ''}>🇨🇦 Canada</option>
+              <option value="AU" ${selectedCountry === 'AU' ? 'selected' : ''}>🇦🇺 Australia</option>
+            </select>
+          </div>
         </div>
 
         <div class="panel-card">
@@ -936,7 +1196,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   <tr>
                     <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 40px 0;">
                       <i class="fa-solid fa-cash-register" style="font-size: 2rem; margin-bottom: 12px; display: block;"></i>
-                      No transaction records located inside MySQL tables yet.
+                      No transaction records located inside MySQL tables yet for ${selectedCountry === 'all' ? 'the global platform' : selectedCountry.toUpperCase()}.
                     </td>
                   </tr>
                 ` : txns.map(t => {
@@ -981,6 +1241,21 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
     `;
+
+    // Connect Country Filter
+    const subCountrySelect = document.getElementById("subCountrySelect");
+    if (subCountrySelect) {
+      subCountrySelect.addEventListener("change", (e) => {
+        const newCountry = e.target.value;
+        if (window.handleGlobalCountryChange) {
+          window.handleGlobalCountryChange(newCountry);
+        } else {
+          window.WedEazzyCountryScope = newCountry;
+          state.biFilters.countryCode = newCountry;
+          renderTransactionHistory(store);
+        }
+      });
+    }
 
     const search = document.getElementById("txnSearch");
     if (search) {
@@ -1095,9 +1370,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>Total Paid:</td>
                 <td style="text-align: right;">₹${amount.toFixed(2)}</td>
               </tr>
-            </table>
-          </div>
-
           <div class="footer">
             <p>Thank you for partnering with WedEazzy. This is a computer-generated tax invoice and requires no physical signature.</p>
             <p>© ${new Date().getFullYear()} WedEazzy.com. All Rights Reserved.</p>
@@ -1109,233 +1381,317 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
 
-  // Render MANAGE PLANS
-  function renderManagePlans(store) {
-    const vendors = store.vendors;
+  // Render MANAGE PLANS — Multi-Country Flexible Pricing, Filters & Pagination
+  async function renderManagePlans(store) {
+    const vendors = store.vendors || [];
+    let activeCountryCode = (window.WedEazzyCountryScope && window.WedEazzyCountryScope !== 'all') 
+      ? window.WedEazzyCountryScope.toUpperCase() 
+      : 'IN';
 
-    window.WedEazzyStore.getPlans().then(res => {
-      const plans = res.plans || {
-        Free: { price: 0, maxPhotos: 4, description: "Basic listing visibility. Max 4 gallery photos. Standard search placement." },
-        Premium: { price: 2999, maxPhotos: 10, description: "Higher search ranking. Max 10 gallery photos. Reports access." },
-        Featured: { price: 5999, maxPhotos: 15, description: "Highest search ranking. Max 15 photos. Exclusive category/pincode locks. Advanced insights." }
+    // Fetch dynamic countries list from DB
+    let configuredCountries = [];
+    try {
+      const cRes = await apiFetch('/api/admin/countries');
+      configuredCountries = cRes.countries || [];
+    } catch (_) {}
+
+    if (!configuredCountries.length) {
+      configuredCountries = [
+        { code: 'IN', name: 'India', flag: '🇮🇳', currencySymbol: '₹', currency: 'INR' },
+        { code: 'AE', name: 'UAE', flag: '🇦🇪', currencySymbol: 'AED', currency: 'AED' },
+        { code: 'GB', name: 'UK', flag: '🇬🇧', currencySymbol: '£', currency: 'GBP' },
+        { code: 'US', name: 'USA', flag: '🇺🇸', currencySymbol: '$', currency: 'USD' },
+        { code: 'CA', name: 'Canada', flag: '🇨🇦', currencySymbol: 'CA$', currency: 'CAD' },
+        { code: 'AU', name: 'Australia', flag: '🇦🇺', currencySymbol: 'A$', currency: 'AUD' }
+      ];
+    }
+
+    // Extract unique cities and categories for dynamic dropdown filters
+    const uniqueCities = [...new Set(vendors.map(v => v.city).filter(Boolean))].sort();
+    const uniqueCategories = [...new Set(vendors.map(v => v.category).filter(Boolean))].sort();
+
+    // Fetch full multi-country plans config
+    const res = await window.WedEazzyStore.getPlans('all');
+    const fullConfig = res.plans || {};
+    window._plansFullCache = fullConfig;
+
+    function getCountryPlans(cCode) {
+      const code = cCode.toUpperCase();
+      if (fullConfig.countries && fullConfig.countries[code]) {
+        return fullConfig.countries[code];
+      }
+      if (fullConfig.countries && fullConfig.countries.IN) {
+        return fullConfig.countries.IN;
+      }
+      return {
+        currency: 'INR',
+        currencySymbol: '₹',
+        Free: fullConfig.Free || { price: 0, maxPhotos: 4, maxBusinesses: 1, description: 'Basic listing visibility.' },
+        Premium: fullConfig.Premium || { price: 2999, maxPhotos: 10, maxBusinesses: 3, description: 'Higher search ranking.' },
+        Featured: fullConfig.Featured || { price: 5999, maxPhotos: 15, maxBusinesses: 7, description: 'Highest search ranking.' }
       };
+    }
 
-      el.portalBody.innerHTML = `
-        <div class="spa-tab-wrapper">
-          <div class="locator-breadcrumb">
-            <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Manage Vendor Plans</span>
-          </div>
+    el.portalBody.innerHTML = `
+      <div class="spa-tab-wrapper">
+        <div class="locator-breadcrumb">
+          <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Manage Vendor Plans</span>
+        </div>
 
-          <!-- 3 Plan Pricing Cards -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 28px; margin-top: 15px;">
-            <!-- Free Plan -->
-            <div class="panel-card" style="border-top: 5px solid var(--text-muted); display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px;">
-              <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Tier 1</span>
-              <h3 style="font-size: 1.3rem; font-weight: 800; margin-top: 6px;">Free Plan</h3>
-              <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin: 12px 0;">₹${plans.Free.price} <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">/ forever</span></div>
-              <p style="font-size: 0.77rem; color: var(--text-sub); line-height: 1.4; margin-bottom: 14px;">${plans.Free.description}</p>
-            </div>
-
-            <!-- Premium Plan -->
-            <div class="panel-card" style="border-top: 5px solid var(--brand-rose); display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px; position: relative;">
-              <div style="position: absolute; top: -11px; background: linear-gradient(135deg, var(--brand-rose), var(--brand-gold)); color: white; font-size: 0.6rem; font-weight: 800; padding: 3px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;">Most Popular</div>
-              <span style="font-size: 0.72rem; font-weight: 800; color: var(--brand-rose); text-transform: uppercase; letter-spacing: 0.05em;">Tier 2</span>
-              <h3 style="font-size: 1.3rem; font-weight: 800; margin-top: 6px;">Premium Tier</h3>
-              <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin: 12px 0;">₹${plans.Premium.price.toLocaleString('en-IN')} <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">/ month</span></div>
-              <p style="font-size: 0.77rem; color: var(--text-sub); line-height: 1.4; margin-bottom: 14px;">${plans.Premium.description}</p>
-            </div>
-
-            <!-- Featured Plan -->
-            <div class="panel-card" style="border-top: 5px solid var(--brand-gold); display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px;">
-              <span style="font-size: 0.72rem; font-weight: 800; color: var(--brand-gold); text-transform: uppercase; letter-spacing: 0.05em;">Tier 3</span>
-              <h3 style="font-size: 1.3rem; font-weight: 800; margin-top: 6px;">Featured Lockout</h3>
-              <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin: 12px 0;">₹${plans.Featured.price.toLocaleString('en-IN')} <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">/ month</span></div>
-              <p style="font-size: 0.77rem; color: var(--text-sub); line-height: 1.4; margin-bottom: 14px;">${plans.Featured.description}</p>
+        <!-- Country Scope Selection Bar -->
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--surface-bg); padding: 16px 20px; border-radius: 14px; border: 1px solid var(--border-color); margin-bottom: 24px; flex-wrap: wrap; gap: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.5rem;">🌍</span>
+            <div>
+              <h4 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">Multi-Country Vendor Subscription Manager</h4>
+              <div style="font-size: 0.78rem; color: var(--text-sub); margin-top: 2px;">Customize tier pricing, photo limits, and descriptions independently for every market.</div>
             </div>
           </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-sub);">Select Country Pricing:</label>
+            <select id="plansCountryScopeSelect" style="background: var(--surface-subtle); color: var(--text-main); border: 1px solid var(--border-color); font-weight: 700; font-size: 0.85rem; padding: 8px 14px; border-radius: 10px; cursor: pointer; outline: none;">
+              ${configuredCountries.map(c => `
+                <option value="${c.code}" ${c.code === activeCountryCode ? 'selected' : ''}>
+                  ${c.flag || '🌐'} ${c.name} (${c.currencySymbol || c.currency || c.code})
+                </option>
+              `).join('')}
+            </select>
+          </div>
+        </div>
 
-          <!-- Global Plans Configuration Form -->
-          <div class="panel-card" style="margin-bottom: 28px;">
-            <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
+        <!-- Dynamic Container for Cards and Form -->
+        <div id="countryPlansContentContainer"></div>
+
+        <!-- Vendor Plan Manager Panel with Filters & Pagination -->
+        <div class="panel-card" style="margin-top: 24px; padding: 0; overflow: hidden;">
+          <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding: 20px 24px; background: #ffffff;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; width: 100%;">
               <div class="panel-title-group">
-                <h3 style="font-size: 1.15rem; font-weight: 800;">Global Subscription Plans Settings</h3>
-                <p>Customize the dynamic price, photo limits, and descriptions for all marketplace tiers.</p>
+                <h3 style="font-size: 1.15rem; font-weight: 800; margin: 0; color: var(--text-main);">Vendor Plan Upgrade Panel</h3>
+                <p style="font-size: 0.8rem; color: var(--text-sub); margin: 4px 0 0;">Promote, downgrade, renew, extend, or toggle vendor subscriptions manually across categories, cities, and countries.</p>
               </div>
             </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
-              <div style="background: var(--surface-bg); padding: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
-                <h4 style="margin-top:0; color:var(--text-main); font-weight: 700; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">Free Plan</h4>
-                <div style="margin-bottom: 12px; margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                  <div>
-                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Photos Limit</label>
-                    <input type="number" id="cfgFreePhotos" class="premium-input" style="width:100%;" value="${plans.Free.maxPhotos}">
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Businesses</label>
-                    <input type="number" id="cfgFreeBusinesses" class="premium-input" style="width:100%;" value="${plans.Free.maxBusinesses || 1}">
-                  </div>
-                </div>
-                <div>
-                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Short Description</label>
-                  <input type="text" id="cfgFreeDesc" class="premium-input" style="width:100%;" value="${plans.Free.description}">
-                </div>
-              </div>
 
-              <div style="background: var(--surface-bg); padding: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
-                <h4 style="margin-top:0; color:var(--brand-rose); font-weight: 700; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">Premium Plan</h4>
-                <div style="margin-bottom: 12px; margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-                  <div>
-                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Price (₹)</label>
-                    <input type="number" id="cfgPremiumPrice" class="premium-input" style="width:100%;" value="${plans.Premium.price}">
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Photos</label>
-                    <input type="number" id="cfgPremiumPhotos" class="premium-input" style="width:100%;" value="${plans.Premium.maxPhotos}">
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Biz</label>
-                    <input type="number" id="cfgPremiumBusinesses" class="premium-input" style="width:100%;" value="${plans.Premium.maxBusinesses || 3}">
-                  </div>
-                </div>
-                <div>
-                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Short Description</label>
-                  <input type="text" id="cfgPremiumDesc" class="premium-input" style="width:100%;" value="${plans.Premium.description}">
-                </div>
+            <!-- FILTER TOOLBAR GRID -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 16px; width: 100%;">
+              <!-- Search -->
+              <div style="grid-column: span 2;">
+                <input type="text" id="planVendorSearch" class="premium-input" placeholder="Search by business name, ID, contact..." style="width: 100%;" />
               </div>
-
-              <div style="background: var(--surface-bg); padding: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
-                <h4 style="margin-top:0; color:var(--brand-gold); font-weight: 700; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">Featured Plan</h4>
-                <div style="margin-bottom: 12px; margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-                  <div>
-                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Price (₹)</label>
-                    <input type="number" id="cfgFeaturedPrice" class="premium-input" style="width:100%;" value="${plans.Featured.price}">
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Photos</label>
-                    <input type="number" id="cfgFeaturedPhotos" class="premium-input" style="width:100%;" value="${plans.Featured.maxPhotos}">
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Biz</label>
-                    <input type="number" id="cfgFeaturedBusinesses" class="premium-input" style="width:100%;" value="${plans.Featured.maxBusinesses || 7}">
-                  </div>
-                </div>
-                <div>
-                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Short Description</label>
-                  <input type="text" id="cfgFeaturedDesc" class="premium-input" style="width:100%;" value="${plans.Featured.description}">
-                </div>
+              <!-- Country Filter -->
+              <div>
+                <select id="planVendorCountryFilter" class="premium-input" style="width: 100%; font-weight: 600;">
+                  <option value="">All Countries</option>
+                  ${configuredCountries.map(c => `<option value="${c.code}">${c.flag || ''} ${c.name}</option>`).join('')}
+                </select>
               </div>
-            </div>
-            
-            <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
-              <button id="saveGlobalPlansBtn" class="btn-premium" style="border-color: var(--brand-gold); color: var(--brand-gold); font-weight:700;">
-                <i class="fa-solid fa-floppy-disk"></i> Save Global Plans Settings
-              </button>
+              <!-- City Filter -->
+              <div>
+                <select id="planVendorCityFilter" class="premium-input" style="width: 100%; font-weight: 600;">
+                  <option value="">All Cities</option>
+                  ${uniqueCities.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('')}
+                </select>
+              </div>
+              <!-- Category Filter -->
+              <div>
+                <select id="planVendorCategoryFilter" class="premium-input" style="width: 100%; font-weight: 600;">
+                  <option value="">All Categories</option>
+                  ${uniqueCategories.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('')}
+                </select>
+              </div>
+              <!-- Plan Filter -->
+              <div>
+                <select id="planVendorPlanFilter" class="premium-input" style="width: 100%; font-weight: 600;">
+                  <option value="">All Plans</option>
+                  <option value="Free">Free</option>
+                  <option value="Premium">Premium</option>
+                  <option value="Featured">Featured</option>
+                </select>
+              </div>
+              <!-- Status Filter -->
+              <div>
+                <select id="planVendorStatusFilter" class="premium-input" style="width: 100%; font-weight: 600;">
+                  <option value="">All Statuses</option>
+                  <option value="Active">Active</option>
+                  <option value="Expired">Expired</option>
+                  <option value="Deactivated">Deactivated</option>
+                </select>
+              </div>
+              <!-- Reset Button -->
+              <div>
+                <button id="planVendorResetBtn" class="btn-premium" style="width: 100%; padding: 8px; justify-content: center; font-weight: 700;" title="Reset all filters">
+                  <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Vendor Plan Manager Table -->
-          <div class="panel-card">
-            <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 12px;">
-              <div class="panel-title-group">
-                <h3 style="font-size: 1.15rem; font-weight: 800;">Vendor Plan Upgrade Panel</h3>
-                <p>Promote, downgrade, renew, extend, or toggle vendor subscriptions manually.</p>
+          <!-- TABLE VIEWPORT -->
+          <div class="table-viewport" style="padding: 0 16px;">
+            <table class="grid-table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th>Vendor ID</th>
+                  <th>Business & Location</th>
+                  <th>Current Plan</th>
+                  <th>Status</th>
+                  <th>Expiry Date</th>
+                  <th>Days Left</th>
+                  <th>Gallery Usage</th>
+                  <th>Reports</th>
+                  <th>Insights</th>
+                  <th style="text-align: right;">Subscription Control</th>
+                </tr>
+              </thead>
+              <tbody id="planVendorTableBody">
+                <!-- Dynamic Rows -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- PAGINATION FOOTER -->
+          <div id="planVendorPaginationFooter"></div>
+        </div>
+      </div>
+    `;
+
+    function updateCountryPlansView(cCode) {
+      activeCountryCode = cCode;
+      const cMeta = configuredCountries.find(c => c.code === cCode) || { name: cCode, flag: '🌐', currencySymbol: '₹', currency: 'INR' };
+      const currentPlans = getCountryPlans(cCode);
+      const symbol = currentPlans.currencySymbol || cMeta.currencySymbol || '₹';
+      const cName = cMeta.name || cCode;
+
+      const free = currentPlans.Free || { price: 0, maxPhotos: 4, maxBusinesses: 1, description: '' };
+      const premium = currentPlans.Premium || { price: 2999, maxPhotos: 10, maxBusinesses: 3, description: '' };
+      const featured = currentPlans.Featured || { price: 5999, maxPhotos: 15, maxBusinesses: 7, description: '' };
+
+      const container = document.getElementById('countryPlansContentContainer');
+      if (!container) return;
+
+      container.innerHTML = `
+        <!-- 3 Plan Pricing Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 28px;">
+          <!-- Free Plan Card -->
+          <div class="panel-card" style="border-top: 5px solid var(--text-muted); display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px;">
+            <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Tier 1</span>
+            <h3 style="font-size: 1.3rem; font-weight: 800; margin-top: 6px;">Free Plan</h3>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin: 12px 0;">${symbol}${free.price} <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">/ forever</span></div>
+            <p style="font-size: 0.77rem; color: var(--text-sub); line-height: 1.4; margin-bottom: 14px;">${free.description}</p>
+            <span class="interactive-pill-badge" style="font-size: 0.7rem;">${cMeta.flag} ${cName} Scope</span>
+          </div>
+
+          <!-- Premium Plan Card -->
+          <div class="panel-card" style="border-top: 5px solid var(--brand-rose); display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px; position: relative;">
+            <div style="position: absolute; top: -11px; background: linear-gradient(135deg, var(--brand-rose), var(--brand-gold)); color: white; font-size: 0.6rem; font-weight: 800; padding: 3px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;">Most Popular</div>
+            <span style="font-size: 0.72rem; font-weight: 800; color: var(--brand-rose); text-transform: uppercase; letter-spacing: 0.05em;">Tier 2</span>
+            <h3 style="font-size: 1.3rem; font-weight: 800; margin-top: 6px;">Premium Tier</h3>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin: 12px 0;">${symbol}${Number(premium.price).toLocaleString('en-IN')} <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">/ month</span></div>
+            <p style="font-size: 0.77rem; color: var(--text-sub); line-height: 1.4; margin-bottom: 14px;">${premium.description}</p>
+            <span class="interactive-pill-badge" style="font-size: 0.7rem;">${cMeta.flag} ${cName} Scope</span>
+          </div>
+
+          <!-- Featured Plan Card -->
+          <div class="panel-card" style="border-top: 5px solid var(--brand-gold); display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px;">
+            <span style="font-size: 0.72rem; font-weight: 800; color: var(--brand-gold); text-transform: uppercase; letter-spacing: 0.05em;">Tier 3</span>
+            <h3 style="font-size: 1.3rem; font-weight: 800; margin-top: 6px;">Featured Lockout</h3>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin: 12px 0;">${symbol}${Number(featured.price).toLocaleString('en-IN')} <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">/ month</span></div>
+            <p style="font-size: 0.77rem; color: var(--text-sub); line-height: 1.4; margin-bottom: 14px;">${featured.description}</p>
+            <span class="interactive-pill-badge" style="font-size: 0.7rem;">${cMeta.flag} ${cName} Scope</span>
+          </div>
+        </div>
+
+        <!-- Subscription Plans Settings Form -->
+        <div class="panel-card">
+          <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
+            <div class="panel-title-group">
+              <h3 style="font-size: 1.15rem; font-weight: 800;">${cMeta.flag} ${cName} Subscription Plans Settings</h3>
+              <p>Customize dynamic prices (${symbol}), photo limits, and descriptions for ${cName} vendors.</p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+            <!-- Free Form -->
+            <div style="background: var(--surface-bg); padding: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <h4 style="margin-top:0; color:var(--text-main); font-weight: 700; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">Free Plan</h4>
+              <div style="margin-bottom: 12px; margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Photos</label>
+                  <input type="number" id="cfgFreePhotos" class="premium-input" style="width:100%;" value="${free.maxPhotos || 4}">
+                </div>
+                <div>
+                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Businesses</label>
+                  <input type="number" id="cfgFreeBusinesses" class="premium-input" style="width:100%;" value="${free.maxBusinesses || 1}">
+                </div>
               </div>
-              <input type="text" id="planVendorSearch" class="premium-input" placeholder="Search business..." style="width: 220px;" />
+              <div>
+                <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Short Description</label>
+                <input type="text" id="cfgFreeDesc" class="premium-input" style="width:100%;" value="${escHtml(free.description || '')}">
+              </div>
             </div>
 
-            <div class="table-viewport">
-              <table class="grid-table">
-                <thead>
-                  <tr>
-                    <th>Vendor ID</th>
-                    <th>Business Name</th>
-                    <th>Current Plan</th>
-                    <th>Status</th>
-                    <th>Expiry Date</th>
-                    <th>Days Left</th>
-                    <th>Gallery Usage</th>
-                    <th>Reports</th>
-                    <th>Insights</th>
-                    <th style="text-align: right;">Subscription Control</th>
-                  </tr>
-                </thead>
-                <tbody id="planVendorTableBody">
-                  ${vendors.length === 0 ? `
-                    <tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px;">No vendors registered yet.</td></tr>
-                  ` : vendors.map(v => {
-                    const plan = v.subscriptionPlan || "Free";
-                    const isFree = plan === 'Free';
-                    
-                    let expiryDate = 'N/A';
-                    let daysRemaining = '—';
-                    let isExpired = false;
-                    
-                    if (v.subscriptionExpiry) {
-                      const exp = new Date(v.subscriptionExpiry);
-                      expiryDate = exp.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                      isExpired = exp < new Date();
-                      if (!isExpired) {
-                        daysRemaining = Math.ceil((exp.getTime() - Date.now()) / (24 * 60 * 60 * 1000)) + ' days';
-                      } else {
-                        daysRemaining = 'Expired';
-                      }
-                    }
-
-                    const planMaxPhotos = plans[plan]?.maxPhotos || 4;
-                    const photoCount = v.photoCount || 0;
-                    const galleryUsage = `${photoCount}/${planMaxPhotos}`;
-
-                    const reportsAccess = (plans[plan]?.reportsAccess) ? 'Yes' : 'No';
-                    const insightsAccess = (plans[plan]?.insightsAccess) ? 'Yes' : 'No';
-
-                    let statusText = 'Active';
-                    let statusClass = 'status-approved';
-                    if (v.status !== 'approved') {
-                      statusText = 'Deactivated';
-                      statusClass = 'status-pending';
-                    } else if (isExpired && !isFree) {
-                      statusText = 'Expired';
-                      statusClass = 'status-cancelled';
-                    } else if (isFree) {
-                      statusText = 'Free';
-                      statusClass = 'status-approved';
-                    }
-
-                    return `
-                      <tr data-vendor-name="${escHtml((v.name || '').toLowerCase())}">
-                        <td><strong>#${escHtml(v.id)}</strong></td>
-                        <td><strong>${escHtml(v.name)}</strong></td>
-                        <td><span class="interactive-pill-badge" style="font-size: 0.7rem; border-color: rgba(59, 130, 246, 0.15); color: var(--brand-blue);">${plan}</span></td>
-                        <td><span class="status-pill ${statusClass}">${statusText}</span></td>
-                        <td>${expiryDate}</td>
-                        <td><strong>${daysRemaining}</strong></td>
-                        <td><span style="font-size: 12px; font-weight: 700; color: ${photoCount > planMaxPhotos ? 'var(--brand-rose)' : 'var(--text-sub)'}">${galleryUsage}</span></td>
-                        <td><strong>${reportsAccess}</strong></td>
-                        <td><strong>${insightsAccess}</strong></td>
-                        <td style="text-align: right;">
-                          <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                            <button class="btn-premium" style="font-size: 0.72rem; padding: 4px 8px; border-color: var(--brand-gold); color: var(--brand-gold);"
-                              onclick="window.openEditSubscriptionModal('${v.id}', '${plan}', '${v.subscriptionExpiry || ''}', ${v.status === 'approved'}, ${JSON.stringify(plans).replace(/"/g, '&quot;')})">
-                              <i class="fa-solid fa-pen-to-square"></i> Edit Subscription
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    `;
-                  }).join("")}
-                </tbody>
-              </table>
+            <!-- Premium Form -->
+            <div style="background: var(--surface-bg); padding: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <h4 style="margin-top:0; color:var(--brand-rose); font-weight: 700; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">Premium Plan</h4>
+              <div style="margin-bottom: 12px; margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                <div>
+                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Price (${symbol})</label>
+                  <input type="number" id="cfgPremiumPrice" class="premium-input" style="width:100%;" value="${premium.price}">
+                </div>
+                <div>
+                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Photos</label>
+                  <input type="number" id="cfgPremiumPhotos" class="premium-input" style="width:100%;" value="${premium.maxPhotos || 10}">
+                </div>
+                <div>
+                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Biz</label>
+                  <input type="number" id="cfgPremiumBusinesses" class="premium-input" style="width:100%;" value="${premium.maxBusinesses || 3}">
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Short Description</label>
+                <input type="text" id="cfgPremiumDesc" class="premium-input" style="width:100%;" value="${escHtml(premium.description || '')}">
+              </div>
             </div>
+
+            <!-- Featured Form -->
+            <div style="background: var(--surface-bg); padding: 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+              <h4 style="margin-top:0; color:var(--brand-gold); font-weight: 700; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">Featured Plan</h4>
+              <div style="margin-bottom: 12px; margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                <div>
+                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Price (${symbol})</label>
+                  <input type="number" id="cfgFeaturedPrice" class="premium-input" style="width:100%;" value="${featured.price}">
+                </div>
+                <div>
+                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Photos</label>
+                  <input type="number" id="cfgFeaturedPhotos" class="premium-input" style="width:100%;" value="${featured.maxPhotos || 15}">
+                </div>
+                <div>
+                  <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Max Biz</label>
+                  <input type="number" id="cfgFeaturedBusinesses" class="premium-input" style="width:100%;" value="${featured.maxBusinesses || 7}">
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Short Description</label>
+                <input type="text" id="cfgFeaturedDesc" class="premium-input" style="width:100%;" value="${escHtml(featured.description || '')}">
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+            <button id="saveGlobalPlansBtn" class="btn-premium" style="border-color: var(--brand-gold); color: var(--brand-gold); font-weight:700;">
+              <i class="fa-solid fa-floppy-disk"></i> Save ${cName} Plan Settings
+            </button>
           </div>
         </div>
       `;
 
-      // Save Global plans handler
+      // Save handler for current country
       const saveBtn = document.getElementById("saveGlobalPlansBtn");
       if (saveBtn) {
-        saveBtn.addEventListener("click", () => {
-          const updatedPlans = {
+        saveBtn.addEventListener("click", async () => {
+          const updatedCountryPlans = {
+            currency: cMeta.currency || 'INR',
+            currencySymbol: symbol,
             Free: {
               price: 0,
               maxPhotos: parseInt(document.getElementById('cfgFreePhotos').value) || 4,
@@ -1345,7 +1701,7 @@ document.addEventListener("DOMContentLoaded", () => {
               description: document.getElementById('cfgFreeDesc').value
             },
             Premium: {
-              price: parseInt(document.getElementById('cfgPremiumPrice').value) || 2999,
+              price: parseFloat(document.getElementById('cfgPremiumPrice').value) || 0,
               maxPhotos: parseInt(document.getElementById('cfgPremiumPhotos').value) || 10,
               maxBusinesses: parseInt(document.getElementById('cfgPremiumBusinesses').value) || 3,
               reportsAccess: true,
@@ -1353,7 +1709,7 @@ document.addEventListener("DOMContentLoaded", () => {
               description: document.getElementById('cfgPremiumDesc').value
             },
             Featured: {
-              price: parseInt(document.getElementById('cfgFeaturedPrice').value) || 5999,
+              price: parseFloat(document.getElementById('cfgFeaturedPrice').value) || 0,
               maxPhotos: parseInt(document.getElementById('cfgFeaturedPhotos').value) || 15,
               maxBusinesses: parseInt(document.getElementById('cfgFeaturedBusinesses').value) || 7,
               reportsAccess: true,
@@ -1362,32 +1718,306 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           };
 
-          window.WedEazzyStore.updatePlans(updatedPlans).then(res => {
-            if (res.ok) {
-              window.showToast('Global plans configuration updated successfully!', 'success');
-              renderManagePlans(window.WedEazzyStore.get());
-            } else {
-              window.showToast(res.message || 'Failed to update plans', 'error');
-            }
-          });
+          const res = await window.WedEazzyStore.updatePlans(updatedCountryPlans, cCode);
+          if (res.ok) {
+            window.showToast(`${cName} plan configuration saved successfully!`, 'success');
+            if (res.plans) window._plansFullCache = res.plans;
+            updateCountryPlansView(cCode);
+          } else {
+            window.showToast(res.message || 'Failed to update plans', 'error');
+          }
         });
+      }
+    }
+
+    // Initial view render
+    updateCountryPlansView(activeCountryCode);
+
+    // Filter & Pagination State
+    let tableState = {
+      search: '',
+      country: '',
+      city: '',
+      category: '',
+      plan: '',
+      status: '',
+      page: 1,
+      perPage: 20
+    };
+
+    window.setPlanVendorPage = function(p) {
+      tableState.page = p;
+      renderPlanVendorTable();
+    };
+
+    function renderPlanVendorTable() {
+      const currentPlans = getCountryPlans(activeCountryCode);
+
+      // Filter vendors
+      let filtered = vendors.filter(v => {
+        if (tableState.search) {
+          const q = tableState.search.toLowerCase();
+          const matchName = (v.name || '').toLowerCase().includes(q);
+          const matchId = (v.id || '').toLowerCase().includes(q);
+          const matchContact = (v.contact || '').toLowerCase().includes(q);
+          const matchEmail = (v.email || '').toLowerCase().includes(q);
+          if (!matchName && !matchId && !matchContact && !matchEmail) return false;
+        }
+
+        if (tableState.country) {
+          const cCode = tableState.country.toUpperCase();
+          if ((v.countryCode || '').toUpperCase() !== cCode) {
+            const cMeta = configuredCountries.find(c => c.code === cCode);
+            if (!cMeta || (v.country || '').toLowerCase() !== cMeta.name.toLowerCase()) return false;
+          }
+        }
+
+        if (tableState.city && (v.city || '').toLowerCase() !== tableState.city.toLowerCase()) {
+          return false;
+        }
+
+        if (tableState.category && (v.category || '').toLowerCase() !== tableState.category.toLowerCase()) {
+          return false;
+        }
+
+        const vPlan = v.subscriptionPlan || "Free";
+        if (tableState.plan && vPlan.toLowerCase() !== tableState.plan.toLowerCase()) {
+          return false;
+        }
+
+        if (tableState.status) {
+          const isFree = vPlan === 'Free';
+          const exp = v.subscriptionExpiry ? new Date(v.subscriptionExpiry) : null;
+          const isExpired = exp ? exp < new Date() : false;
+          let statusText = 'Active';
+          if (v.status !== 'approved') statusText = 'Deactivated';
+          else if (isExpired && !isFree) statusText = 'Expired';
+          else if (isFree) statusText = 'Active';
+
+          if (statusText.toLowerCase() !== tableState.status.toLowerCase()) return false;
+        }
+
+        return true;
+      });
+
+      const totalItems = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(totalItems / tableState.perPage));
+      if (tableState.page > totalPages) tableState.page = totalPages;
+
+      const startIdx = (tableState.page - 1) * tableState.perPage;
+      const endIdx = Math.min(startIdx + tableState.perPage, totalItems);
+      const pagedList = filtered.slice(startIdx, endIdx);
+
+      const tableBody = document.getElementById('planVendorTableBody');
+      if (tableBody) {
+        if (pagedList.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 36px;">No matching vendors found for active filters.</td></tr>`;
+        } else {
+          tableBody.innerHTML = pagedList.map(v => {
+            const plan = v.subscriptionPlan || "Free";
+            const isFree = plan === 'Free';
+            let expiryDate = 'N/A';
+            let daysRemaining = '—';
+            let isExpired = false;
+
+            if (v.subscriptionExpiry) {
+              const exp = new Date(v.subscriptionExpiry);
+              expiryDate = exp.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+              isExpired = exp < new Date();
+              if (!isExpired) {
+                daysRemaining = Math.ceil((exp.getTime() - Date.now()) / (24 * 60 * 60 * 1000)) + ' days';
+              } else {
+                daysRemaining = 'Expired';
+              }
+            }
+
+            const planMaxPhotos = currentPlans[plan]?.maxPhotos || 4;
+            const photoCount = v.photoCount || 0;
+            const galleryUsage = `${photoCount}/${planMaxPhotos}`;
+
+            const reportsAccess = (currentPlans[plan]?.reportsAccess) ? 'Yes' : 'No';
+            const insightsAccess = (currentPlans[plan]?.insightsAccess) ? 'Yes' : 'No';
+
+            let statusText = 'Active';
+            let statusClass = 'status-approved';
+            if (v.status !== 'approved') {
+              statusText = 'Deactivated';
+              statusClass = 'status-pending';
+            } else if (isExpired && !isFree) {
+              statusText = 'Expired';
+              statusClass = 'status-cancelled';
+            } else if (isFree) {
+              statusText = 'Free';
+              statusClass = 'status-approved';
+            }
+
+            return `
+              <tr>
+                <td><strong>#${escHtml(v.id)}</strong></td>
+                <td>
+                  <strong>${escHtml(v.name)}</strong>
+                  <div style="font-size: 0.72rem; color: var(--text-sub); margin-top: 2px;">
+                    ${escHtml(v.city || '—')}, ${escHtml(v.country || 'India')} (${escHtml(v.category || 'Vendor')})
+                  </div>
+                </td>
+                <td><span class="interactive-pill-badge" style="font-size: 0.7rem; border-color: rgba(59, 130, 246, 0.15); color: var(--brand-blue);">${plan}</span></td>
+                <td><span class="status-pill ${statusClass}">${statusText}</span></td>
+                <td>${expiryDate}</td>
+                <td><strong>${daysRemaining}</strong></td>
+                <td><span style="font-size: 12px; font-weight: 700; color: ${photoCount > planMaxPhotos ? 'var(--brand-rose)' : 'var(--text-sub)'}">${galleryUsage}</span></td>
+                <td><strong>${reportsAccess}</strong></td>
+                <td><strong>${insightsAccess}</strong></td>
+                <td style="text-align: right;">
+                  <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button class="btn-premium" style="font-size: 0.72rem; padding: 4px 8px; border-color: var(--brand-gold); color: var(--brand-gold);"
+                      onclick="window.openEditSubscriptionModal('${v.id}', '${plan}', '${v.subscriptionExpiry || ''}', ${v.status === 'approved'})">
+                      <i class="fa-solid fa-pen-to-square"></i> Edit Subscription
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
       }
 
-      const search = document.getElementById("planVendorSearch");
-      if (search) {
-        search.addEventListener("input", (e) => {
-          const q = e.target.value.toLowerCase();
-          document.querySelectorAll("#planVendorTableBody tr").forEach(row => {
-            const name = row.getAttribute("data-vendor-name");
-            if (name) row.style.display = name.includes(q) ? "" : "none";
+      // Render Pagination Footer
+      const paginationFooter = document.getElementById('planVendorPaginationFooter');
+      if (paginationFooter) {
+        paginationFooter.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 14px; background: var(--surface-bg); border-radius: 0 0 12px 12px;">
+            <div style="font-size: 0.8rem; color: var(--text-sub); font-weight: 600;">
+              Showing ${totalItems === 0 ? 0 : startIdx + 1} to ${endIdx} of ${totalItems.toLocaleString('en-IN')} vendors
+              ${filtered.length !== vendors.length ? `<span style="color: var(--brand-rose);"> (filtered from ${vendors.length.toLocaleString('en-IN')} total)</span>` : ''}
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.78rem; color: var(--text-sub);">Per page:</span>
+                <select id="planVendorPerPageSelect" style="background: var(--surface-subtle); border: 1px solid var(--border-color); font-size: 0.78rem; padding: 4px 8px; border-radius: 6px; font-weight: 700; cursor: pointer;">
+                  <option value="10" ${tableState.perPage === 10 ? 'selected' : ''}>10</option>
+                  <option value="20" ${tableState.perPage === 20 ? 'selected' : ''}>20</option>
+                  <option value="50" ${tableState.perPage === 50 ? 'selected' : ''}>50</option>
+                  <option value="100" ${tableState.perPage === 100 ? 'selected' : ''}>100</option>
+                </select>
+              </div>
+
+              <div style="display: flex; gap: 6px;">
+                <button class="btn-premium" ${tableState.page <= 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="window.setPlanVendorPage(1)" title="First Page">
+                  <i class="fa-solid fa-angles-left"></i>
+                </button>
+                <button class="btn-premium" ${tableState.page <= 1 ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="window.setPlanVendorPage(${tableState.page - 1})" title="Previous Page">
+                  <i class="fa-solid fa-angle-left"></i> Prev
+                </button>
+                <span style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; background: var(--surface-subtle); border-radius: 8px; border: 1px solid var(--border-color);">
+                  Page ${tableState.page} of ${totalPages}
+                </span>
+                <button class="btn-premium" ${tableState.page >= totalPages ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="window.setPlanVendorPage(${tableState.page + 1})" title="Next Page">
+                  Next <i class="fa-solid fa-angle-right"></i>
+                </button>
+                <button class="btn-premium" ${tableState.page >= totalPages ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''} onclick="window.setPlanVendorPage(${totalPages})" title="Last Page">
+                  <i class="fa-solid fa-angles-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const perPageEl = document.getElementById('planVendorPerPageSelect');
+        if (perPageEl) {
+          perPageEl.addEventListener('change', (e) => {
+            tableState.perPage = parseInt(e.target.value, 10) || 20;
+            tableState.page = 1;
+            renderPlanVendorTable();
           });
-        });
+        }
       }
-    });
+    }
+
+    // Attach Event Listeners to Filter Controls
+    const searchEl = document.getElementById("planVendorSearch");
+    if (searchEl) {
+      searchEl.addEventListener("input", (e) => {
+        tableState.search = e.target.value;
+        tableState.page = 1;
+        renderPlanVendorTable();
+      });
+    }
+
+    const countryFilterEl = document.getElementById("planVendorCountryFilter");
+    if (countryFilterEl) {
+      countryFilterEl.addEventListener("change", (e) => {
+        tableState.country = e.target.value;
+        tableState.page = 1;
+        renderPlanVendorTable();
+      });
+    }
+
+    const cityFilterEl = document.getElementById("planVendorCityFilter");
+    if (cityFilterEl) {
+      cityFilterEl.addEventListener("change", (e) => {
+        tableState.city = e.target.value;
+        tableState.page = 1;
+        renderPlanVendorTable();
+      });
+    }
+
+    const categoryFilterEl = document.getElementById("planVendorCategoryFilter");
+    if (categoryFilterEl) {
+      categoryFilterEl.addEventListener("change", (e) => {
+        tableState.category = e.target.value;
+        tableState.page = 1;
+        renderPlanVendorTable();
+      });
+    }
+
+    const planFilterEl = document.getElementById("planVendorPlanFilter");
+    if (planFilterEl) {
+      planFilterEl.addEventListener("change", (e) => {
+        tableState.plan = e.target.value;
+        tableState.page = 1;
+        renderPlanVendorTable();
+      });
+    }
+
+    const statusFilterEl = document.getElementById("planVendorStatusFilter");
+    if (statusFilterEl) {
+      statusFilterEl.addEventListener("change", (e) => {
+        tableState.status = e.target.value;
+        tableState.page = 1;
+        renderPlanVendorTable();
+      });
+    }
+
+    const resetBtnEl = document.getElementById("planVendorResetBtn");
+    if (resetBtnEl) {
+      resetBtnEl.addEventListener("click", () => {
+        tableState = { search: '', country: '', city: '', category: '', plan: '', status: '', page: 1, perPage: 20 };
+        if (searchEl) searchEl.value = '';
+        if (countryFilterEl) countryFilterEl.value = '';
+        if (cityFilterEl) cityFilterEl.value = '';
+        if (categoryFilterEl) categoryFilterEl.value = '';
+        if (planFilterEl) planFilterEl.value = '';
+        if (statusFilterEl) statusFilterEl.value = '';
+        renderPlanVendorTable();
+      });
+    }
+
+    // Attach Country Selector Change Listener for 0ms Smooth Switch
+    const countrySelectEl = document.getElementById('plansCountryScopeSelect');
+    if (countrySelectEl) {
+      countrySelectEl.addEventListener('change', (e) => {
+        updateCountryPlansView(e.target.value);
+        renderPlanVendorTable();
+      });
+    }
+
+    // Initial table render
+    renderPlanVendorTable();
   }
 
   // Edit Subscription Modal Handlers
-  window.openEditSubscriptionModal = function(vendorId, currentPlan, expiryDate, isActive, plans) {
+  window.openEditSubscriptionModal = function(vendorId, currentPlan, expiryDate, isActive) {
     let modal = document.getElementById('editSubscriptionModal');
     if (!modal) {
       modal = document.createElement('div');
@@ -1396,6 +2026,15 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.appendChild(modal);
     }
     
+    const activeCode = (window.WedEazzyCountryScope && window.WedEazzyCountryScope !== 'all') ? window.WedEazzyCountryScope.toUpperCase() : 'IN';
+    const plansCache = window._plansFullCache || {};
+    const countryPlans = (plansCache.countries && plansCache.countries[activeCode]) ? plansCache.countries[activeCode] : (plansCache.countries && plansCache.countries.IN ? plansCache.countries.IN : plansCache);
+
+    const symbol = countryPlans?.currencySymbol || '₹';
+    const freePrice = countryPlans?.Free?.price ?? 0;
+    const premiumPrice = countryPlans?.Premium?.price ?? 2999;
+    const featuredPrice = countryPlans?.Featured?.price ?? 5999;
+
     const formattedDate = expiryDate ? new Date(expiryDate).toISOString().slice(0, 10) : '';
 
     modal.innerHTML = `
@@ -1409,9 +2048,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <div>
             <label style="font-size: 12px; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 6px;">Select Subscription Plan</label>
             <select id="editSubPlan" class="premium-input" style="width: 100%;">
-              <option value="Free" ${currentPlan === 'Free' ? 'selected' : ''}>Free (₹${plans.Free.price}/mo)</option>
-              <option value="Premium" ${currentPlan === 'Premium' ? 'selected' : ''}>Premium (₹${plans.Premium.price.toLocaleString('en-IN')}/mo)</option>
-              <option value="Featured" ${currentPlan === 'Featured' ? 'selected' : ''}>Featured (₹${plans.Featured.price.toLocaleString('en-IN')}/mo)</option>
+              <option value="Free" ${currentPlan === 'Free' ? 'selected' : ''}>Free (${symbol}${freePrice}/mo)</option>
+              <option value="Premium" ${currentPlan === 'Premium' ? 'selected' : ''}>Premium (${symbol}${Number(premiumPrice).toLocaleString('en-IN')}/mo)</option>
+              <option value="Featured" ${currentPlan === 'Featured' ? 'selected' : ''}>Featured (${symbol}${Number(featuredPrice).toLocaleString('en-IN')}/mo)</option>
             </select>
           </div>
 
@@ -2505,220 +3144,1117 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Render SEND EMAILS campaign
-  function renderSendEmails(store) {
-    const segmentLabels = {
-      all: 'All Accounts (Couples & Vendors)',
-      vendors: 'Registered Wedding Vendors Only',
-      couples: 'Couples Planning Weddings Only',
-    };
-    const statusLabels = {
-      sending: { text: 'SENDING…', color: '#C9A33A' },
-      completed: { text: 'DELIVERED', color: '#10b981' },
-      partial: { text: 'PARTIALLY DELIVERED', color: '#f59e0b' },
-      failed: { text: 'FAILED', color: '#dc2626' },
-    };
 
-    function renderHistoryLogs(campaigns) {
-      if (!campaigns || campaigns.length === 0) {
-        return `<p style="font-size: 0.8rem; color: var(--text-sub);">No campaigns dispatched yet.</p>`;
-      }
-      return campaigns.map(c => {
-        const status = statusLabels[c.status] || statusLabels.sending;
-        const date = new Date(c.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
-        const segmentLabel = c.segment && c.segment.startsWith('vendor_category:')
-          ? `Vendors — ${c.segment.slice('vendor_category:'.length)}`
-          : (segmentLabels[c.segment] || c.segment);
-        return `
-          <div style="border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; background-color: var(--canvas-bg);">
-            <div style="display: flex; justify-content: space-between; font-size: 0.77rem; margin-bottom: 4px;">
-              <strong>${escapeHtmlUi(c.name)}</strong>
-              <span style="color: ${status.color}; font-weight: bold;">${status.text}</span>
+  // -------------------------------------------------------------
+  // EMAIL CAMPAIGN CENTER (SAAS EMAIL MARKETING CONTROL CENTER)
+  // -------------------------------------------------------------
+
+  // Global state for Email Campaign Center
+  state.emailCenter = state.emailCenter || {
+    audienceRules: {
+      audienceType: 'all',
+      categories: [],
+      cities: [],
+      tier: '',
+      claimStatus: '',
+      verificationStatus: '',
+      status: '',
+      hasPhone: false,
+      hasPhotos: false
+    },
+    customEmails: '',
+    previewDevice: 'desktop',
+    sampleRole: 'vendor',
+    activeTab: 'builder'
+  };
+
+  async function renderSendEmails(store) {
+    // 1. Render Skeleton / Initial Frame
+    el.portalBody.innerHTML = `
+      <div class="spa-tab-wrapper" style="display: flex; flex-direction: column; gap: 24px; padding-bottom: 50px;">
+        <!-- BREADCRUMB & HEADER -->
+        <div>
+          <div class="locator-breadcrumb">
+            <a href="#">WedEazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Email Campaign Center</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 6px;">
+            <div>
+              <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); margin: 0;">Email Campaign Center</h2>
+              <p style="margin-top: 4px; color: var(--text-muted); font-size: 0.85rem;">Create, target, preview and monitor email campaigns across WedEazzy.</p>
             </div>
-            <p style="font-size: 0.72rem; color: var(--text-sub);">Subject: ${escapeHtmlUi(c.subject)}</p>
-            <div style="display: flex; gap: 16px; font-size: 0.68rem; color: var(--text-muted); margin-top: 6px;">
-              <span>Sent: ${c.sentCount}/${c.totalRecipients} (${escapeHtmlUi(segmentLabel)})</span>
-              ${c.failedCount > 0 ? `<span>Failed: ${c.failedCount}</span>` : ''}
-              <span>Fires: ${date}</span>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn-premium" onclick="window.loadEmailTemplatesModal()"><i class="fa-solid fa-folder-open"></i> Templates</button>
+              <button class="btn-premium btn-premium-rose" onclick="window.scrollToCampaignBuilder()"><i class="fa-solid fa-plus"></i> Create Campaign</button>
             </div>
           </div>
-        `;
-      }).join('');
-    }
-
-    function escapeHtmlUi(str) {
-      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-
-    el.portalBody.innerHTML = `
-      <div class="spa-tab-wrapper">
-        <div class="locator-breadcrumb">
-          <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Send Broadcast Campaign</span>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 15px;">
-          <!-- Broadcast Form -->
-          <div class="panel-card">
-            <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 14px;">
-              <h3 style="font-size: 1.15rem; font-weight: 800;"><i class="fa-regular fa-paper-plane" style="color: var(--brand-rose);"></i> Bulk Email Campaign Broadcast</h3>
-              <p>Configure custom HTML news blasts and promotional letters to segmented users.</p>
+        <!-- TOP STATS CARDS -->
+        <div id="emailCenterStatsCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div class="panel-card loading-skeleton" style="height: 100px; border-radius: 12px;"></div>
+          <div class="panel-card loading-skeleton" style="height: 100px; border-radius: 12px;"></div>
+          <div class="panel-card loading-skeleton" style="height: 100px; border-radius: 12px;"></div>
+          <div class="panel-card loading-skeleton" style="height: 100px; border-radius: 12px;"></div>
+          <div class="panel-card loading-skeleton" style="height: 100px; border-radius: 12px;"></div>
+        </div>
+
+        <!-- MAIN TWO-COLUMN STUDIO LAYOUT -->
+        <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 24px; align-items: start;" id="campaignStudioContainer">
+          
+          <!-- LEFT COLUMN: CAMPAIGN BUILDER -->
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            
+            <!-- SECTION 1: CAMPAIGN DETAILS -->
+            <div class="panel-card">
+              <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
+                <h3 style="font-size: 1.1rem; font-weight: 800;"><i class="fa-regular fa-pen-to-square" style="color: var(--brand-rose); margin-right: 6px;"></i> 1. Campaign Details</h3>
+                <p>Internal identifiers and email subject line.</p>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="modal-form-group">
+                  <label style="font-weight: 700; font-size: 0.8rem;">Internal Campaign Name</label>
+                  <input type="text" id="ec_name" class="premium-input" placeholder="e.g. Wedding Season Vendor Outreach — August" required />
+                </div>
+
+                <div class="modal-form-group">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-weight: 700; font-size: 0.8rem;">Email Subject Line</label>
+                    <span id="ec_subject_count" style="font-size: 0.7rem; color: var(--text-muted);">0 / 150 chars</span>
+                  </div>
+                  <input type="text" id="ec_subject" class="premium-input" placeholder="e.g. Grow Your Wedding Business with WedEazzy" maxlength="150" required oninput="document.getElementById('ec_subject_count').textContent = this.value.length + ' / 150 chars'; window.updateEmailLivePreview();" />
+                </div>
+
+                <div class="modal-form-group">
+                  <label style="font-weight: 700; font-size: 0.8rem;">Preview Text / Preheader (Optional)</label>
+                  <input type="text" id="ec_preview_text" class="premium-input" placeholder="e.g. Reach more couples searching for wedding vendors in your city." oninput="window.updateEmailLivePreview();" />
+                </div>
+
+                <div style="padding: 12px; background: var(--canvas-bg); border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.78rem; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <span style="color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; font-weight: 700; display: block;">Configured SMTP Sender</span>
+                    <strong>WedEazzy &lt;info@wedeazzy.com&gt;</strong>
+                  </div>
+                  <span class="interactive-pill-badge" style="font-size: 0.68rem; background: rgba(16,185,129,0.1); color: #10b981;">Hostinger SMTP Active</span>
+                </div>
+              </div>
             </div>
 
-            <form id="formBulkEmail" style="display: flex; flex-direction: column; gap: 14px;">
+            <!-- SECTION 2: RECENT AUDIENCE BUILDER -->
+            <div class="panel-card">
+              <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
+                <h3 style="font-size: 1.1rem; font-weight: 800;"><i class="fa-solid fa-users-gear" style="color: var(--brand-rose); margin-right: 6px;"></i> 2. Recipient Audience Builder</h3>
+                <p>Target specific segments, cities, categories, and tiers.</p>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                
+                <div class="modal-form-group">
+                  <label style="font-weight: 700; font-size: 0.8rem;">Target Audience Type</label>
+                  <select id="ec_audience_type" class="premium-select" onchange="window.updateAudienceRulesFromUi();">
+                    <option value="all">All Registered Accounts (Couples & Vendors)</option>
+                    <option value="couples">Couples Planning Weddings Only</option>
+                    <option value="vendors">All Registered Vendors Only</option>
+                    <option value="claimed">Claimed Vendors Only (Linked Ownership)</option>
+                    <option value="unclaimed">Unclaimed Vendors Only (Directory Listings)</option>
+                    <option value="verified">Verified Vendors Only (Admin Verified)</option>
+                    <option value="unverified">Unverified Vendors Only</option>
+                    <option value="active">Active Accounts Only</option>
+                  </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                  <div class="modal-form-group">
+                    <label style="font-weight: 700; font-size: 0.8rem;">Target Country</label>
+                    <select id="ec_country_code" class="premium-select" onchange="window.updateAudienceRulesFromUi();">
+                      <option value="all">🌍 All Countries</option>
+                      <option value="IN">🇮🇳 India</option>
+                      <option value="AE">🇦🇪 UAE</option>
+                      <option value="GB">🇬🇧 UK</option>
+                      <option value="US">🇺🇸 USA</option>
+                      <option value="CA">🇨🇦 Canada</option>
+                      <option value="AU">🇦🇺 Australia</option>
+                    </select>
+                  </div>
+
+                  <div class="modal-form-group">
+                    <label style="font-weight: 700; font-size: 0.8rem;">Vendor Category</label>
+                    <select id="ec_category_slug" class="premium-select" onchange="window.updateAudienceRulesFromUi();">
+                      <option value="">All Categories</option>
+                    </select>
+                  </div>
+
+                  <div class="modal-form-group">
+                    <label style="font-weight: 700; font-size: 0.8rem;">Target City</label>
+                    <select id="ec_city_slug" class="premium-select" onchange="window.updateAudienceRulesFromUi();">
+                      <option value="">All Active Cities</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div class="modal-form-group">
+                    <label style="font-weight: 700; font-size: 0.8rem;">Vendor Tier</label>
+                    <select id="ec_tier" class="premium-select" onchange="window.updateAudienceRulesFromUi();">
+                      <option value="">All Tiers</option>
+                      <option value="basic">Basic Tier</option>
+                      <option value="featured">Featured Tier</option>
+                    </select>
+                  </div>
+
+                  <div class="modal-form-group">
+                    <label style="font-weight: 700; font-size: 0.8rem;">Profile Completeness</label>
+                    <select id="ec_has_phone" class="premium-select" onchange="window.updateAudienceRulesFromUi();">
+                      <option value="">Any Profile State</option>
+                      <option value="true">Must Have Phone Number</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Manual & CSV Recipients -->
+                <div class="modal-form-group" style="margin-top: 4px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label style="font-weight: 700; font-size: 0.8rem;">Manual / Custom Email Addresses (Optional)</label>
+                    <button class="btn-premium" style="font-size: 0.7rem; padding: 2px 8px;" onclick="window.triggerCsvRecipientImport()"><i class="fa-solid fa-file-csv"></i> Import CSV</button>
+                  </div>
+                  <textarea id="ec_custom_emails" class="premium-input" style="height: 60px; font-size: 0.78rem;" placeholder="Paste emails separated by commas or newlines (e.g. rahul@example.com, info@royalpalace.com)" oninput="window.updateAudienceRulesFromUi();"></textarea>
+                </div>
+
+                <!-- REAL-TIME AUDIENCE CALCULATOR BOX -->
+                <div id="ec_audience_counter_box" style="padding: 16px; border-radius: 10px; background: rgba(220, 31, 48, 0.04); border: 1px solid rgba(220, 31, 48, 0.2); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                  <div>
+                    <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; color: var(--brand-rose); letter-spacing: 0.04em;">Target Audience Match</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin-top: 2px;" id="ec_counter_total">Calculating audience…</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;" id="ec_counter_details">Valid emails ready for broadcast</div>
+                  </div>
+                  <button class="btn-premium" style="font-size: 0.78rem; padding: 6px 14px;" onclick="window.openRecipientPreviewModal()"><i class="fa-solid fa-list-check"></i> View Recipients</button>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- SECTION 3: EMAIL CONTENT EDITOR -->
+            <div class="panel-card">
+              <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div class="panel-title-group">
+                  <h3 style="font-size: 1.1rem; font-weight: 800;"><i class="fa-solid fa-code" style="color: var(--brand-rose); margin-right: 6px;"></i> 3. Email Content & Personalization</h3>
+                  <p>Compose rich HTML email content with dynamic placeholders.</p>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn-premium active" id="btnContentVisualTab" style="font-size: 0.72rem; padding: 4px 10px;" onclick="window.switchEditorTab('visual')">Visual Editor</button>
+                  <button class="btn-premium" id="btnContentHtmlTab" style="font-size: 0.72rem; padding: 4px 10px;" onclick="window.switchEditorTab('html')">HTML Source</button>
+                </div>
+              </div>
+
+              <!-- PERSONALIZATION TAGS TOOLBAR -->
+              <div style="padding: 10px; background: var(--canvas-bg); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 14px;">
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-sub); margin-bottom: 6px;">
+                  <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--brand-gold);"></i> Click to Insert Personalization Tags:
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button class="btn-premium" style="font-size: 0.7rem; padding: 2px 8px;" onclick="window.insertPersonalizationTag('{{name}}')">{{name}}</button>
+                  <button class="btn-premium" style="font-size: 0.7rem; padding: 2px 8px;" onclick="window.insertPersonalizationTag('{{businessName}}')">{{businessName}}</button>
+                  <button class="btn-premium" style="font-size: 0.7rem; padding: 2px 8px;" onclick="window.insertPersonalizationTag('{{city}}')">{{city}}</button>
+                  <button class="btn-premium" style="font-size: 0.7rem; padding: 2px 8px;" onclick="window.insertPersonalizationTag('{{category}}')">{{category}}</button>
+                  <button class="btn-premium" style="font-size: 0.7rem; padding: 2px 8px;" onclick="window.insertPersonalizationTag('{{vendorLoginUrl}}')">{{vendorLoginUrl}}</button>
+                  <button class="btn-premium" style="font-size: 0.7rem; padding: 2px 8px;" onclick="window.insertPersonalizationTag('{{claimUrl}}')">{{claimUrl}}</button>
+                </div>
+              </div>
+
+              <!-- QUICK CONTENT BLOCK BUILDERS -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;">
+                <button class="btn-premium" style="font-size: 0.72rem; padding: 4px 8px;" onclick="window.appendBlock('heading')">+ Heading Block</button>
+                <button class="btn-premium btn-premium-rose" style="font-size: 0.72rem; padding: 4px 8px;" onclick="window.triggerInsertImageModal()"><i class="fa-solid fa-image"></i> Upload & Insert Image</button>
+                <button class="btn-premium" style="font-size: 0.72rem; padding: 4px 8px;" onclick="window.appendBlock('button')">+ Call-to-Action Button</button>
+                <button class="btn-premium" style="font-size: 0.72rem; padding: 4px 8px;" onclick="window.appendBlock('divider')">+ Divider</button>
+              </div>
+
+              <!-- VISUAL WYSIWYG CONTAINER & HTML TEXTAREA -->
               <div class="modal-form-group">
-                <label>Campaign Nickname</label>
-                <input type="text" id="emailCampaignName" class="premium-input" placeholder="e.g. Wedding Season 2026 Launches" required />
+                <!-- Visual Editor Box (contenteditable="true") -->
+                <div id="ec_body_visual" contenteditable="true" style="min-height: 280px; max-height: 500px; overflow-y: auto; padding: 16px; background: #ffffff; color: #1e293b; border: 1.5px solid var(--border-color); border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 0.9rem; line-height: 1.6; outline: none;" oninput="window.syncVisualToHtml();"></div>
+
+                <!-- Raw HTML Textarea (hidden by default in visual mode) -->
+                <textarea id="ec_body" class="premium-input" style="display: none; height: 280px; font-family: monospace; font-size: 0.82rem; line-height: 1.5; resize: vertical;" placeholder="Enter email body HTML or markdown..." required oninput="window.syncHtmlToVisual();"></textarea>
               </div>
+            </div>
 
-              <div class="modal-form-group">
-                <label>Recipient Target Audience Segments</label>
-                <select id="emailSegment" class="premium-select" required onchange="document.getElementById('emailCategoryGroup').style.display = this.value === 'vendor_category' ? 'block' : 'none';">
-                  <option value="all">All Accounts (Couples & Vendors)</option>
-                  <option value="vendors">Registered Wedding Vendors Only</option>
-                  <option value="couples">Couples Planning Weddings Only</option>
-                  <option value="vendor_category">Vendors in a Specific Category</option>
-                </select>
-              </div>
-
-              <div class="modal-form-group" id="emailCategoryGroup" style="display: none;">
-                <label>Vendor Category</label>
-                <select id="emailCategorySlug" class="premium-select">
-                  <option value="">Loading categories…</option>
-                </select>
-              </div>
-
-              <div class="modal-form-group">
-                <label>Email Subject Title Line</label>
-                <input type="text" id="emailSubject" class="premium-input" placeholder="e.g. Dream Wedding Season is Here! 🌟" required />
-              </div>
-
-              <div class="modal-form-group">
-                <label>Email Content Draft (Rich Text)</label>
-                <textarea id="emailBody" class="premium-input" style="height: 120px; resize: none;" placeholder="Write body text content here..." required></textarea>
-              </div>
-
-              <div id="emailBroadcastStatus" style="display: none; margin-top: 10px; font-size: 0.75rem; color: var(--text-sub);"></div>
-
-              <button class="btn-premium btn-premium-rose" type="button" id="btnDispatchBroadcast" onclick="window.triggerEmailBroadcast()" style="justify-content: center; margin-top: 10px;">
-                <i class="fa-solid fa-paper-plane"></i> Dispatch Email Broadcast
-              </button>
-            </form>
           </div>
 
-          <!-- Logs -->
-          <div class="panel-card">
-            <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 12px;">
-              <h3 style="font-size: 1.15rem; font-weight: 800;">Campaign History Logs</h3>
-              <p>Delivery markers for recently dispatched emails.</p>
+          <!-- RIGHT COLUMN: LIVE EMAIL PREVIEW FRAME -->
+          <div style="position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px;">
+            
+            <div class="panel-card" style="padding: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; margin-bottom: 14px;">
+                <div style="font-size: 0.85rem; font-weight: 800;">
+                  <i class="fa-solid fa-mobile-screen" style="color: var(--brand-rose); margin-right: 6px;"></i> Live Email Preview
+                </div>
+
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn-premium active" id="btnPreviewDesktop" style="font-size: 0.7rem; padding: 3px 8px;" onclick="window.setPreviewDevice('desktop')"><i class="fa-solid fa-desktop"></i> Desktop</button>
+                  <button class="btn-premium" id="btnPreviewMobile" style="font-size: 0.7rem; padding: 3px 8px;" onclick="window.setPreviewDevice('mobile')"><i class="fa-solid fa-mobile-button"></i> Mobile</button>
+                </div>
+              </div>
+
+              <!-- PREVIEW CONTAINER -->
+              <div id="emailPreviewWrapper" style="width: 100%; transition: max-width 0.3s ease; margin: 0 auto; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; background: #ffffff; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+                
+                <!-- Email Header Frame -->
+                <div style="background: #0f111a; padding: 14px 20px; text-align: center; border-bottom: 2px solid var(--brand-rose);">
+                  <img src="assets/logo.png" alt="WedEazzy" style="height: 32px; filter: brightness(0) invert(1);" />
+                </div>
+
+                <!-- Email Preheader Bar -->
+                <div style="background: #f8fafc; padding: 8px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.7rem; color: #64748b;">
+                  <strong>Subject:</strong> <span id="prevSubjectText">Grow Your Wedding Business with WedEazzy</span>
+                  <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;" id="prevPreheaderText">Reach more couples searching for vendors</div>
+                </div>
+
+                <!-- Email Rendered Content Body -->
+                <div id="emailRenderedContent" style="padding: 24px; min-height: 260px; font-family: 'Inter', sans-serif; color: #1e293b; font-size: 0.88rem; line-height: 1.6; word-break: break-word;">
+                  <!-- Rendered via updateEmailLivePreview -->
+                </div>
+
+                <!-- Email Footer Frame -->
+                <div style="background: #f1f5f9; padding: 16px 20px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 0.72rem; color: #64748b;">
+                  <div>© 2026 WedEazzy Marketplace Inc. All rights reserved.</div>
+                  <div style="margin-top: 4px; font-size: 0.68rem; color: #94a3b8;">You received this email as a registered WedEazzy user.</div>
+                </div>
+
+              </div>
+
+              <!-- ACTION BUTTONS BAR -->
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                <button class="btn-premium btn-premium-rose" style="width: 100%; padding: 10px 16px; font-size: 0.9rem; font-weight: 800;" onclick="window.openSendConfirmationModal()"><i class="fa-solid fa-paper-plane"></i> Send Campaign Now</button>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                  <button class="btn-premium" style="font-size: 0.78rem; padding: 8px 10px;" onclick="window.triggerScheduleModal()"><i class="fa-solid fa-clock"></i> Schedule</button>
+                  <button class="btn-premium" style="font-size: 0.78rem; padding: 8px 10px;" onclick="window.triggerSendTestEmailModal()"><i class="fa-solid fa-vial"></i> Send Test</button>
+                  <button class="btn-premium" style="font-size: 0.78rem; padding: 8px 10px;" onclick="window.saveCampaignDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+                </div>
+              </div>
+
             </div>
 
-            <div id="emailHistoryLogs" style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto;">
-              <p style="font-size: 0.8rem; color: var(--text-sub);">Loading campaign history…</p>
-            </div>
           </div>
+
+        </div>
+
+        <!-- SECTION 4: CAMPAIGN HISTORY & DISPATCH LOGS -->
+        <div class="panel-card" style="margin-top: 10px;">
+          <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div class="panel-title-group">
+              <h3 style="font-size: 1.15rem; font-weight: 800;">Campaign History & Delivery Logs</h3>
+              <p>Monitor status, delivery progress, and retry failed recipients.</p>
+            </div>
+            <button class="btn-premium" style="font-size: 0.78rem;" onclick="window.loadEmailCampaignHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh Logs</button>
+          </div>
+
+          <div class="table-viewport">
+            <table class="grid-table" id="tableEmailCampaignHistory">
+              <thead>
+                <tr>
+                  <th>Campaign Name</th>
+                  <th>Target Audience</th>
+                  <th>Recipients</th>
+                  <th>Delivered</th>
+                  <th>Failed</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyEmailCampaignHistory">
+                <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">Loading campaign history…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    // 2. Load Categories & Cities into Form Dropdowns
+    window.loadCampaignDropdowns();
+
+    // 3. Load Initial Statistics Cards & History Table
+    window.loadEmailCenterStats();
+    window.loadEmailCampaignHistory();
+
+    // 4. Set Default Sample Content
+    const defaultBody = `<h2 style="color: #DC1F30; font-size: 1.3rem; margin-bottom: 12px;">Grow Your Wedding Business with WedEazzy</h2>
+<p>Hi <strong>{{name}}</strong>,</p>
+<p>WedEazzy is now experiencing record wedding inquiry volume across <strong>{{city}}</strong>!</p>
+<p>Ensure your listing for <strong>{{businessName}}</strong> is fully updated with photo galleries, pricing packages, and direct contact numbers so couples can book your services instantly.</p>
+
+<div style="text-align: center; margin: 24px 0;">
+  <a href="{{claimUrl}}" style="background-color: #DC1F30; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 800; display: inline-block;">Update Business Profile →</a>
+</div>
+
+<p style="color: #64748b; font-size: 0.8rem;">Need help with your account? Reply directly to this email to speak with your WedEazzy account executive.</p>`;
+
+    const nameInput = document.getElementById('ec_name');
+    const subjectInput = document.getElementById('ec_subject');
+    const previewInput = document.getElementById('ec_preview_text');
+    const bodyInput = document.getElementById('ec_body');
+
+    if (nameInput) nameInput.value = 'Wedding Season Vendor Outreach — August';
+    if (subjectInput) subjectInput.value = 'Grow Your Wedding Business with WedEazzy';
+    if (previewInput) previewInput.value = 'Reach more couples searching for vendors in your city.';
+    if (bodyInput) bodyInput.value = defaultBody;
+    const visualBox = document.getElementById('ec_body_visual');
+    if (visualBox) visualBox.innerHTML = defaultBody;
+
+    window.updateAudienceRulesFromUi();
+    window.updateEmailLivePreview();
+  }
+
+  // GLOBAL HELPERS & EVENT HANDLERS FOR EMAIL CAMPAIGN CENTER
+
+  window.loadCampaignDropdowns = async function() {
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+
+      // Load Categories
+      const catRes = await fetch('/api/admin/vendor-categories', { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+      const catData = await catRes.json();
+      const catSelect = document.getElementById('ec_category_slug');
+      if (catSelect && catData.ok && catData.categories) {
+        catSelect.innerHTML = '<option value="">All Categories</option>' +
+          catData.categories.map(c => `<option value="${c.slug}">${escHtml(c.name)} (${c.count})</option>`).join('');
+      }
+
+      // Load Cities
+      const cityRes = await fetch('/api/admin/cities', { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+      const cityData = await cityRes.json();
+      const citySelect = document.getElementById('ec_city_slug');
+      if (citySelect && cityData.ok && cityData.cities) {
+        citySelect.innerHTML = '<option value="">All Active Cities</option>' +
+          cityData.cities.map(c => `<option value="${c.slug}">${escHtml(c.name)}</option>`).join('');
+      }
+    } catch (e) {
+      console.error('Failed to load campaign dropdown options:', e);
+    }
+  };
+
+  window.loadEmailCenterStats = async function() {
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const res = await fetch('/api/admin/email-campaigns/stats', {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json();
+      const container = document.getElementById('emailCenterStatsCards');
+      if (container && data.ok && data.stats) {
+        const s = data.stats;
+        container.innerHTML = `
+          <div class="panel-card" style="padding: 16px; border-left: 4px solid #0284c7;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Total Recipients</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin-top: 4px;">${s.totalRecipients.toLocaleString('en-IN')}</div>
+            <div style="font-size: 0.68rem; color: var(--text-sub); margin-top: 2px;">Marketing-eligible emails</div>
+          </div>
+
+          <div class="panel-card" style="padding: 16px; border-left: 4px solid #0d9488;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Campaigns Sent</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin-top: 4px;">${s.totalCampaigns.toLocaleString('en-IN')}</div>
+            <div style="font-size: 0.68rem; color: var(--text-sub); margin-top: 2px;">Total broadcasts created</div>
+          </div>
+
+          <div class="panel-card" style="padding: 16px; border-left: 4px solid #10b981;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Delivery Rate</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #10b981; margin-top: 4px;">${s.deliveryRate}%</div>
+            <div style="font-size: 0.68rem; color: var(--text-sub); margin-top: 2px;">Successful SMTP dispatch</div>
+          </div>
+
+          <div class="panel-card" style="padding: 16px; border-left: 4px solid #ef4444;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Failed Emails</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #ef4444; margin-top: 4px;">${s.totalFailed.toLocaleString('en-IN')}</div>
+            <div style="font-size: 0.68rem; color: var(--text-sub); margin-top: 2px;">Undelivered attempts (${s.failureRate}%)</div>
+          </div>
+
+          <div class="panel-card" style="padding: 16px; border-left: 4px solid #8b5cf6;">
+            <div style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Sent This Month</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin-top: 4px;">${s.sentThisMonth.toLocaleString('en-IN')}</div>
+            <div style="font-size: 0.68rem; color: var(--text-sub); margin-top: 2px;">Current billing cycle</div>
+          </div>
+        `;
+      }
+    } catch (e) {
+      console.error('Failed to load email center stats:', e);
+    }
+  };
+
+  window.updateAudienceRulesFromUi = function() {
+    const type = document.getElementById('ec_audience_type')?.value || 'all';
+    const cat = document.getElementById('ec_category_slug')?.value || '';
+    const city = document.getElementById('ec_city_slug')?.value || '';
+    const tier = document.getElementById('ec_tier')?.value || '';
+    const hasPhone = document.getElementById('ec_has_phone')?.value === 'true';
+    const customEmails = document.getElementById('ec_custom_emails')?.value || '';
+
+    state.emailCenter.audienceRules = {
+      audienceType: type,
+      categories: cat ? [cat] : [],
+      cities: city ? [city] : [],
+      tier,
+      hasPhone
+    };
+    state.emailCenter.customEmails = customEmails;
+
+    window.refreshAudienceCountServer();
+  };
+
+  window.refreshAudienceCountServer = async function() {
+    const totalEl = document.getElementById('ec_counter_total');
+    const detailsEl = document.getElementById('ec_counter_details');
+    if (!totalEl) return;
+
+    totalEl.textContent = 'Calculating…';
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const res = await fetch('/api/admin/email-campaigns/audience-count', {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          audienceRules: state.emailCenter.audienceRules,
+          customEmails: state.emailCenter.customEmails
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        totalEl.textContent = `${data.totalRecipients.toLocaleString('en-IN')} recipients`;
+        if (detailsEl) {
+          detailsEl.textContent = `${data.validCount.toLocaleString('en-IN')} valid emails • ${data.missingEmailCount} accounts missing email`;
+        }
+      }
+    } catch (e) {
+      if (totalEl) totalEl.textContent = 'Unable to estimate';
+    }
+  };
+
+  window.updateEmailLivePreview = function() {
+    const subject = document.getElementById('ec_subject')?.value || 'Grow Your Wedding Business with WedEazzy';
+    const preheader = document.getElementById('ec_preview_text')?.value || 'Reach more couples searching for vendors in your city.';
+    const rawBody = document.getElementById('ec_body')?.value || '';
+
+    const prevSub = document.getElementById('prevSubjectText');
+    const prevPre = document.getElementById('prevPreheaderText');
+    const prevBody = document.getElementById('emailRenderedContent');
+
+    if (prevSub) prevSub.textContent = subject;
+    if (prevPre) prevPre.textContent = preheader;
+
+    if (prevBody) {
+      // Replace personalization tags for live preview sample
+      const sampleRecipient = {
+        name: 'Rahul Sharma',
+        businessName: 'Royal Palace Banquets',
+        city: 'Mumbai',
+        category: 'Venue & Banquet'
+      };
+
+      let rendered = rawBody
+        .replace(/\{\{\s*name\s*\}\}/gi, sampleRecipient.name)
+        .replace(/\{\{\s*businessName\s*\}\}/gi, sampleRecipient.businessName)
+        .replace(/\{\{\s*city\s*\}\}/gi, sampleRecipient.city)
+        .replace(/\{\{\s*category\s*\}\}/gi, sampleRecipient.category)
+        .replace(/\{\{\s*vendorLoginUrl\s*\}\}/gi, '#')
+        .replace(/\{\{\s*claimUrl\s*\}\}/gi, '#');
+
+      prevBody.innerHTML = rendered || '<p style="color: #94a3b8;">Start typing email content on the left to see live preview...</p>';
+    }
+  };
+
+  window.setPreviewDevice = function(mode) {
+    const wrapper = document.getElementById('emailPreviewWrapper');
+    const btnDesktop = document.getElementById('btnPreviewDesktop');
+    const btnMobile = document.getElementById('btnPreviewMobile');
+
+    if (mode === 'mobile') {
+      if (wrapper) wrapper.style.maxWidth = '360px';
+      if (btnMobile) btnMobile.classList.add('active');
+      if (btnDesktop) btnDesktop.classList.remove('active');
+    } else {
+      if (wrapper) wrapper.style.maxWidth = '100%';
+      if (btnDesktop) btnDesktop.classList.add('active');
+      if (btnMobile) btnMobile.classList.remove('active');
+    }
+  };
+
+  window.switchEditorTab = function(mode) {
+    state.emailCenter.activeTab = mode;
+    const visualBox = document.getElementById('ec_body_visual');
+    const htmlArea = document.getElementById('ec_body');
+    const btnVisual = document.getElementById('btnContentVisualTab');
+    const btnHtml = document.getElementById('btnContentHtmlTab');
+
+    if (mode === 'visual') {
+      if (btnVisual) btnVisual.classList.add('active');
+      if (btnHtml) btnHtml.classList.remove('active');
+      if (visualBox && htmlArea) {
+        visualBox.innerHTML = htmlArea.value;
+        visualBox.style.display = 'block';
+        htmlArea.style.display = 'none';
+      }
+    } else {
+      if (btnHtml) btnHtml.classList.add('active');
+      if (btnVisual) btnVisual.classList.remove('active');
+      if (visualBox && htmlArea) {
+        htmlArea.value = visualBox.innerHTML;
+        htmlArea.style.display = 'block';
+        visualBox.style.display = 'none';
+      }
+    }
+    window.updateEmailLivePreview();
+  };
+
+  window.syncVisualToHtml = function() {
+    const visualBox = document.getElementById('ec_body_visual');
+    const htmlArea = document.getElementById('ec_body');
+    if (visualBox && htmlArea) {
+      htmlArea.value = visualBox.innerHTML;
+    }
+    window.updateEmailLivePreview();
+  };
+
+  window.syncHtmlToVisual = function() {
+    const visualBox = document.getElementById('ec_body_visual');
+    const htmlArea = document.getElementById('ec_body');
+    if (visualBox && htmlArea) {
+      visualBox.innerHTML = htmlArea.value;
+    }
+    window.updateEmailLivePreview();
+  };
+
+  window.insertPersonalizationTag = function(tag) {
+    const visualBox = document.getElementById('ec_body_visual');
+    const htmlArea = document.getElementById('ec_body');
+    const isVisual = state.emailCenter.activeTab !== 'html';
+
+    if (isVisual && visualBox) {
+      visualBox.focus();
+      document.execCommand('insertText', false, tag);
+      window.syncVisualToHtml();
+    } else if (htmlArea) {
+      const start = htmlArea.selectionStart || 0;
+      const end = htmlArea.selectionEnd || 0;
+      const current = htmlArea.value;
+      htmlArea.value = current.substring(0, start) + tag + current.substring(end);
+      htmlArea.focus();
+      htmlArea.selectionStart = htmlArea.selectionEnd = start + tag.length;
+      window.syncHtmlToVisual();
+    }
+  };
+
+  window.appendBlock = function(blockType) {
+    const visualBox = document.getElementById('ec_body_visual');
+    const htmlArea = document.getElementById('ec_body');
+    const isVisual = state.emailCenter.activeTab !== 'html';
+
+    let snippet = '';
+    if (blockType === 'heading') {
+      snippet = `<h2 style="color: #DC1F30; font-size: 1.25rem; font-weight: 800; margin-top: 20px;">Heading Title Here</h2>`;
+    } else if (blockType === 'image') {
+      return window.triggerInsertImageModal();
+    } else if (blockType === 'button') {
+      snippet = `<div style="text-align: center; margin: 20px 0;"><a href="https://wedeazzy.com" style="background-color: #DC1F30; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 800; display: inline-block;">Explore WedEazzy →</a></div>`;
+    } else if (blockType === 'divider') {
+      snippet = `<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />`;
+    }
+
+    if (isVisual && visualBox) {
+      visualBox.focus();
+      document.execCommand('insertHTML', false, snippet);
+      window.syncVisualToHtml();
+    } else if (htmlArea) {
+      htmlArea.value += '\n' + snippet + '\n';
+      window.syncHtmlToVisual();
+    }
+  };
+
+  window.triggerInsertImageModal = function() {
+    window._uploadedEmailImageUrl = null;
+
+    const bodyHTML = `
+      <form id="formInsertImage" style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="modal-form-group">
+          <label style="font-weight: 700; font-size: 0.8rem;">Upload Image File</label>
+          <input type="file" id="mimg_file" class="premium-input" accept="image/*" />
+          <div id="mimg_status" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Choose an image file from your device to upload automatically.</div>
+        </div>
+
+        <div style="text-align: center; font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin: 2px 0;">— OR PASTE IMAGE URL —</div>
+
+        <div class="modal-form-group">
+          <label style="font-weight: 700; font-size: 0.8rem;">Image Direct URL</label>
+          <input type="url" id="mimg_url" class="premium-input" placeholder="https://example.com/banner.jpg" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="modal-form-group">
+            <label style="font-weight: 700; font-size: 0.8rem;">Alt Description</label>
+            <input type="text" id="mimg_alt" class="premium-input" placeholder="e.g. Wedding Banner" value="Campaign Image" />
+          </div>
+
+          <div class="modal-form-group">
+            <label style="font-weight: 700; font-size: 0.8rem;">Clickable Link URL (Optional)</label>
+            <input type="url" id="mimg_link" class="premium-input" placeholder="https://wedeazzy.com" />
+          </div>
+        </div>
+      </form>
+    `;
+
+    const footerHTML = `
+      <button class="btn-premium" onclick="window.closeModal()">Cancel</button>
+      <button class="btn-premium btn-premium-rose" id="btnSubmitInsertImg" onclick="window.submitInsertImage()">Insert Image</button>
+    `;
+
+    openModal("Upload & Insert Image into Email", bodyHTML, footerHTML);
+
+    const fileInput = document.getElementById('mimg_file');
+    if (fileInput) {
+      fileInput.addEventListener('change', async () => {
+        const file = fileInput.files && fileInput.files[0];
+        const status = document.getElementById('mimg_status');
+        const urlInput = document.getElementById('mimg_url');
+
+        if (!file) return;
+        if (status) status.textContent = `Uploading ${file.name}…`;
+
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+          const apiFetch = window.WedEazzyAuth ? window.WedEazzyAuth.apiFetch.bind(window.WedEazzyAuth) : fetch;
+          const res = await apiFetch('/api/upload/photo', { method: 'POST', body: formData });
+          const data = await res.json();
+
+          if (res.ok && data.ok) {
+            window._uploadedEmailImageUrl = data.url;
+            if (urlInput) urlInput.value = data.url;
+            if (status) status.textContent = `✓ ${file.name} uploaded successfully!`;
+          } else {
+            if (status) status.textContent = `Upload failed: ${data.message || data.error || 'unknown error'}`;
+          }
+        } catch (e) {
+          if (status) status.textContent = `Upload failed: ${e.message}`;
+        }
+      });
+    }
+  };
+
+  window.submitInsertImage = function() {
+    const url = document.getElementById('mimg_url')?.value || window._uploadedEmailImageUrl;
+    const alt = document.getElementById('mimg_alt')?.value || 'Email Image';
+    const link = document.getElementById('mimg_link')?.value;
+    const visualBox = document.getElementById('ec_body_visual');
+    const htmlArea = document.getElementById('ec_body');
+
+    if (!url) {
+      showToast('Please select an image file to upload or paste a direct image URL!', 'danger');
+      return;
+    }
+
+    let imgHtml = `<img src="${url}" alt="${escHtml(alt)}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />`;
+    if (link) {
+      imgHtml = `<a href="${escHtml(link)}" target="_blank">${imgHtml}</a>`;
+    }
+
+    const snippet = `<div style="text-align: center; margin: 20px 0;">${imgHtml}</div>`;
+    const isVisual = state.emailCenter.activeTab !== 'html';
+
+    if (isVisual && visualBox) {
+      visualBox.focus();
+      document.execCommand('insertHTML', false, snippet);
+      window.syncVisualToHtml();
+    } else if (htmlArea) {
+      const start = htmlArea.selectionStart || htmlArea.value.length;
+      const end = htmlArea.selectionEnd || htmlArea.value.length;
+      const current = htmlArea.value;
+      htmlArea.value = current.substring(0, start) + '\n' + snippet + '\n' + current.substring(end);
+      window.syncHtmlToVisual();
+    }
+
+    closeModal();
+    showToast('Image inserted into email content!', 'success');
+  };
+
+  window.openRecipientPreviewModal = async function() {
+    const bodyHTML = `
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Paginated list of resolved database recipients for the current audience filters.</div>
+        <div class="table-viewport" style="max-height: 340px; overflow-y: auto;">
+          <table class="grid-table">
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Role</th><th>City</th><th>Category</th></tr>
+            </thead>
+            <tbody id="tbodyRecipientModal">
+              <tr><td colspan="5" style="text-align: center; padding: 20px;">Loading recipients…</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     `;
 
-    window.loadEmailCampaignHistory = async function() {
-      const container = document.getElementById('emailHistoryLogs');
-      try {
-        const auth = window.WedEazzyAuth;
-        const token = auth ? auth.getToken() : null;
-        const res = await fetch('/api/admin/email-campaigns', {
-          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-        });
-        const data = await res.json();
-        if (container) {
-          container.innerHTML = data.ok ? renderHistoryLogs(data.campaigns) : `<p style="font-size: 0.8rem; color: var(--text-sub);">Could not load campaign history.</p>`;
-        }
-      } catch (e) {
-        if (container) container.innerHTML = `<p style="font-size: 0.8rem; color: var(--text-sub);">Could not load campaign history.</p>`;
+    const footerHTML = `
+      <button class="btn-premium" onclick="window.closeModal()">Close</button>
+    `;
+
+    openModal("Target Recipient List Preview", bodyHTML, footerHTML);
+
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const res = await fetch('/api/admin/email-campaigns/audience-preview', {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          audienceRules: state.emailCenter.audienceRules,
+          customEmails: state.emailCenter.customEmails,
+          page: 1,
+          limit: 50
+        })
+      });
+      const data = await res.json();
+      const tbody = document.getElementById('tbodyRecipientModal');
+      if (tbody && data.ok && data.recipients) {
+        tbody.innerHTML = data.recipients.length === 0
+          ? '<tr><td colspan="5" style="text-align: center; padding: 20px;">No recipients found matching these filters.</td></tr>'
+          : data.recipients.map(r => `
+            <tr>
+              <td><strong>${escHtml(r.name)}</strong></td>
+              <td>${escHtml(r.email)}</td>
+              <td><span class="interactive-pill-badge" style="font-size: 0.65rem;">${r.role}</span></td>
+              <td>${escHtml(r.city || '—')}</td>
+              <td>${escHtml(r.category || '—')}</td>
+            </tr>
+          `).join('');
       }
-    };
-    window.loadEmailCampaignHistory();
+    } catch (e) {
+      const tbody = document.getElementById('tbodyRecipientModal');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--brand-rose);">Failed to load recipient list.</td></tr>';
+    }
+  };
 
-    (async function loadCategoryOptions() {
-      const select = document.getElementById('emailCategorySlug');
-      if (!select) return;
-      try {
-        const auth = window.WedEazzyAuth;
-        const token = auth ? auth.getToken() : null;
-        const res = await fetch('/api/admin/vendor-categories', {
-          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-        });
-        const data = await res.json();
-        const categories = (data.ok && data.categories) || [];
-        select.innerHTML = categories.length
-          ? categories.map(c => `<option value="${c.slug}">${escapeHtmlUi(c.name)} (${c.count})</option>`).join('')
-          : '<option value="">No categories found</option>';
-      } catch (e) {
-        select.innerHTML = '<option value="">Could not load categories</option>';
-      }
-    })();
+  window.loadEmailCampaignHistory = async function() {
+    const tbody = document.getElementById('tbodyEmailCampaignHistory');
+    if (!tbody) return;
 
-    window.triggerEmailBroadcast = async function() {
-      const emailCampaignName = document.getElementById("emailCampaignName");
-      const emailSegment = document.getElementById("emailSegment");
-      const emailSubject = document.getElementById("emailSubject");
-      const emailBody = document.getElementById("emailBody");
-      const statusEl = document.getElementById("emailBroadcastStatus");
-      const btn = document.getElementById("btnDispatchBroadcast");
-
-      const name = emailCampaignName ? emailCampaignName.value : "";
-      let segment = emailSegment ? emailSegment.value : "all";
-      const sub = emailSubject ? emailSubject.value : "";
-      const body = emailBody ? emailBody.value : "";
-
-      if (!name || !sub || !body) {
-        showToast("Please fill all campaign details first!", "danger");
-        return;
-      }
-
-      if (segment === 'vendor_category') {
-        const categorySlug = document.getElementById("emailCategorySlug")?.value;
-        if (!categorySlug) {
-          showToast("Please choose a vendor category!", "danger");
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const res = await fetch('/api/admin/email-campaigns', {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json();
+      if (data.ok && data.campaigns) {
+        if (data.campaigns.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">Your campaigns will appear here once you send your first campaign.</td></tr>';
           return;
         }
-        segment = `vendor_category:${categorySlug}`;
+
+        tbody.innerHTML = data.campaigns.map(c => {
+          const statusColors = {
+            draft: { bg: 'rgba(107,114,128,0.1)', fg: '#6b7280', label: 'DRAFT' },
+            scheduled: { bg: 'rgba(139,92,246,0.1)', fg: '#8b5cf6', label: 'SCHEDULED' },
+            queued: { bg: 'rgba(59,130,246,0.1)', fg: '#3b82f6', label: 'QUEUED' },
+            sending: { bg: 'rgba(234,179,8,0.1)', fg: '#d97706', label: 'SENDING…' },
+            completed: { bg: 'rgba(16,185,129,0.1)', fg: '#10b981', label: 'COMPLETED' },
+            partially_failed: { bg: 'rgba(245,158,11,0.1)', fg: '#f59e0b', label: 'PARTIAL FAIL' },
+            failed: { bg: 'rgba(239,68,68,0.1)', fg: '#ef4444', label: 'FAILED' }
+          };
+          const st = statusColors[c.status] || statusColors.draft;
+          const dateStr = c.status === 'scheduled' && c.scheduledAt
+            ? `Scheduled: ${new Date(c.scheduledAt).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+            : new Date(c.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+
+          return `
+            <tr>
+              <td>
+                <strong>${escHtml(c.name)}</strong>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">${escHtml(c.subject)}</div>
+              </td>
+              <td><span class="interactive-pill-badge" style="font-size: 0.65rem;">${c.segment}</span></td>
+              <td><strong>${(c.totalRecipients || 0).toLocaleString('en-IN')}</strong></td>
+              <td><span style="color: #10b981; font-weight: 700;">${(c.sentCount || 0).toLocaleString('en-IN')}</span></td>
+              <td><span style="color: ${(c.failedCount || 0) > 0 ? '#ef4444' : 'var(--text-muted)'}; font-weight: 700;">${(c.failedCount || 0).toLocaleString('en-IN')}</span></td>
+              <td>
+                <span style="padding: 2px 8px; border-radius: 12px; font-size: 0.68rem; font-weight: 800; background: ${st.bg}; color: ${st.fg};">
+                  ${st.label}
+                </span>
+              </td>
+              <td><span style="font-size: 0.75rem; color: var(--text-muted);">${dateStr}</span></td>
+              <td style="text-align: right;">
+                <div style="display: flex; justify-content: flex-end; gap: 6px;">
+                  <button class="btn-premium" style="font-size: 0.68rem; padding: 2px 6px;" onclick="window.duplicateCampaign('${c.id}')" title="Duplicate Campaign"><i class="fa-solid fa-copy"></i></button>
+                  ${(c.failedCount > 0) ? `<button class="btn-premium" style="font-size: 0.68rem; padding: 2px 6px; color: #ef4444;" onclick="window.retryFailedCampaign('${c.id}')" title="Retry Failed"><i class="fa-solid fa-rotate-right"></i></button>` : ''}
+                  <button class="btn-premium" style="font-size: 0.68rem; padding: 2px 6px;" onclick="window.deleteCampaignRecord('${c.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
       }
+    } catch (e) {
+      console.error('Failed to load email campaign history:', e);
+    }
+  };
 
-      if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-      if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Dispatching…'; }
+  window.triggerSendTestEmailModal = function() {
+    const bodyHTML = `
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="modal-form-group">
+          <label style="font-weight: 700; font-size: 0.8rem;">Send Test Email To:</label>
+          <input type="email" id="mtest_email" class="premium-input" placeholder="admin@wedeazzy.com" value="wedeazzy@gmail.com" required />
+        </div>
+        <p style="font-size: 0.72rem; color: var(--text-muted);">Sends a single test email with sample personalization tags to verify formatting before broadcasting.</p>
+      </div>
+    `;
 
-      try {
-        const auth = window.WedEazzyAuth;
-        const token = auth ? auth.getToken() : null;
-        const res = await fetch('/api/admin/email-campaigns', {
-          method: 'POST',
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : '',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ name, segment, subject: sub, body })
-        });
-        const data = await res.json();
+    const footerHTML = `
+      <button class="btn-premium" onclick="window.closeModal()">Cancel</button>
+      <button class="btn-premium btn-premium-rose" onclick="window.submitSendTestEmail()">Send Test Now</button>
+    `;
 
-        if (data.ok) {
-          showToast(`Broadcasting "${name}" to ${data.campaign.totalRecipients} recipient(s)!`, "success");
-          if (emailCampaignName) emailCampaignName.value = "";
-          if (emailSubject) emailSubject.value = "";
-          if (emailBody) emailBody.value = "";
-          if (statusEl) statusEl.style.display = 'none';
-          window.loadEmailCampaignHistory();
-        } else {
-          showToast('Broadcast failed: ' + (data.error || data.message || 'Unknown error'), 'danger');
-          if (statusEl) statusEl.style.display = 'none';
-        }
-      } catch (e) {
-        showToast('Error: ' + e.message, 'danger');
-        if (statusEl) statusEl.style.display = 'none';
-      } finally {
-        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+    openModal("Send Test Email", bodyHTML, footerHTML);
+  };
+
+  window.submitSendTestEmail = async function() {
+    const testEmail = document.getElementById('mtest_email')?.value;
+    const subject = document.getElementById('ec_subject')?.value;
+    const previewText = document.getElementById('ec_preview_text')?.value;
+    const body = document.getElementById('ec_body')?.value;
+
+    if (!testEmail || !subject || !body) {
+      showToast('Please enter a test email address, subject, and content body!', 'danger');
+      return;
+    }
+
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const res = await fetch('/api/admin/email-campaigns/send-test', {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ testEmail, subject, previewText, body })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(data.message || `Test email sent to ${testEmail}!`, 'success');
+        closeModal();
+      } else {
+        showToast('Test email failed: ' + (data.message || data.error), 'danger');
       }
-    };
-  }
+    } catch (e) {
+      showToast('Error sending test email: ' + e.message, 'danger');
+    }
+  };
+
+  window.triggerScheduleModal = function() {
+    const name = document.getElementById('ec_name')?.value;
+    const subject = document.getElementById('ec_subject')?.value;
+
+    if (!name || !subject) {
+      showToast('Please enter campaign name and subject line before scheduling!', 'danger');
+      return;
+    }
+
+    const defaultDate = new Date(Date.now() + 86400000);
+    defaultDate.setHours(10, 0, 0, 0);
+    const localIso = new Date(defaultDate.getTime() - (defaultDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+
+    const bodyHTML = `
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="padding: 12px; background: rgba(139, 92, 246, 0.08); border-left: 4px solid #8b5cf6; border-radius: 8px;">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: #8b5cf6; margin: 0;">Schedule Email Campaign</h4>
+          <p style="font-size: 0.78rem; color: var(--text-sub); margin-top: 4px;">Select the target date and time to automatically dispatch this email broadcast.</p>
+        </div>
+
+        <div class="modal-form-group">
+          <label style="font-weight: 700; font-size: 0.8rem;">Dispatch Date & Time</label>
+          <input type="datetime-local" id="ec_schedule_time" class="premium-input" value="${localIso}" required />
+        </div>
+      </div>
+    `;
+
+    const footerHTML = `
+      <button class="btn-premium" onclick="window.closeModal()">Cancel</button>
+      <button class="btn-premium btn-premium-rose" style="background: #8b5cf6;" onclick="window.submitScheduleCampaign()">Confirm Schedule</button>
+    `;
+
+    openModal("Schedule Email Campaign", bodyHTML, footerHTML);
+  };
+
+  window.submitScheduleCampaign = function() {
+    const timeVal = document.getElementById('ec_schedule_time')?.value;
+    if (!timeVal) {
+      showToast('Please select a valid date and time to schedule!', 'danger');
+      return;
+    }
+    const scheduledDate = new Date(timeVal);
+    if (scheduledDate <= new Date()) {
+      showToast('Schedule date and time must be in the future!', 'danger');
+      return;
+    }
+    window.executeCampaignBroadcast('schedule', timeVal);
+  };
+
+  window.openSendConfirmationModal = function() {
+    const name = document.getElementById('ec_name')?.value;
+    const subject = document.getElementById('ec_subject')?.value;
+    const totalText = document.getElementById('ec_counter_total')?.textContent || 'Target audience';
+
+    if (!name || !subject) {
+      showToast('Please enter campaign name and subject line before dispatching!', 'danger');
+      return;
+    }
+
+    const bodyHTML = `
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="padding: 14px; background: rgba(220, 31, 48, 0.08); border-left: 4px solid var(--brand-rose); border-radius: 8px;">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--brand-rose); margin: 0;">Confirm Email Campaign Broadcast</h4>
+          <p style="font-size: 0.78rem; color: var(--text-sub); margin-top: 4px;">You are about to launch a live broadcast. Sending will happen safely in background batches.</p>
+        </div>
+
+        <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 6px;">
+          <div><strong>Campaign:</strong> ${escHtml(name)}</div>
+          <div><strong>Subject:</strong> ${escHtml(subject)}</div>
+          <div><strong>Target Audience:</strong> ${escHtml(totalText)}</div>
+          <div><strong>Sender:</strong> WedEazzy &lt;info@wedeazzy.com&gt;</div>
+        </div>
+      </div>
+    `;
+
+    const footerHTML = `
+      <button class="btn-premium" onclick="window.closeModal()">Cancel</button>
+      <button class="btn-premium btn-premium-rose" id="btnConfirmDispatch" onclick="window.executeCampaignBroadcast('send')">Confirm & Send</button>
+    `;
+
+    openModal("Campaign Launch Confirmation", bodyHTML, footerHTML);
+  };
+
+  window.executeCampaignBroadcast = async function(actionType = 'send', scheduledAt = null) {
+    const name = document.getElementById('ec_name')?.value;
+    const subject = document.getElementById('ec_subject')?.value;
+    const previewText = document.getElementById('ec_preview_text')?.value;
+    const body = document.getElementById('ec_body')?.value;
+
+    const btn = document.getElementById('btnConfirmDispatch');
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; }
+
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const res = await fetch('/api/admin/email-campaigns', {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name,
+          subject,
+          previewText,
+          body,
+          audienceRules: state.emailCenter.audienceRules,
+          customEmails: state.emailCenter.customEmails,
+          action: actionType,
+          scheduledAt
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        let msg = `Draft campaign "${name}" saved!`;
+        if (actionType === 'send') msg = `Campaign "${name}" queued for background dispatch!`;
+        if (actionType === 'schedule') msg = `Campaign "${name}" scheduled successfully!`;
+
+        showToast(msg, 'success');
+        closeModal();
+        window.loadEmailCampaignHistory();
+        window.loadEmailCenterStats();
+      } else {
+        showToast('Campaign request failed: ' + (data.message || data.error), 'danger');
+      }
+    } catch (e) {
+      showToast('Error: ' + e.message, 'danger');
+    }
+  };
+
+  window.saveCampaignDraft = function() {
+    window.executeCampaignBroadcast('draft');
+  };
+
+  window.duplicateCampaign = async function(id) {
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const res = await fetch(`/api/admin/email-campaigns/${id}/duplicate`, {
+        method: 'POST',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast('Campaign duplicated as draft!', 'success');
+        window.loadEmailCampaignHistory();
+      }
+    } catch (e) {
+      showToast('Failed to duplicate campaign', 'danger');
+    }
+  };
+
+  window.retryFailedCampaign = async function(id) {
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const res = await fetch(`/api/admin/email-campaigns/${id}/retry-failed`, {
+        method: 'POST',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast('Retrying failed recipients in background!', 'success');
+        window.loadEmailCampaignHistory();
+      }
+    } catch (e) {
+      showToast('Failed to retry failed recipients', 'danger');
+    }
+  };
+
+  window.deleteCampaignRecord = async function(id) {
+    if (!confirm('Are you sure you want to delete this campaign history log?')) return;
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      await fetch(`/api/admin/email-campaigns/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      showToast('Campaign record deleted', 'success');
+      window.loadEmailCampaignHistory();
+      window.loadEmailCenterStats();
+    } catch (e) {
+      showToast('Failed to delete campaign', 'danger');
+    }
+  };
+
+  window.scrollToCampaignBuilder = function() {
+    const el = document.getElementById('ec_name');
+    if (el) {
+      el.focus();
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
 
   // Render BLOGS dashboard
   function renderBlogs(store) {
@@ -3032,363 +4568,279 @@ document.addEventListener("DOMContentLoaded", () => {
   // TAB RENDERING ENGINES
   // -------------------------------------------------------------
 
-  // Render DASHBOARD (Tab 1)
-  function renderDashboard(store) {
-    const stats = store.stats;
-    const recentLogs = store.logs.slice(0, 4);
-
-    // ── Bookings by Status chart data (reuses the same colors as the tiles above) ──
-    const statusChartData = [
-      { label: 'Pending', value: stats.pendingBookings || 0, color: '#f59e0b' },
-      { label: 'In-Progress', value: stats.inProgressBookings || 0, color: '#3b82f6' },
-      { label: 'Confirmed', value: stats.confirmedBookings || 0, color: '#10b981' },
-      { label: 'Cancelled', value: stats.cancelledBookings || 0, color: '#ef4444' },
-    ];
-    const statusMax = Math.max(1, ...statusChartData.map(d => d.value));
-
-    function renderBarRow(d, max) {
-      const pct = Math.round((d.value / max) * 100);
-      return `
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:92px;font-size:0.74rem;color:var(--text-sub);flex-shrink:0;">${d.label}</div>
-          <div style="flex-grow:1;background:var(--canvas-bg);border-radius:4px;height:20px;position:relative;">
-            <div style="width:${pct}%;background:${d.color};height:20px;border-radius:4px 0 0 4px;min-width:2px;"></div>
-          </div>
-          <div style="width:36px;text-align:right;font-size:0.78rem;font-weight:700;color:var(--text-main);flex-shrink:0;">${d.value}</div>
-        </div>
-      `;
-    }
-
-    // ── Top Vendor Categories chart data (fixed categorical color order) ──
-    const CATEGORICAL_COLORS = ['#2a78d6', '#008300', '#e87ba4', '#eda100', '#1baf7a', '#eb6834'];
-    const categoryCounts = {};
-    (store.vendors || []).forEach(v => {
-      const cat = v.category || 'Uncategorized';
-      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-    });
-    const topCategories = Object.entries(categoryCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([label, value], idx) => ({ label, value, color: CATEGORICAL_COLORS[idx] }));
-    const categoryMax = Math.max(1, ...topCategories.map(d => d.value));
-
+  async function renderDashboard(store) {
+    // 1. Initial Skeleton Loader View
     el.portalBody.innerHTML = `
       <div class="spa-tab-wrapper">
         <div class="locator-breadcrumb">
-          <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Dashboard Overview</span>
+          <a href="#">WedEazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Platform Overview</span>
         </div>
-        
-        <div class="portal-welcome-banner">
+        <div class="portal-welcome-banner" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
           <div>
-            <h2 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">Admin Dashboard</h2>
-            <p style="color: var(--text-sub); font-size: 0.85rem; margin-top: 2px;">Track and manage customer orders and all bookings.</p>
+            <h2 style="font-size: 1.5rem; font-weight: 800;">Platform Overview</h2>
+            <p style="margin-top: 4px; color: var(--text-muted);">Monitor real-time growth, couple engagement, and marketplace analytics.</p>
           </div>
-          <div class="system-clock-badge" id="systemClockBadge">
-            <i class="fa-solid fa-clock"></i> Syncing Live Time...
+        </div>
+        <div class="metrics-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 20px;">
+          <div class="metric-tile loading-skeleton" style="height: 110px; border-radius: 12px;"></div>
+          <div class="metric-tile loading-skeleton" style="height: 110px; border-radius: 12px;"></div>
+          <div class="metric-tile loading-skeleton" style="height: 110px; border-radius: 12px;"></div>
+          <div class="metric-tile loading-skeleton" style="height: 110px; border-radius: 12px;"></div>
+        </div>
+        <div class="panel-card loading-skeleton" style="height: 380px; margin-top: 20px; border-radius: 16px;"></div>
+      </div>
+    `;
+
+    if (!state.biFilters) {
+      state.biFilters = { range: '30d', countryCode: 'IN', activeGrowthMetric: 'inquiries' };
+    }
+    
+    const savedScope = localStorage.getItem('wedeazzy_country_scope') || 'IN';
+    window.WedEazzyCountryScope = savedScope;
+    const activeCountryScope = (state.biFilters.countryCode || savedScope || 'IN').toString().toLowerCase();
+
+    // 2. Fetch BI Analytics Overview Payload Server-Side
+    let overviewData = null;
+    try {
+      const auth = window.WedEazzyAuth;
+      const token = auth ? auth.getToken() : null;
+      const params = new URLSearchParams();
+      params.set('range', state.biFilters.range || '30d');
+      params.set('countryCode', activeCountryScope);
+
+      const res = await fetch(`/api/admin/analytics?${params.toString()}`, {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json();
+      if (data.ok) {
+        overviewData = data.overview || data;
+      }
+    } catch (err) {
+      console.error('Failed to load BI analytics overview:', err);
+    }
+
+    if (!overviewData) {
+      el.portalBody.innerHTML = `
+        <div class="spa-tab-wrapper">
+          <div class="panel-card" style="text-align: center; padding: 60px 20px; margin-top: 20px;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 2.5rem; color: var(--brand-rose); margin-bottom: 16px;"></i>
+            <h3 style="font-size: 1.2rem; font-weight: 800;">Unable to load Platform Overview data</h3>
+            <p style="color: var(--text-muted); margin-top: 6px; font-size: 0.85rem;">Please check server connection or retry fetching analytics.</p>
+            <button class="btn-premium btn-premium-rose" style="margin-top: 20px; padding: 8px 24px;" onclick="renderDashboard(WedEazzyStore.get())">
+              <i class="fa-solid fa-rotate-right"></i> Retry
+            </button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const {
+      kpis = {},
+      trends = {},
+      subscriptions = {},
+      revenue = { total: 0, subscriptionRevenue: 0, growRevenue: 0, byCurrency: [] },
+      topCities = [],
+      categoryPerformance = [],
+      topVendors = [],
+      countryPerformance = [],
+      hasData = true
+    } = overviewData;
+
+    const isGlobal = activeCountryScope === 'all';
+    const scopeUpper = activeCountryScope.toUpperCase();
+    const scopeNames = { 'ALL': 'Global Marketplace', 'IN': 'India', 'AE': 'UAE', 'GB': 'UK', 'US': 'USA', 'CA': 'Canada', 'AU': 'Australia' };
+    const scopeFlags = { 'ALL': '🌍', 'IN': '🇮🇳', 'AE': '🇦🇪', 'GB': '🇬🇧', 'US': '🇺🇸', 'CA': '🇨🇦', 'AU': '🇦🇺' };
+    const currencySymbols = { 'ALL': 'Multi', 'IN': '₹', 'AE': 'AED ', 'GB': '£', 'US': '$', 'CA': 'CA$', 'AU': 'A$' };
+    const currencySym = currencySymbols[scopeUpper] || '₹';
+    const activeGrowthMetric = state.biFilters.activeGrowthMetric || 'inquiries';
+
+    el.portalBody.innerHTML = `
+      <div class="spa-tab-wrapper" style="display: flex; flex-direction: column; gap: 24px; padding-bottom: 50px; background-color: var(--canvas-bg);">
+        <div class="panel-card" style="padding: 20px 24px; background: var(--surface-bg); border-bottom: 2px solid var(--brand-rose);">
+          <div class="locator-breadcrumb">
+            <a href="#">WedEazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Platform Overview / Management Console</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 10px;">
+            <div>
+              <h2 style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px;">
+                <span>WedEazzy ${scopeFlags[scopeUpper] || '🌐'} ${scopeNames[scopeUpper] || 'Marketplace'} Overview</span>
+              </h2>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 6px; background: #182033; padding: 6px 14px; border-radius: 10px; color: #FFFFFF;">
+                <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--brand-rose); letter-spacing: 0.05em;">SCOPE:</span>
+                <select id="biCountryFilter" class="premium-select" style="font-size: 0.85rem; font-weight: 800; background: transparent; color: #FFFFFF; border: none; padding: 4px 8px; cursor: pointer; outline: none;">
+                  <option value="all" ${isGlobal ? 'selected' : ''}>🌍 All Countries</option>
+                  <option value="IN" ${scopeUpper === 'IN' ? 'selected' : ''}>🇮🇳 India</option>
+                  <option value="AE" ${scopeUpper === 'AE' ? 'selected' : ''}>🇦🇪 UAE</option>
+                  <option value="GB" ${scopeUpper === 'GB' ? 'selected' : ''}>🇬🇧 UK</option>
+                  <option value="US" ${scopeUpper === 'US' ? 'selected' : ''}>🇺🇸 USA</option>
+                  <option value="CA" ${scopeUpper === 'CA' ? 'selected' : ''}>🇨🇦 Canada</option>
+                  <option value="AU" ${scopeUpper === 'AU' ? 'selected' : ''}>🇦🇺 Australia</option>
+                </select>
+              </div>
+              <button class="btn-premium" onclick="renderDashboard(WedEazzyStore.get())" style="padding: 8px 14px; font-size: 0.82rem;">
+                <i class="fa-solid fa-rotate-right"></i> Refresh
+              </button>
+              <button class="btn-premium btn-premium-rose" onclick="window.exportPaymentsCsv()" title="Export CSV Report" style="padding: 8px 16px; font-size: 0.82rem;">
+                <i class="fa-solid fa-file-arrow-down"></i> Export Report
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- 11 Stats Cards Grid matching reference image -->
-        <div class="metrics-deck" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 16px; margin-bottom: 24px;">
-          
-          <!-- Card 1: Pending Bookings -->
-          <div class="metric-tile" style="border-left: 4px solid #f59e0b;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Pending Bookings</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(245, 158, 11, 0.08); color: #f59e0b;">
-                <i class="fa-solid fa-hourglass-half"></i>
-              </div>
-            </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-pending">${stats.pendingBookings}</div>
-            </div>
+        ${!hasData ? `
+          <div class="panel-card" style="padding: 30px; text-align: center; background: rgba(239, 68, 68, 0.05); border: 1.5px dashed var(--brand-rose); border-radius: 12px;">
+            <i class="fa-solid fa-folder-open" style="font-size: 2.2rem; color: var(--brand-rose); margin-bottom: 10px;"></i>
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">No Market Data Available for ${scopeNames[scopeUpper] || scopeUpper}</h3>
           </div>
+        ` : ''}
 
-          <!-- Card 2: In-Progress Bookings -->
-          <div class="metric-tile" style="border-left: 4px solid #3b82f6;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">In-Progress Bookings</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(59, 130, 246, 0.08); color: #3b82f6;">
-                <i class="fa-solid fa-bolt"></i>
-              </div>
-            </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-inprogress">${stats.inProgressBookings}</div>
-            </div>
+        <div>
+          <div style="font-size: 0.82rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-chart-line" style="color: var(--brand-rose);"></i> Primary Performance KPIs — ${scopeNames[scopeUpper]}
           </div>
-
-          <!-- Card 3: Confirmed Bookings -->
-          <div class="metric-tile" style="border-left: 4px solid #10b981;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Confirmed Bookings</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(16, 185, 129, 0.08); color: #10b981;">
-                <i class="fa-regular fa-calendar-check"></i>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;">
+            <div class="panel-card" style="padding: 20px; background: var(--surface-bg); border-top: 4px solid var(--brand-rose);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Total Listings</span>
               </div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 8px;">${(kpis.listings ? kpis.listings.value : 0).toLocaleString('en-IN')}</div>
             </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-confirmed">${stats.confirmedBookings}</div>
-            </div>
-          </div>
-
-          <!-- Card 4: Cancelled Bookings -->
-          <div class="metric-tile" style="border-left: 4px solid #ef4444;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Cancelled Bookings</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(239, 68, 68, 0.08); color: #ef4444;">
-                <i class="fa-solid fa-ban"></i>
+            <div class="panel-card" style="padding: 20px; background: var(--surface-bg); border-top: 4px solid #10b981;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Claimed Listings</span>
               </div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 8px;">${(kpis.claimedListings ? kpis.claimedListings.value : 0).toLocaleString('en-IN')}</div>
             </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-cancelled">${stats.cancelledBookings}</div>
-            </div>
-          </div>
-
-          <!-- Card 5: Venues -->
-          <div class="metric-tile" style="border-left: 4px solid #8b5cf6;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Venues</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(139, 92, 246, 0.08); color: #8b5cf6;">
-                <i class="fa-solid fa-hotel"></i>
+            <div class="panel-card" style="padding: 20px; background: var(--surface-bg); border-top: 4px solid #f59e0b;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Paid Vendors</span>
               </div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 8px;">${(kpis.paidVendors ? kpis.paidVendors.value : 0).toLocaleString('en-IN')}</div>
             </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-venues">${stats.venuesCount}</div>
-            </div>
-          </div>
-
-          <!-- Card 6: Vendors -->
-          <div class="metric-tile" style="border-left: 4px solid #0d9488;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Vendors</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(13, 148, 136, 0.08); color: #0d9488;">
-                <i class="fa-solid fa-users-rectangle"></i>
-              </div>
-            </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-vendors">${stats.vendorsCount}</div>
-            </div>
-          </div>
-
-          <!-- Card 7: Services -->
-          <div class="metric-tile" style="border-left: 4px solid #ea580c;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Services</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(234, 88, 12, 0.08); color: #ea580c;">
-                <i class="fa-solid fa-list-check"></i>
-              </div>
-            </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-services">${stats.servicesCount}</div>
-            </div>
-          </div>
-
-          <!-- Card 8: Users -->
-          <div class="metric-tile" style="border-left: 4px solid #0284c7;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Users</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(2, 132, 199, 0.08); color: #0284c7;">
-                <i class="fa-solid fa-users"></i>
-              </div>
-            </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-users">${stats.usersCount}</div>
-            </div>
-          </div>
-
-          <!-- Card 9: Business Claims -->
-          <div class="metric-tile" style="border-left: 4px solid #ec4899;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Business Claims</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(236, 72, 153, 0.08); color: #ec4899;">
-                <i class="fa-solid fa-award"></i>
-              </div>
-            </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-claims">${stats.businessClaims}</div>
-            </div>
-          </div>
-
-          <!-- Card 10: Regions -->
-          <div class="metric-tile" style="border-left: 4px solid #059669;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Regions</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(5, 150, 105, 0.08); color: #059669;">
-                <i class="fa-solid fa-earth-asia"></i>
-              </div>
-            </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-regions">${stats.regionsCount}</div>
-            </div>
-          </div>
-
-          <!-- Card 11: Cities -->
-          <div class="metric-tile" style="border-left: 4px solid #eab308;">
-            <div class="tile-head">
-              <span class="tile-title" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub);">Cities</span>
-              <div class="tile-icon-wrap" style="background-color: rgba(234, 179, 8, 0.08); color: #eab308;">
-                <i class="fa-solid fa-city"></i>
-              </div>
-            </div>
-            <div class="tile-body">
-              <div class="tile-number" id="dash-stat-cities">${stats.citiesCount}</div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Trend Charts -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; margin-bottom: 24px;">
-          <div class="panel-card">
-            <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
-              <div class="panel-title-group">
-                <h3 style="font-size: 1rem; font-weight: 800;">Bookings by Status</h3>
-              </div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:14px;">
-              ${statusChartData.map(d => renderBarRow(d, statusMax)).join('')}
-            </div>
-          </div>
-
-          <div class="panel-card">
-            <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
-              <div class="panel-title-group">
-                <h3 style="font-size: 1rem; font-weight: 800;">Top Vendor Categories</h3>
-              </div>
-            </div>
-            ${topCategories.length === 0 ? `
-              <p style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding:20px 0;">No vendors yet.</p>
-            ` : `
-              <div style="display:flex;flex-direction:column;gap:14px;">
-                ${topCategories.map(d => renderBarRow(d, categoryMax)).join('')}
-              </div>
-            `}
           </div>
         </div>
 
-        <!-- Today's Bookings Registry Card -->
-        <div class="panel-card" style="margin-bottom: 24px;">
-          <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 12px;">
+        <div class="panel-card" style="padding: 24px; background: var(--surface-bg);">
+          <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
             <div class="panel-title-group">
-              <h3 style="font-size: 1.15rem; font-weight: 800;">Today's Bookings</h3>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);">Marketplace Growth Trends — ${scopeNames[scopeUpper]}</h3>
             </div>
-            <a href="#" onclick="event.preventDefault(); document.querySelector('[data-tab-trigger=bookings]').click();" style="color: var(--brand-rose); font-size: 0.8rem; font-weight: 600; text-decoration: none;">View All</a>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn-premium ${activeGrowthMetric === 'inquiries' ? 'btn-premium-rose' : ''}" style="font-size: 0.75rem; padding: 5px 12px;" onclick="state.biFilters.activeGrowthMetric='inquiries'; renderDashboard(WedEazzyStore.get());">Enquiries</button>
+              <button class="btn-premium ${activeGrowthMetric === 'bookings' ? 'btn-premium-rose' : ''}" style="font-size: 0.75rem; padding: 5px 12px;" onclick="state.biFilters.activeGrowthMetric='bookings'; renderDashboard(WedEazzyStore.get());">Bookings</button>
+            </div>
           </div>
-
-          <!-- Filter Sub-tabs matching image -->
-          <div style="display: flex; gap: 20px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 15px;">
-            <button class="selector-tab-btn active" style="background: none; border: none; border-bottom: 2.5px solid var(--brand-rose); border-radius: 0; padding: 8px 4px; color: var(--brand-rose); font-size: 0.82rem; font-weight: 700;">All Bookings</button>
-            <button class="selector-tab-btn" style="background: none; border: none; border-bottom: 2.5px solid transparent; border-radius: 0; padding: 8px 4px; color: var(--text-sub); font-size: 0.82rem; font-weight: 600;" onclick="window.showToast('Filter by Vendor bookings (Demo)...', 'info')">Vendor</button>
-            <button class="selector-tab-btn" style="background: none; border: none; border-bottom: 2.5px solid transparent; border-radius: 0; padding: 8px 4px; color: var(--text-sub); font-size: 0.82rem; font-weight: 600;" onclick="window.showToast('Filter by Venue bookings (Demo)...', 'info')">Venue</button>
+          <div class="canvas-container" style="height: 320px; position: relative;">
+            <canvas id="chartPlatformGrowth"></canvas>
           </div>
+        </div>
 
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="panel-card" style="padding: 20px; background: var(--surface-bg);">
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">Revenue Trend (${currencySym})</h3>
+            <div class="canvas-container" style="height: 240px; position: relative;">
+              <canvas id="chartRevenue"></canvas>
+            </div>
+          </div>
+          <div class="panel-card" style="padding: 20px; background: var(--surface-bg);">
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main);">Subscription Distribution</h3>
+            <div class="canvas-container" style="height: 240px; position: relative;">
+              <canvas id="chartListingClaims"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card" style="padding: 20px; background: var(--surface-bg);">
+          <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);">Category Performance — ${scopeNames[scopeUpper]}</h3>
+          </div>
           <div class="table-viewport">
             <table class="grid-table">
               <thead>
                 <tr>
-                  <th>Customer Name</th>
-                  <th>Customer Phone No</th>
-                  <th>Service</th>
-                  <th>Venue</th>
-                  <th>Appointment Date</th>
-                  <th>Booking Dates</th>
-                  <th>Status</th>
-                  <th style="text-align: right;">Actions</th>
+                  <th>Category</th>
+                  <th>Listings (Supply)</th>
+                  <th>Claimed</th>
+                  <th>Enquiries (Demand)</th>
                 </tr>
               </thead>
               <tbody>
-                ${store.bookings.slice(0, 3).map(b => `
+                ${categoryPerformance.length === 0 ? `
+                  <tr><td colspan="4" style="text-align: center; color: var(--text-sub); padding: 30px 0;">No category performance data for ${scopeNames[scopeUpper]}.</td></tr>
+                ` : categoryPerformance.map(cat => `
                   <tr>
-                    <td><strong style="font-weight: 700; color: var(--text-main);">${b.clientName}</strong></td>
-                    <td>+91 74989 87620</td>
-                    <td><span class="interactive-pill-badge" style="font-size: 0.7rem; border-color: rgba(220, 31, 48, 0.15); color: var(--brand-rose); font-weight: 600;">${b.eventType}</span></td>
-                    <td>${b.venue}</td>
-                    <td><i class="fa-regular fa-calendar-days" style="color: var(--brand-rose);"></i> ${b.date}</td>
-                    <td>${b.date}</td>
-                    <td>
-                      <span class="status-pill status-${b.status}">
-                        <span class="status-bullet-dot"></span> ${b.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div class="row-actions-group" style="justify-content: flex-end;">
-                        ${b.status !== "confirmed" ? `
-                          <button class="row-action-icon-btn row-action-approve" onclick="window.handleBookingStatus('${b.id}', 'confirmed')"><i class="fa-solid fa-check"></i></button>
-                        ` : ''}
-                        ${b.status !== "cancelled" ? `
-                          <button class="row-action-icon-btn row-action-reject" onclick="window.handleBookingStatus('${b.id}', 'cancelled')"><i class="fa-solid fa-xmark"></i></button>
-                        ` : ''}
-                      </div>
-                    </td>
-                  </tr>
-                `).join("")}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Booking Statistics Chart Panel -->
-        <div class="panel-card" style="margin-bottom: 24px;">
-          <div class="panel-header">
-            <div class="panel-title-group">
-              <h3 style="font-size: 1.15rem; font-weight: 800;">Booking Statistics</h3>
-            </div>
-            <div class="panel-controls">
-              <select class="premium-select" style="font-size: 0.78rem; font-weight: 600; padding: 6px 12px; border-radius: 6px;" onchange="window.showToast('Statistics range adjusted.', 'success')">
-                <option>Last 7 Days</option>
-                <option>Last 30 Days</option>
-                <option>Last 12 Months</option>
-              </select>
-            </div>
-          </div>
-          <div class="canvas-container" style="height: 320px;">
-            <canvas id="chartBookingTrends"></canvas>
-          </div>
-        </div>
-
-        <!-- Master Footer matching reference image -->
-        <footer style="margin-top: 35px; border-top: 1px solid var(--border-color); padding: 18px 0; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px;">
-          <div>&copy; 2026 All rights reserved | Cooked with ❤️ by <a href="#" style="color: var(--text-sub); text-decoration: none; font-weight: 600;">Psyber Inc.</a></div>
-          <div style="display: flex; gap: 16px;">
-            <a href="#" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-rose)'" onmouseout="this.style.color='var(--text-muted)'">Privacy</a>
-            <a href="#" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-rose)'" onmouseout="this.style.color='var(--text-muted)'">Terms</a>
-          </div>
-        </footer>
-
-        <!-- Floating concierge widgets matching image exactly -->
-        <div class="floating-widgets-dock" style="position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 90;">
-          <button class="interactive-pill-badge" style="border-color: #10b981; color: #10b981; font-weight: 700; background-color: var(--surface-bg); padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; box-shadow: var(--shadow-box);" onclick="window.triggerAddVenueModal()">Venue</button>
-          <button class="interactive-pill-badge" style="border-color: #10b981; color: #10b981; font-weight: 700; background-color: var(--surface-bg); padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; box-shadow: var(--shadow-box);" onclick="window.triggerAddVendorModal()">Vendor</button>
-        </div>
-
-      </div>
-    `;
-
-    // Initialize clock specific inside welcome banner
-    const clockBadge = document.getElementById("systemClockBadge");
-    if (clockBadge && el.clockNode) {
-      clockBadge.innerHTML = el.clockNode.innerHTML;
-      // Mirror clock
-      const observer = new MutationObserver(() => {
-        clockBadge.innerHTML = el.clockNode.innerHTML;
+                    <td><strong>${escHtml(cat.category)}</strong></td>
+    const rangeSelect = document.getElementById('biRangeSelect');
+    if (rangeSelect) {
+      rangeSelect.addEventListener('change', (e) => {
+        state.biFilters.range = e.target.value;
+        renderDashboard(WedEazzyStore.get());
       });
-      observer.observe(el.clockNode, { childList: true });
     }
 
-    // Render Charts
-    if (window.WedEazzyCharts) {
-      window.WedEazzyCharts.renderAll();
+    const countrySelect = document.getElementById('biCountryFilter');
+    if (countrySelect) {
+      countrySelect.addEventListener('change', (e) => {
+        state.biFilters.countryCode = e.target.value;
+        if (window.handleGlobalCountryChange) {
+          window.WedEazzyCountryScope = e.target.value;
+          localStorage.setItem('wedeazzy_country_scope', e.target.value);
+          const globalSelect = document.getElementById('globalAdminCountrySelect');
+          if (globalSelect && globalSelect.value !== e.target.value) globalSelect.value = e.target.value;
+        }
+        renderDashboard(WedEazzyStore.get());
+      });
     }
+
+    const citySelect = document.getElementById('biCityFilter');
+    if (citySelect) {
+      citySelect.addEventListener('change', (e) => {
+        state.biFilters.citySlug = e.target.value;
+        renderDashboard(WedEazzyStore.get());
+      });
+    }
+
+    const categorySelect = document.getElementById('biCategoryFilter');
+    if (categorySelect) {
+      categorySelect.addEventListener('change', (e) => {
+        state.biFilters.categorySlug = e.target.value;
+        renderDashboard(WedEazzyStore.get());
+      });
+    }
+
+    const tierSelect = document.getElementById('biTierFilter');
+    if (tierSelect) {
+      tierSelect.addEventListener('change', (e) => {
+        state.biFilters.tier = e.target.value;
+        renderDashboard(WedEazzyStore.get());
+      });
+    }
+
+    // 5. Render Chart.js Visualizations
+    setTimeout(() => {
+      if (window.WedEazzyCharts) {
+        window.WedEazzyCharts.renderPlatformGrowthChart('chartPlatformGrowth', growthSeries, state.biFilters.activeGrowthMetric);
+        window.WedEazzyCharts.renderUserCompositionChart('chartUserComposition', userComposition);
+      }
+    }, 100);
   }
 
   // Render BOOKINGS (Tab 2)
   function renderBookings(store) {
-    const list = store.bookings;
+    const currentScope = window.WedEazzyCountryScope || 'all';
+    const rawList = store.bookings || [];
+    const list = rawList.filter(b => window.matchesCountryScope(b, currentScope));
 
     el.portalBody.innerHTML = `
       <div class="spa-tab-wrapper">
         <div class="locator-breadcrumb">
           <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Booking Manager</span>
         </div>
+
+        ${window.renderAdminCountryScopeHeader('Booking Manager Country Scope', 'Filter active client scheduling and venue reservations per country')}
 
         <div class="panel-card">
           <div class="panel-header">
@@ -3515,7 +4967,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render VENUES (Tab 3)
   function renderVenues(store) {
-    const venues = store.venues;
+    const currentScope = window.WedEazzyCountryScope || 'all';
+    const rawVenues = store.venues || [];
+    const venues = rawVenues.filter(v => window.matchesCountryScope(v, currentScope));
     const { pageItems, filteredCount, totalPages, currentPage } = paginateList(
       venues,
       state.venuesSearch,
@@ -3529,6 +4983,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="locator-breadcrumb">
           <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Venue Manager</span>
         </div>
+
+        ${window.renderAdminCountryScopeHeader('Venue Manager Country Scope', 'Filter banquet halls & wedding lawns directory per country')}
 
         <div class="panel-card">
           <div class="panel-header">
@@ -4830,37 +6286,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Modal 2: Add Vendor
   window.triggerAddVendorModal = function() {
+    const savedScope = (window.WedEazzyCountryScope || 'IN').toUpperCase();
     const bodyHTML = `
       <form id="formAddVendor" style="display: flex; flex-direction: column; gap: 12px;">
         <div class="modal-form-group">
-          <label for="mv_name">Business Name</label>
+          <label for="mv_name">Business Name *</label>
           <input type="text" id="mv_name" class="premium-input" placeholder="e.g. Dream Event Decorators" required />
         </div>
         <div class="modal-form-group">
-          <label for="mv_category">Service Vertical</label>
+          <label for="mv_country">Country *</label>
+          <select id="mv_country" class="premium-select" required>
+            <option value="India" ${savedScope === 'IN' || savedScope === 'ALL' ? 'selected' : ''}>🇮🇳 India</option>
+            <option value="UAE" ${savedScope === 'AE' ? 'selected' : ''}>🇦🇪 UAE</option>
+            <option value="UK" ${savedScope === 'GB' ? 'selected' : ''}>🇬🇧 UK</option>
+            <option value="USA" ${savedScope === 'US' ? 'selected' : ''}>🇺🇸 USA</option>
+            <option value="Canada" ${savedScope === 'CA' ? 'selected' : ''}>🇨🇦 Canada</option>
+            <option value="Australia" ${savedScope === 'AU' ? 'selected' : ''}>🇦🇺 Australia</option>
+          </select>
+        </div>
+        <div class="modal-form-group">
+          <label for="mv_category">Service Vertical *</label>
           <select id="mv_category" class="premium-select" required>
             <option value="Catering">Catering</option>
             <option value="Decoration">Decoration</option>
             <option value="Photography">Photography</option>
             <option value="Makeup Artist">Makeup Artist</option>
             <option value="Entertainment">Entertainment</option>
+            <option value="Wedding Venues">Wedding Venues</option>
+            <option value="Wedding Planners">Wedding Planners</option>
           </select>
         </div>
         <div class="modal-form-group">
-          <label for="mv_contact">Contact Phone</label>
-          <input type="text" id="mv_contact" class="premium-input" placeholder="+91 XXXXX XXXXX" required />
+          <label for="mv_contact">Contact Phone *</label>
+          <input type="text" id="mv_contact" class="premium-input" placeholder="+1 / +44 / +91 XXXXX XXXXX" required />
         </div>
         <div class="modal-form-group">
-          <label for="mv_email">Email Address</label>
+          <label for="mv_email">Email Address *</label>
           <input type="email" id="mv_email" class="premium-input" placeholder="info@company.com" required />
         </div>
         <div class="modal-form-group">
-          <label for="mv_address">City</label>
-          <select id="mv_address" class="premium-select" required>
-            <option value="">Select city…</option>
-            <option>Mumbai</option><option>Delhi NCR</option><option>Goa</option>
-            <option>Jaipur</option><option>Udaipur</option><option>Jodhpur</option><option>Ahmedabad</option>
-          </select>
+          <label for="mv_address">City *</label>
+          <input type="text" id="mv_address" class="premium-input" placeholder="e.g. London / New York / Dubai / Mumbai" required />
         </div>
       </form>
     `;
@@ -4875,6 +6341,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.submitAddVendor = async function() {
     const name = document.getElementById("mv_name").value;
+    const country = document.getElementById("mv_country").value;
     const cat = document.getElementById("mv_category").value;
     const phone = document.getElementById("mv_contact").value;
     const email = document.getElementById("mv_email").value;
@@ -4885,11 +6352,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const codeMap = { 'India': 'IN', 'USA': 'US', 'UK': 'GB', 'UAE': 'AE', 'Canada': 'CA', 'Australia': 'AU' };
+    const countryCode = codeMap[country] || 'IN';
+
     const btn = document.querySelector('[onclick="window.submitAddVendor()"]');
     if (btn) { btn.disabled = true; btn.textContent = 'Approving…'; }
     try {
       const result = await window.WedEazzyStore.addVendor({
         name: name,
+        country: country,
+        countryCode: countryCode,
         category: cat,
         contact: phone,
         email: email,
@@ -5299,15 +6771,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div class="portal-welcome-banner">
           <div>
-            <h2>🚀 Grow Business Campaigns</h2>
-            <p>Manage all vendor advertising campaigns. Review, approve, update analytics, and track performance.</p>
+            <h2>🚀 Grow Business Campaigns Management</h2>
+            <p>Review vendor ad campaigns, manage active promotion budgets, update real performance analytics, and track ROI.</p>
           </div>
-          <div style="display:flex;gap:12px;">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <input type="text" id="campaignSearchInput" placeholder="Search business or package..." 
+              style="border:1.5px solid var(--border-color);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text-main);background:var(--surface-bg);outline:none;min-width:200px;"
+              oninput="window.filterAdminCampaigns()" />
+            
+            <select id="campaignCountryFilter" 
+              style="border:1.5px solid var(--border-color);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text-main);background:var(--surface-bg);outline:none;cursor:pointer;"
+              onchange="window.filterAdminCampaigns()">
+              <option value="all">All Countries</option>
+              <option value="IN">🇮🇳 India</option>
+              <option value="AE">🇦🇪 UAE</option>
+              <option value="GB">🇬🇧 UK</option>
+              <option value="US">🇺🇸 USA</option>
+              <option value="CA">🇨🇦 Canada</option>
+              <option value="AU">🇦🇺 Australia</option>
+            </select>
+
             <select id="campaignStatusFilter" 
               style="border:1.5px solid var(--border-color);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text-main);background:var(--surface-bg);outline:none;cursor:pointer;"
-              onchange="window.loadAdminCampaigns(this.value)">
-              <option value="all">All Campaigns</option>
-              <option value="pending">Pending</option>
+              onchange="window.filterAdminCampaigns()">
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending Review</option>
               <option value="approved">Approved</option>
               <option value="running">Running</option>
               <option value="completed">Completed</option>
@@ -5315,6 +6803,9 @@ document.addEventListener("DOMContentLoaded", () => {
             </select>
           </div>
         </div>
+
+        <!-- KPI SUMMARY CARDS -->
+        <div id="growCampaignsKpiContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;"></div>
 
         <div id="adminCampaignsContainer">
           <div style="text-align:center;padding:48px;color:var(--text-muted);">
@@ -5325,20 +6816,21 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    window.loadAdminCampaigns('all');
+    window._rawAdminCampaigns = [];
+    window.loadAdminCampaigns();
   }
 
-  window.loadAdminCampaigns = async function(status = 'all') {
+  window.loadAdminCampaigns = async function() {
     const container = document.getElementById('adminCampaignsContainer');
     if (!container) return;
 
-    container.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;margin-bottom:16px;display:block;"></i>Loading...</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;margin-bottom:16px;display:block;"></i>Loading campaigns...</div>`;
 
     try {
       const auth = window.WedEazzyAuth;
       const token = auth ? auth.getToken() : null;
 
-      const url = `/api/campaigns/admin/all?status=${status}&limit=50`;
+      const url = `/api/campaigns/admin/all?status=all&limit=200`;
       const res = await fetch(url, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
@@ -5346,156 +6838,208 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
       const data = await res.json();
+      if (!data.ok) throw new Error(data.message || 'Failed to load campaigns');
 
-      if (!data.ok) throw new Error(data.message || 'Failed to load');
-
-      const campaigns = data.campaigns || [];
-
-      const statusColors = {
-        pending: { bg: 'rgba(245,158,11,0.1)', color: '#D97706' },
-        approved: { bg: 'rgba(16,185,129,0.1)', color: '#059669' },
-        running: { bg: 'rgba(59,130,246,0.1)', color: '#2563EB' },
-        completed: { bg: 'rgba(107,114,128,0.1)', color: '#6B7280' },
-        rejected: { bg: 'rgba(220,31,48,0.1)', color: '#DC1F30' }
-      };
-
-      const pkgNames = {
-        whatsapp_leads: 'WhatsApp Enquiries',
-        more_leads: 'More Leads',
-        website_sales: 'Website Sales'
-      };
-
-      if (campaigns.length === 0) {
-        container.innerHTML = `
-          <div class="panel-card" style="text-align:center;padding:48px;">
-            <div style="font-size:48px;margin-bottom:16px;">📭</div>
-            <h3>No campaigns found</h3>
-            <p style="color:var(--text-muted);">No campaigns with the selected status.</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:16px;">
-          ${campaigns.map(c => {
-            const sc = statusColors[c.adminStatus] || statusColors.pending;
-            const vendorName = c.vendor ? c.vendor.businessName : '—';
-            const vendorEmail = c.vendor && c.vendor.user ? c.vendor.user.email : '—';
-            const vendorPhone = c.vendor ? (c.vendor.whatsappNumber || c.vendor.user?.phone || '—') : '—';
-            const targetAreas = Array.isArray(c.targetAreas) ? c.targetAreas.join(', ') : '—';
-            const pkgName = pkgNames[c.packageType] || c.packageType || '—';
-            const createdAt = new Date(c.createdAt).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
-
-            return `
-              <div class="panel-card" id="campaign-${c.id}" style="border-left:4px solid ${sc.color};">
-                <!-- Header -->
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-                  <div>
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-                      <h3 style="font-size:16px;font-weight:800;color:var(--text-main);">${pkgName}</h3>
-                      <span style="background:${sc.bg};color:${sc.color};font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;text-transform:uppercase;">
-                        ● ${(c.adminStatus || 'pending').replace('_', ' ')}
-                      </span>
-                    </div>
-                    <div style="font-size:12px;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap;">
-                      <span>🏪 <strong>${escHtml(vendorName)}</strong></span>
-                      <span>📧 ${escHtml(vendorEmail)}</span>
-                      <span>📱 ${escHtml(vendorPhone)}</span>
-                      <span>📅 ${createdAt}</span>
-                    </div>
-                  </div>
-                  <div style="font-size:18px;font-weight:800;color:#DC1F30;">${c.totalAmount ? '₹' + parseInt(c.totalAmount).toLocaleString('en-IN') : '—'}</div>
-                </div>
-
-                <!-- Campaign Details -->
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;background:var(--canvas-bg);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;">
-                  <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Plan Duration</span><div style="font-weight:700;color:var(--text-main);">${c.planDays ? c.planDays + ' Days' : 'Custom'}</div></div>
-                  <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Payment Method</span><div style="font-weight:700;color:var(--text-main);">${(c.paymentMethod || '—').replace('_', ' ')}</div></div>
-                  <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Gender</span><div style="font-weight:700;color:var(--text-main);">${c.gender || 'All'}</div></div>
-                  <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Age Range</span><div style="font-weight:700;color:var(--text-main);">${c.ageMin || 18}–${c.ageMax || 65}</div></div>
-                  <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Time Schedule</span><div style="font-weight:700;color:var(--text-main);">${c.timeSchedule === 'whole_day' ? 'Whole Day' : (c.startTime + ' – ' + c.endTime)}</div></div>
-                  <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Payment Status</span><div style="font-weight:700;color:${c.paymentStatus === 'paid' ? '#059669' : c.paymentStatus === 'failed' ? '#DC1F30' : '#D97706'};">${c.paymentStatus || 'pending'}</div></div>
-                </div>
-
-                ${targetAreas !== '—' ? `
-                  <div style="margin-bottom:14px;">
-                    <span style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text-muted);">Target Areas</span>
-                    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
-                      ${(Array.isArray(c.targetAreas) ? c.targetAreas : []).map(a => `<span style="background:var(--canvas-bg);border:1px solid var(--border-color);font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;">${a}</span>`).join('')}
-                    </div>
-                  </div>
-                ` : ''}
-
-                <!-- Analytics Update Section -->
-                <div style="background:rgba(220,31,48,0.04);border:1.5px solid rgba(220,31,48,0.12);border-radius:10px;padding:14px;margin-bottom:16px;">
-                  <div style="font-size:12px;font-weight:800;color:var(--text-main);margin-bottom:10px;">📊 Analytics Update (enter real numbers)</div>
-                  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
-                    ${[
-                      {key:'analyticsReach', label:'Reach', val: c.analyticsReach},
-                      {key:'analyticsImpressions', label:'Impressions', val: c.analyticsImpressions},
-                      {key:'analyticsClicks', label:'Clicks', val: c.analyticsClicks},
-                      {key:'analyticsLeads', label:'Leads', val: c.analyticsLeads},
-                      {key:'analyticsWhatsapp', label:'WhatsApp', val: c.analyticsWhatsapp}
-                    ].map(f => `
-                      <div>
-                        <div style="font-size:9px;text-transform:uppercase;font-weight:700;color:var(--text-muted);margin-bottom:4px;">${f.label}</div>
-                        <input type="number" id="anlyt-${c.id}-${f.key}" value="${f.val || 0}" min="0"
-                          style="width:100%;border:1.5px solid var(--border-color);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--text-main);background:var(--surface-bg);outline:none;font-family:inherit;" />
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-
-                <!-- Admin Notes -->
-                <div style="margin-bottom:16px;">
-                  <div style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Admin Notes</div>
-                  <textarea id="notes-${c.id}" 
-                    style="width:100%;border:1.5px solid var(--border-color);border-radius:8px;padding:10px;font-size:13px;color:var(--text-main);background:var(--surface-bg);font-family:inherit;resize:vertical;min-height:60px;outline:none;"
-                    placeholder="Internal notes about this campaign...">${c.adminNotes || ''}</textarea>
-                </div>
-
-                <!-- Action Buttons -->
-                <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                  <button onclick="window.adminUpdateCampaign('${c.id}', 'approved')"
-                    style="background:rgba(16,185,129,0.1);color:#059669;border:1.5px solid #059669;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
-                    ✅ Approve
-                  </button>
-                  <button onclick="window.adminUpdateCampaign('${c.id}', 'running')"
-                    style="background:rgba(59,130,246,0.1);color:#2563EB;border:1.5px solid #2563EB;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
-                    ▶ Mark Running
-                  </button>
-                  <button onclick="window.adminUpdateCampaign('${c.id}', 'completed')"
-                    style="background:rgba(107,114,128,0.1);color:#6B7280;border:1.5px solid #6B7280;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
-                    ✔ Completed
-                  </button>
-                  <button onclick="window.adminUpdateCampaign('${c.id}', 'rejected')"
-                    style="background:rgba(220,31,48,0.08);color:#DC1F30;border:1.5px solid #DC1F30;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
-                    ✖ Reject
-                  </button>
-                  <button onclick="window.adminSaveAnalytics('${c.id}')"
-                    style="margin-left:auto;background:#DC1F30;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
-                    💾 Save Analytics
-                  </button>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `;
+      window._rawAdminCampaigns = data.campaigns || [];
+      window.filterAdminCampaigns();
     } catch (e) {
       container.innerHTML = `
         <div class="panel-card" style="text-align:center;padding:48px;">
           <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
           <h3>Failed to load campaigns</h3>
           <p style="color:var(--text-muted);">${e.message}</p>
-          <button onclick="window.loadAdminCampaigns('all')" 
+          <button onclick="window.loadAdminCampaigns()" 
             style="margin-top:16px;background:#DC1F30;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">
             Retry
           </button>
         </div>
       `;
     }
+  };
+
+  window.filterAdminCampaigns = function() {
+    const container = document.getElementById('adminCampaignsContainer');
+    const kpiContainer = document.getElementById('growCampaignsKpiContainer');
+    if (!container) return;
+
+    const campaigns = window._rawAdminCampaigns || [];
+    const statusVal = document.getElementById('campaignStatusFilter')?.value || 'all';
+    const countryVal = document.getElementById('campaignCountryFilter')?.value || 'all';
+    const searchVal = (document.getElementById('campaignSearchInput')?.value || '').toLowerCase().trim();
+
+    const filtered = campaigns.filter(c => {
+      if (statusVal !== 'all' && (c.adminStatus || 'pending') !== statusVal) return false;
+      if (countryVal !== 'all') {
+        const cCode = (c.vendor?.countryCode || c.vendor?.country || '').toUpperCase();
+        if (!cCode.includes(countryVal)) return false;
+      }
+      if (searchVal) {
+        const bName = (c.vendor?.businessName || '').toLowerCase();
+        const pkg = (c.packageType || '').toLowerCase();
+        const email = (c.vendor?.user?.email || '').toLowerCase();
+        if (!bName.includes(searchVal) && !pkg.includes(searchVal) && !email.includes(searchVal)) return false;
+      }
+      return true;
+    });
+
+    // Update KPI Cards
+    if (kpiContainer) {
+      const totalRev = filtered.reduce((acc, c) => acc + (parseFloat(c.totalAmount) || 0), 0);
+      const activeCnt = filtered.filter(c => c.adminStatus === 'running' || c.adminStatus === 'approved').length;
+      const totalLeads = filtered.reduce((acc, c) => acc + (parseInt(c.analyticsLeads, 10) || 0) + (parseInt(c.analyticsWhatsapp, 10) || 0), 0);
+
+      kpiContainer.innerHTML = `
+        <div class="panel-card" style="padding: 16px;">
+          <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Total Campaigns</span>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin-top: 4px;">${filtered.length}</div>
+        </div>
+        <div class="panel-card" style="padding: 16px;">
+          <span style="font-size: 0.72rem; font-weight: 800; color: #059669; text-transform: uppercase;">Active / Running</span>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #059669; margin-top: 4px;">${activeCnt}</div>
+        </div>
+        <div class="panel-card" style="padding: 16px;">
+          <span style="font-size: 0.72rem; font-weight: 800; color: var(--brand-rose); text-transform: uppercase;">Total Campaign Revenue</span>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--brand-rose); margin-top: 4px;">₹${totalRev.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="panel-card" style="padding: 16px;">
+          <span style="font-size: 0.72rem; font-weight: 800; color: var(--brand-blue); text-transform: uppercase;">Leads Delivered</span>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--brand-blue); margin-top: 4px;">${totalLeads.toLocaleString('en-IN')}</div>
+        </div>
+      `;
+    }
+
+    const statusColors = {
+      pending: { bg: 'rgba(245,158,11,0.1)', color: '#D97706' },
+      approved: { bg: 'rgba(16,185,129,0.1)', color: '#059669' },
+      running: { bg: 'rgba(59,130,246,0.1)', color: '#2563EB' },
+      completed: { bg: 'rgba(107,114,128,0.1)', color: '#6B7280' },
+      rejected: { bg: 'rgba(220,31,48,0.1)', color: '#DC1F30' }
+    };
+
+    const pkgNames = {
+      whatsapp_leads: 'WhatsApp Enquiries',
+      more_leads: 'More Leads',
+      website_sales: 'Website Sales'
+    };
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="panel-card" style="text-align:center;padding:48px;">
+          <div style="font-size:48px;margin-bottom:16px;">📭</div>
+          <h3>No campaigns match active filters</h3>
+          <p style="color:var(--text-muted);">Try resetting search keywords, status, or country filters.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        ${filtered.map(c => {
+          const sc = statusColors[c.adminStatus] || statusColors.pending;
+          const vendorName = c.vendor ? c.vendor.businessName : '—';
+          const vendorEmail = c.vendor && c.vendor.user ? c.vendor.user.email : '—';
+          const vendorPhone = c.vendor ? (c.vendor.whatsappNumber || c.vendor.user?.phone || '—') : '—';
+          const targetAreas = Array.isArray(c.targetAreas) ? c.targetAreas.join(', ') : '—';
+          const pkgName = pkgNames[c.packageType] || c.packageType || '—';
+          const createdAt = new Date(c.createdAt).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+
+          return `
+            <div class="panel-card" id="campaign-${c.id}" style="border-left:4px solid ${sc.color};">
+              <!-- Header -->
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+                <div>
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                    <h3 style="font-size:16px;font-weight:800;color:var(--text-main);">${pkgName}</h3>
+                    <span style="background:${sc.bg};color:${sc.color};font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;text-transform:uppercase;">
+                      ● ${(c.adminStatus || 'pending').replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap;">
+                    <span>🏪 <strong>${escHtml(vendorName)}</strong></span>
+                    <span>📧 ${escHtml(vendorEmail)}</span>
+                    <span>📱 ${escHtml(vendorPhone)}</span>
+                    <span>📅 ${createdAt}</span>
+                  </div>
+                </div>
+                <div style="font-size:18px;font-weight:800;color:#DC1F30;">${c.totalAmount ? '₹' + parseInt(c.totalAmount).toLocaleString('en-IN') : '—'}</div>
+              </div>
+
+              <!-- Campaign Details -->
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;background:var(--canvas-bg);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;">
+                <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Plan Duration</span><div style="font-weight:700;color:var(--text-main);">${c.planDays ? c.planDays + ' Days' : 'Custom'}</div></div>
+                <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Payment Method</span><div style="font-weight:700;color:var(--text-main);">${(c.paymentMethod || '—').replace('_', ' ')}</div></div>
+                <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Gender</span><div style="font-weight:700;color:var(--text-main);">${c.gender || 'All'}</div></div>
+                <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Age Range</span><div style="font-weight:700;color:var(--text-main);">${c.ageMin || 18}–${c.ageMax || 65}</div></div>
+                <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Time Schedule</span><div style="font-weight:700;color:var(--text-main);">${c.timeSchedule === 'whole_day' ? 'Whole Day' : (c.startTime + ' – ' + c.endTime)}</div></div>
+                <div><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;font-weight:700;">Payment Status</span><div style="font-weight:700;color:${c.paymentStatus === 'paid' ? '#059669' : c.paymentStatus === 'failed' ? '#DC1F30' : '#D97706'};">${c.paymentStatus || 'pending'}</div></div>
+              </div>
+
+              ${targetAreas !== '—' ? `
+                <div style="margin-bottom:14px;">
+                  <span style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text-muted);">Target Areas</span>
+                  <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+                    ${(Array.isArray(c.targetAreas) ? c.targetAreas : []).map(a => `<span style="background:var(--canvas-bg);border:1px solid var(--border-color);font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;">${a}</span>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Analytics Update Section -->
+              <div style="background:rgba(220,31,48,0.04);border:1.5px solid rgba(220,31,48,0.12);border-radius:10px;padding:14px;margin-bottom:16px;">
+                <div style="font-size:12px;font-weight:800;color:var(--text-main);margin-bottom:10px;">📊 Analytics Update (enter real numbers)</div>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+                  ${[
+                    {key:'analyticsReach', label:'Reach', val: c.analyticsReach},
+                    {key:'analyticsImpressions', label:'Impressions', val: c.analyticsImpressions},
+                    {key:'analyticsClicks', label:'Clicks', val: c.analyticsClicks},
+                    {key:'analyticsLeads', label:'Leads', val: c.analyticsLeads},
+                    {key:'analyticsWhatsapp', label:'WhatsApp', val: c.analyticsWhatsapp}
+                  ].map(f => `
+                    <div>
+                      <div style="font-size:9px;text-transform:uppercase;font-weight:700;color:var(--text-muted);margin-bottom:4px;">${f.label}</div>
+                      <input type="number" id="anlyt-${c.id}-${f.key}" value="${f.val || 0}" min="0"
+                        style="width:100%;border:1.5px solid var(--border-color);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--text-main);background:var(--surface-bg);outline:none;font-family:inherit;" />
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <!-- Admin Notes -->
+              <div style="margin-bottom:16px;">
+                <div style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Admin Notes</div>
+                <textarea id="notes-${c.id}" 
+                  style="width:100%;border:1.5px solid var(--border-color);border-radius:8px;padding:10px;font-size:13px;color:var(--text-main);background:var(--surface-bg);font-family:inherit;resize:vertical;min-height:60px;outline:none;"
+                  placeholder="Internal notes about this campaign...">${c.adminNotes || ''}</textarea>
+              </div>
+
+              <!-- Action Buttons -->
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button onclick="window.adminUpdateCampaign('${c.id}', 'approved')"
+                  style="background:rgba(16,185,129,0.1);color:#059669;border:1.5px solid #059669;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
+                  ✅ Approve
+                </button>
+                <button onclick="window.adminUpdateCampaign('${c.id}', 'running')"
+                  style="background:rgba(59,130,246,0.1);color:#2563EB;border:1.5px solid #2563EB;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
+                  ▶ Mark Running
+                </button>
+                <button onclick="window.adminUpdateCampaign('${c.id}', 'completed')"
+                  style="background:rgba(107,114,128,0.1);color:#6B7280;border:1.5px solid #6B7280;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
+                  ✔ Completed
+                </button>
+                <button onclick="window.adminUpdateCampaign('${c.id}', 'rejected')"
+                  style="background:rgba(220,31,48,0.08);color:#DC1F30;border:1.5px solid #DC1F30;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
+                  ✖ Reject
+                </button>
+                <button onclick="window.adminSaveAnalytics('${c.id}')"
+                  style="margin-left:auto;background:#DC1F30;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;">
+                  💾 Save Analytics
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
   };
 
   window.adminUpdateCampaign = async function(campaignId, adminStatus) {
@@ -5516,8 +7060,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (data.ok) {
         showToast(`Campaign status updated to "${adminStatus}"`, 'success');
-        const filterEl = document.getElementById('campaignStatusFilter');
-        window.loadAdminCampaigns(filterEl ? filterEl.value : 'all');
+        window.loadAdminCampaigns();
       } else {
         showToast('Update failed: ' + (data.message || 'Unknown error'), 'danger');
       }
@@ -5565,7 +7108,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // ── Grow Business Pricing (editable price catalog for the vendor-side Grow Business page) ──
+  // ── Grow Business Pricing (editable price catalog & dynamic analytics for Grow Business) ──
 
   const GROW_PACKAGE_LABELS = {
     whatsapp_leads: 'Get WhatsApp Enquiries',
@@ -5573,81 +7116,465 @@ document.addEventListener("DOMContentLoaded", () => {
     website_sales: 'Increase Website Sales',
   };
 
+  const GROW_COUNTRY_SYMBOLS = {
+    IN: '₹',
+    AE: 'AED ',
+    GB: '£',
+    US: '$',
+    CA: 'CA$',
+    AU: 'A$'
+  };
+
+  const GROW_COUNTRY_NAMES = {
+    IN: 'India',
+    AE: 'UAE',
+    GB: 'UK',
+    US: 'USA',
+    CA: 'Canada',
+    AU: 'Australia'
+  };
+
+  const GROW_COUNTRY_FLAGS = {
+    IN: '🇮🇳',
+    AE: '🇦🇪',
+    GB: '🇬🇧',
+    US: '🇺🇸',
+    CA: '🇨🇦',
+    AU: '🇦🇺'
+  };
+
   async function renderGrowPricing(store) {
+    let activeCountryCode = (window.WedEazzyCountryScope && window.WedEazzyCountryScope !== 'all') 
+      ? window.WedEazzyCountryScope.toUpperCase() 
+      : 'all';
+
     el.portalBody.innerHTML = `
-      <div class="spa-tab-wrapper">
-        <div class="locator-breadcrumb">
-          <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Grow Business Pricing</span>
+      <div class="spa-tab-wrapper" style="animation: fadeIn 0.3s ease-in-out; max-width: 1400px; margin: 0 auto; padding: 12px 16px;">
+        
+        <!-- Locator Breadcrumb -->
+        <div class="locator-breadcrumb" style="margin-bottom: 16px; font-size: 0.82rem; font-weight: 700; color: var(--text-sub);">
+          <a href="#" style="color: var(--text-sub); text-decoration: none;">Wedeazzy Admin</a> 
+          <i class="fa-solid fa-angle-right" style="font-size: 0.7rem; margin: 0 6px;"></i> 
+          <span style="color: var(--text-main);">Grow Business Pricing & Analytics</span>
         </div>
 
-        <div class="portal-welcome-banner">
-          <div>
-            <h2>🏷️ Grow Business Pricing</h2>
-            <p>Edit campaign package prices shown to vendors on their Grow Business page. Changes apply immediately.</p>
+        <!-- Header Welcome Banner -->
+        <div class="portal-welcome-banner" style="background: linear-gradient(135deg, rgba(225, 29, 72, 0.09) 0%, rgba(147, 51, 234, 0.07) 100%); border: 1px solid rgba(225, 29, 72, 0.2); padding: 22px 26px; border-radius: 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.04);">
+          <div style="flex: 1; min-width: 280px;">
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin: 0 0 6px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <span style="background: linear-gradient(135deg, #e11d48, #9333ea); color: white; width: 38px; height: 38px; border-radius: 12px; font-size: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);"><i class="fa-solid fa-chart-line"></i></span>
+              Grow Business Pricing & Performance Analytics
+            </h2>
+            <p style="color: var(--text-sub); font-size: 0.88rem; margin: 0; line-height: 1.5; max-width: 780px;">
+              Manage Grow Business package prices per country and track real-time revenue, top purchasing countries, vendor categories, cities, and popular plans. Price updates sync instantly with vendor checkout.
+            </p>
           </div>
-          <div>
-            <button class="btn-premium btn-premium-rose" id="btnSaveGrowPricing" onclick="window.saveGrowPricing()">
-              <i class="fa-solid fa-floppy-disk"></i> Save All Changes
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <button class="btn-premium btn-premium-rose" id="btnSaveGrowPricing" onclick="window.saveGrowPricing()" style="padding: 12px 24px; font-weight: 800; border-radius: 14px; background: linear-gradient(135deg, #e11d48, #be123c); color: white; border: none; font-size: 0.9rem; cursor: pointer; box-shadow: 0 6px 20px rgba(225, 29, 72, 0.35); transition: all 0.2s;">
+              <i class="fa-solid fa-floppy-disk" style="margin-right: 8px;"></i> Save All Changes
             </button>
           </div>
         </div>
 
-        <div id="growPricingContainer" style="display:flex;flex-direction:column;gap:20px;">
-          <div style="text-align:center;padding:48px;color:var(--text-muted);">
-            <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;margin-bottom:16px;display:block;"></i>
-            Loading pricing…
+        <!-- Country Filter Bar & Quick Pills -->
+        <div style="background: var(--surface-bg); padding: 20px 24px; border-radius: 18px; border: 1px solid var(--border-color); margin-bottom: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="width: 42px; height: 42px; border-radius: 14px; background: rgba(59, 130, 246, 0.12); color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 800;">
+                🌍
+              </div>
+              <div>
+                <h4 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">Country Filter & Scope</h4>
+                <div style="font-size: 0.8rem; color: var(--text-sub); margin-top: 2px;">Filter metrics & edit pricing for a specific country or view global summary.</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-sub);">Select Country:</label>
+              <select id="growPricingCountryScopeSelect" style="background: var(--surface-subtle); color: var(--text-main); border: 1.5px solid var(--border-color); font-weight: 800; font-size: 0.9rem; padding: 10px 18px; border-radius: 12px; cursor: pointer; outline: none; transition: all 0.2s;"
+                onchange="window.loadGrowPricingAndStats(this.value)">
+                <option value="all" ${activeCountryCode === 'all' ? 'selected' : ''}>🌐 All Countries (Global Overview)</option>
+                <option value="IN" ${activeCountryCode === 'IN' ? 'selected' : ''}>🇮🇳 India (INR ₹)</option>
+                <option value="AE" ${activeCountryCode === 'AE' ? 'selected' : ''}>🇦🇪 UAE (AED)</option>
+                <option value="GB" ${activeCountryCode === 'GB' ? 'selected' : ''}>🇬🇧 UK (GBP £)</option>
+                <option value="US" ${activeCountryCode === 'US' ? 'selected' : ''}>🇺🇸 USA (USD $)</option>
+                <option value="CA" ${activeCountryCode === 'CA' ? 'selected' : ''}>🇨🇦 Canada (CAD CA$)</option>
+                <option value="AU" ${activeCountryCode === 'AU' ? 'selected' : ''}>🇦🇺 Australia (AUD A$)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Quick Click Filter Pills -->
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; pt: 10px; border-top: 1px dashed var(--border-subtle); padding-top: 12px;">
+            <span style="font-size: 0.76rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-right: 4px;">Quick Switch:</span>
+            <button onclick="window.loadGrowPricingAndStats('all')" class="grow-scope-pill ${activeCountryCode === 'all' ? 'active' : ''}" style="background: ${activeCountryCode === 'all' ? '#e11d48' : 'var(--surface-subtle)'}; color: ${activeCountryCode === 'all' ? '#ffffff' : 'var(--text-main)'}; border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+              🌐 Global
+            </button>
+            <button onclick="window.loadGrowPricingAndStats('IN')" class="grow-scope-pill ${activeCountryCode === 'IN' ? 'active' : ''}" style="background: ${activeCountryCode === 'IN' ? '#e11d48' : 'var(--surface-subtle)'}; color: ${activeCountryCode === 'IN' ? '#ffffff' : 'var(--text-main)'}; border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+              🇮🇳 India
+            </button>
+            <button onclick="window.loadGrowPricingAndStats('AE')" class="grow-scope-pill ${activeCountryCode === 'AE' ? 'active' : ''}" style="background: ${activeCountryCode === 'AE' ? '#e11d48' : 'var(--surface-subtle)'}; color: ${activeCountryCode === 'AE' ? '#ffffff' : 'var(--text-main)'}; border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+              🇦🇪 UAE
+            </button>
+            <button onclick="window.loadGrowPricingAndStats('GB')" class="grow-scope-pill ${activeCountryCode === 'GB' ? 'active' : ''}" style="background: ${activeCountryCode === 'GB' ? '#e11d48' : 'var(--surface-subtle)'}; color: ${activeCountryCode === 'GB' ? '#ffffff' : 'var(--text-main)'}; border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+              🇬🇧 UK
+            </button>
+            <button onclick="window.loadGrowPricingAndStats('US')" class="grow-scope-pill ${activeCountryCode === 'US' ? 'active' : ''}" style="background: ${activeCountryCode === 'US' ? '#e11d48' : 'var(--surface-subtle)'}; color: ${activeCountryCode === 'US' ? '#ffffff' : 'var(--text-main)'}; border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+              🇺🇸 USA
+            </button>
+            <button onclick="window.loadGrowPricingAndStats('CA')" class="grow-scope-pill ${activeCountryCode === 'CA' ? 'active' : ''}" style="background: ${activeCountryCode === 'CA' ? '#e11d48' : 'var(--surface-subtle)'}; color: ${activeCountryCode === 'CA' ? '#ffffff' : 'var(--text-main)'}; border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+              🇨🇦 Canada
+            </button>
+            <button onclick="window.loadGrowPricingAndStats('AU')" class="grow-scope-pill ${activeCountryCode === 'AU' ? 'active' : ''}" style="background: ${activeCountryCode === 'AU' ? '#e11d48' : 'var(--surface-subtle)'}; color: ${activeCountryCode === 'AU' ? '#ffffff' : 'var(--text-main)'}; border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+              🇦🇺 Australia
+            </button>
           </div>
         </div>
+
+        <!-- Dynamic 5 KPI Stats Container -->
+        <div id="growPricingStatsContainer" style="margin-bottom: 36px;">
+          <div style="text-align:center;padding:40px;color:var(--text-muted);">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;margin-bottom:12px;display:block;color:#e11d48;"></i>
+            Loading performance analytics…
+          </div>
+        </div>
+
+        <!-- Section Title for Pricing Editor -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 8px;">
+              🏷️ Package Pricing Management
+            </h3>
+            <div style="font-size: 0.84rem; color: var(--text-sub); margin-top: 4px;" id="pricingScopeSubtitle">
+              Loading package catalog details…
+            </div>
+          </div>
+        </div>
+
+        <!-- Price Catalog Cards Container -->
+        <div id="growPricingContainer" style="display:flex; flex-direction:column; gap:24px; margin-bottom: 40px;">
+          <div style="text-align:center;padding:40px;color:var(--text-muted);">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;margin-bottom:12px;display:block;color:#e11d48;"></i>
+            Loading package pricing catalog…
+          </div>
+        </div>
+
+        <!-- Recent Grow Business Orders Table -->
+        <div class="panel-card" style="border-radius: 20px; border: 1px solid var(--border-color); padding: 26px; margin-bottom: 36px; box-shadow: 0 4px 20px rgba(0,0,0,0.02);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px;">
+              <span style="background: rgba(225, 29, 72, 0.1); color: #e11d48; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;"><i class="fa-solid fa-receipt"></i></span>
+              Recent Grow Business Plan Orders
+            </h3>
+            <span style="font-size: 0.8rem; font-weight: 800; background: var(--surface-subtle); color: var(--text-main); padding: 6px 14px; border-radius: 10px; border: 1px solid var(--border-color);" id="orderCountBadge">
+              0 Orders
+            </span>
+          </div>
+          <div class="table-viewport" id="growOrdersTableContainer" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <div style="text-align:center;padding:28px;color:var(--text-muted);">Loading recent orders...</div>
+          </div>
+        </div>
+
       </div>
     `;
+
+    window.loadGrowPricingAndStats(activeCountryCode);
+  }
+
+  window.loadGrowPricingAndStats = async function(cCode = 'all') {
+    // Update select element if present
+    const scopeSelect = document.getElementById('growPricingCountryScopeSelect');
+    if (scopeSelect && scopeSelect.value !== cCode) scopeSelect.value = cCode;
+
+    // Update pill highlight styling
+    document.querySelectorAll('.grow-scope-pill').forEach(pill => {
+      const isMatch = (pill.getAttribute('onclick') || '').includes(`'${cCode}'`);
+      if (isMatch) {
+        pill.style.background = '#e11d48';
+        pill.style.color = '#ffffff';
+      } else {
+        pill.style.background = 'var(--surface-subtle)';
+        pill.style.color = 'var(--text-main)';
+      }
+    });
+
+    const statsContainer = document.getElementById('growPricingStatsContainer');
+    const pricingContainer = document.getElementById('growPricingContainer');
+    const ordersContainer = document.getElementById('growOrdersTableContainer');
+    const scopeSubtitle = document.getElementById('pricingScopeSubtitle');
+
+    const editCountryCode = (cCode === 'all') ? 'IN' : cCode;
+    const editSymbol = GROW_COUNTRY_SYMBOLS[editCountryCode] || '₹';
+    const editCountryName = GROW_COUNTRY_NAMES[editCountryCode] || editCountryCode;
+    const editFlag = GROW_COUNTRY_FLAGS[editCountryCode] || '🌐';
+
+    if (scopeSubtitle) {
+      scopeSubtitle.innerHTML = `Editing tier prices for <strong>${editFlag} ${editCountryName} (${editSymbol})</strong>. Vendors in ${editCountryName} will see these updated prices during Grow Business checkout.`;
+    }
+
+    if (statsContainer) {
+      statsContainer.innerHTML = `
+        <div style="text-align:center;padding:40px;color:var(--text-muted);">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;margin-bottom:12px;display:block;color:#e11d48;"></i>
+          Updating performance metrics for ${cCode === 'all' ? 'Global Overview' : editCountryName}...
+        </div>`;
+    }
+    if (pricingContainer) {
+      pricingContainer.innerHTML = `
+        <div style="text-align:center;padding:40px;color:var(--text-muted);">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem;margin-bottom:12px;display:block;color:#e11d48;"></i>
+          Loading package prices for ${editCountryName}...
+        </div>`;
+    }
 
     try {
       const auth = window.WedEazzyAuth;
       const token = auth ? auth.getToken() : null;
-      const res = await fetch('/api/public/grow-campaigns-pricing', {
-        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-      });
-      const data = await res.json();
-      const container = document.getElementById('growPricingContainer');
-      if (!data.ok || !container) throw new Error('Could not load pricing');
+      const headers = { 'Authorization': token ? `Bearer ${token}` : '' };
 
-      container.innerHTML = Object.keys(data.pricing).map(key => {
-        const pkg = data.pricing[key];
-        return `
-          <div class="panel-card">
-            <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 14px;">
-              <h3 style="font-size: 1.05rem; font-weight: 800;">${GROW_PACKAGE_LABELS[key] || key}</h3>
+      // Fetch stats & pricing in parallel
+      const [statsRes, pricingRes] = await Promise.all([
+        fetch(`/api/admin/grow-campaigns-stats?countryCode=${cCode}`, { headers }),
+        fetch(`/api/public/grow-campaigns-pricing?countryCode=${editCountryCode}`, { headers })
+      ]);
+
+      const statsData = await statsRes.json();
+      const pricingData = await pricingRes.json();
+
+      // ── 1. Render 5 Executive KPI Stats ──
+      if (statsContainer && statsData.ok) {
+        const stats = statsData.stats || {};
+        const revSymbol = (cCode !== 'all' && GROW_COUNTRY_SYMBOLS[cCode]) ? GROW_COUNTRY_SYMBOLS[cCode] : '₹';
+        const formattedRev = `${revSymbol}${Number(stats.totalRevenue || 0).toLocaleString('en-IN')}`;
+
+        statsContainer.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;">
+            
+            <!-- KPI 1: Total Revenue -->
+            <div style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 22px; box-shadow: 0 4px 18px rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='none'">
+              <div style="position: absolute; right: -8px; top: -8px; width: 68px; height: 68px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">💰</div>
+              <div style="font-size: 0.76rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px;">Grow Revenue</div>
+              <div style="font-size: 1.65rem; font-weight: 900; color: #10b981; margin: 8px 0 4px 0;">${formattedRev}</div>
+              <div style="font-size: 0.76rem; color: var(--text-sub); font-weight: 600;">
+                <span style="background: rgba(16, 185, 129, 0.15); color: #059669; padding: 2px 8px; border-radius: 6px; font-weight: 800;">${stats.totalPurchases || 0}</span> Paid Campaigns
+              </div>
             </div>
-            <div class="table-viewport">
-              <table class="grid-table">
+
+            <!-- KPI 2: Top Country -->
+            <div style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 22px; box-shadow: 0 4px 18px rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='none'">
+              <div style="position: absolute; right: -8px; top: -8px; width: 68px; height: 68px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🌍</div>
+              <div style="font-size: 0.76rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px;">Top Country</div>
+              <div style="font-size: 1.25rem; font-weight: 900; color: var(--text-main); margin: 8px 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${stats.topCountry?.name || 'India'}">
+                ${stats.topCountry?.name || 'India'}
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-sub); font-weight: 600;">
+                <span style="background: rgba(59, 130, 246, 0.15); color: #2563eb; padding: 2px 8px; border-radius: 6px; font-weight: 800;">${stats.topCountry?.count || 0}</span> Orders (${revSymbol}${Number(stats.topCountry?.revenue || 0).toLocaleString('en-IN')})
+              </div>
+            </div>
+
+            <!-- KPI 3: Top Category -->
+            <div style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 22px; box-shadow: 0 4px 18px rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='none'">
+              <div style="position: absolute; right: -8px; top: -8px; width: 68px; height: 68px; background: rgba(236, 72, 153, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🏷️</div>
+              <div style="font-size: 0.76rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px;">Top Category</div>
+              <div style="font-size: 1.2rem; font-weight: 900; color: var(--text-main); margin: 8px 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${stats.topCategory?.name || 'Wedding Photographers'}">
+                ${stats.topCategory?.name || 'Wedding Photographers'}
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-sub); font-weight: 600;">
+                <span style="background: rgba(236, 72, 153, 0.15); color: #db2777; padding: 2px 8px; border-radius: 6px; font-weight: 800;">${stats.topCategory?.count || 0}</span> Orders
+              </div>
+            </div>
+
+            <!-- KPI 4: Top City -->
+            <div style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 22px; box-shadow: 0 4px 18px rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='none'">
+              <div style="position: absolute; right: -8px; top: -8px; width: 68px; height: 68px; background: rgba(147, 51, 234, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🏙️</div>
+              <div style="font-size: 0.76rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px;">Top City</div>
+              <div style="font-size: 1.25rem; font-weight: 900; color: var(--text-main); margin: 8px 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${stats.topCity?.name || 'Ahmedabad'}">
+                ${stats.topCity?.name || 'Ahmedabad'}
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-sub); font-weight: 600;">
+                <span style="background: rgba(147, 51, 234, 0.15); color: #7c3aed; padding: 2px 8px; border-radius: 6px; font-weight: 800;">${stats.topCity?.count || 0}</span> Orders
+              </div>
+            </div>
+
+            <!-- KPI 5: Most Purchased Plan -->
+            <div style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 22px; box-shadow: 0 4px 18px rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='none'">
+              <div style="position: absolute; right: -8px; top: -8px; width: 68px; height: 68px; background: rgba(245, 158, 11, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🚀</div>
+              <div style="font-size: 0.76rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px;">Most Popular Plan</div>
+              <div style="font-size: 1.12rem; font-weight: 900; color: var(--text-main); margin: 8px 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${stats.topPlan?.name || 'Get More Leads (30 Days)'}">
+                ${stats.topPlan?.name || 'Get More Leads (30 Days)'}
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-sub); font-weight: 600;">
+                <span style="background: rgba(245, 158, 11, 0.15); color: #d97706; padding: 2px 8px; border-radius: 6px; font-weight: 800;">${stats.topPlan?.count || 0}</span> Purchases
+              </div>
+            </div>
+
+          </div>
+        `;
+
+        // Render Recent Orders Table
+        const recent = statsData.recentPurchases || [];
+        const orderBadge = document.getElementById('orderCountBadge');
+        if (orderBadge) orderBadge.textContent = `${recent.length} Recent Orders`;
+
+        if (ordersContainer) {
+          if (recent.length === 0) {
+            ordersContainer.innerHTML = `
+              <div style="text-align: center; padding: 44px 20px; background: var(--surface-subtle); border-radius: 16px; border: 1px dashed var(--border-color);">
+                <div style="width: 54px; height: 54px; border-radius: 16px; background: rgba(225, 29, 72, 0.08); color: #e11d48; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 12px auto;">
+                  <i class="fa-solid fa-receipt"></i>
+                </div>
+                <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">No Grow Business Plan Purchases Yet</h4>
+                <p style="margin: 0 auto; font-size: 0.86rem; color: var(--text-sub); max-width: 520px; line-height: 1.5;">
+                  Your package pricing is set and active! When vendors upgrade their business from their Grow Business dashboard, live orders & payment transactions will automatically appear here.
+                </p>
+              </div>
+            `;
+          } else {
+            ordersContainer.innerHTML = `
+              <table class="grid-table" style="width: 100%; min-width: 650px;">
                 <thead>
                   <tr>
-                    <th>Tier</th>
-                    <th>Price (₹)</th>
-                    <th>Strikethrough Price (₹, optional)</th>
+                    <th>Vendor</th>
+                    <th>Category</th>
+                    <th>Location</th>
+                    <th>Package Plan</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${pkg.plans.map((tier, idx) => `
+                  ${recent.map(item => `
                     <tr>
-                      <td><strong>${tier.label}</strong>${tier.recommended ? ' <span style="color:#10b981;font-size:0.7rem;">★ Recommended</span>' : ''}</td>
-                      <td><input type="number" class="premium-input grow-price-input" data-pkg="${key}" data-idx="${idx}" data-field="price" value="${tier.price}" style="max-width:140px;" /></td>
-                      <td><input type="number" class="premium-input grow-price-input" data-pkg="${key}" data-idx="${idx}" data-field="original" value="${tier.original || ''}" placeholder="—" style="max-width:140px;" /></td>
+                      <td><strong>${item.vendorName}</strong></td>
+                      <td><span style="font-size: 0.8rem; background: var(--surface-subtle); padding: 4px 10px; border-radius: 8px; font-weight: 700;">${item.category}</span></td>
+                      <td>${item.city}, ${item.country}</td>
+                      <td><strong>${GROW_PACKAGE_LABELS[item.packageType] || item.packageType}</strong> (${item.planDays ? item.planDays + ' Days' : 'Custom'})</td>
+                      <td><strong style="color: #10b981; font-size: 0.95rem;">${editSymbol}${Number(item.totalAmount).toLocaleString('en-IN')}</strong></td>
+                      <td>
+                        <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 8px; background: ${item.paymentStatus === 'paid' || item.adminStatus === 'running' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; color: ${item.paymentStatus === 'paid' || item.adminStatus === 'running' ? '#059669' : '#d97706'};">
+                          ${item.paymentStatus === 'paid' ? 'PAID' : item.adminStatus}
+                        </span>
+                      </td>
+                      <td style="font-size: 0.8rem; color: var(--text-sub);">${new Date(item.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                     </tr>
                   `).join('')}
                 </tbody>
               </table>
+            `;
+          }
+        }
+      }
+
+      // ── 2. Render Package Pricing Editor ──
+      if (pricingContainer && pricingData.ok) {
+        const pricing = pricingData.pricing || {};
+        const pkgKeys = Object.keys(pricing).filter(k => k !== 'countries');
+
+        pricingContainer.innerHTML = pkgKeys.map(key => {
+          const pkg = pricing[key];
+          if (!pkg || !Array.isArray(pkg.plans)) return '';
+          return `
+            <div class="panel-card" style="border-radius: 20px; border: 1px solid var(--border-color); padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.02);">
+              <div class="panel-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px;">
+                  <span style="color: #e11d48; font-size: 1.2rem;">💎</span> ${GROW_PACKAGE_LABELS[key] || key}
+                </h3>
+                <span style="font-size: 0.8rem; font-weight: 800; background: rgba(59, 130, 246, 0.1); color: #2563eb; padding: 5px 12px; border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                  ${editFlag} ${editCountryName} (${editSymbol})
+                </span>
+              </div>
+              <div class="table-viewport" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table class="grid-table" style="width: 100%; min-width: 600px;">
+                  <thead>
+                    <tr>
+                      <th style="width: 32%;">Plan Duration / Tier</th>
+                      <th style="width: 34%;">Selling Price (${editSymbol})</th>
+                      <th style="width: 34%;">Original Strikethrough Price (${editSymbol}, Optional)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${pkg.plans.map((tier, idx) => {
+                      const priceVal = Number(tier.price) || 0;
+                      const origVal = Number(tier.original) || 0;
+                      const hasSavings = origVal > priceVal;
+                      const savingsAmt = hasSavings ? origVal - priceVal : 0;
+                      const pctOff = hasSavings && origVal > 0 ? Math.round((savingsAmt / origVal) * 100) : 0;
+
+                      return `
+                        <tr>
+                          <td>
+                            <div style="font-weight: 800; color: var(--text-main); font-size: 0.95rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                              ${tier.label}
+                              ${tier.recommended ? ' <span style="background: rgba(16, 185, 129, 0.15); color: #059669; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 800;">★ RECOMMENDED</span>' : ''}
+                              ${tier.custom ? ' <span style="background: rgba(147, 51, 234, 0.15); color: #7c3aed; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 800;">CUSTOM BUILDER FLOOR</span>' : ''}
+                            </div>
+                          </td>
+                          <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                              <span style="font-weight: 800; color: var(--text-sub); font-size: 0.95rem;">${editSymbol}</span>
+                              <input type="number" class="premium-input grow-price-input" data-pkg="${key}" data-idx="${idx}" data-field="price" value="${tier.price}" style="max-width:160px; font-weight: 800; font-size: 0.95rem; padding: 9px 14px; border-radius: 10px;" min="0" 
+                                oninput="window.updateSavingsPreview(this)" />
+                            </div>
+                          </td>
+                          <td>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                              <span style="font-weight: 800; color: var(--text-sub); font-size: 0.95rem;">${editSymbol}</span>
+                              <input type="number" class="premium-input grow-price-input" data-pkg="${key}" data-idx="${idx}" data-field="original" value="${tier.original || ''}" placeholder="None" style="max-width:160px; font-weight: 600; font-size: 0.95rem; padding: 9px 14px; border-radius: 10px;" min="0" 
+                                oninput="window.updateSavingsPreview(this)" />
+                              <span class="savings-preview-chip" id="savingsChip_${key}_${idx}" style="font-size: 0.75rem; font-weight: 800; background: rgba(16, 185, 129, 0.15); color: #059669; padding: 4px 8px; border-radius: 6px; display: ${hasSavings ? 'inline-block' : 'none'};">
+                                Save ${editSymbol}${savingsAmt.toLocaleString('en-IN')} (${pctOff}% OFF)
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+      }
     } catch (e) {
-      const container = document.getElementById('growPricingContainer');
-      if (container) container.innerHTML = `<div style="text-align:center;color:#ef4444;padding:24px;">Could not load pricing: ${e.message}</div>`;
+      if (statsContainer) statsContainer.innerHTML = `<div style="text-align:center;color:#ef4444;padding:24px;">Failed to load stats: ${e.message}</div>`;
+      if (pricingContainer) pricingContainer.innerHTML = `<div style="text-align:center;color:#ef4444;padding:24px;">Failed to load pricing: ${e.message}</div>`;
     }
-  }
+  };
+
+  window.updateSavingsPreview = function(inputEl) {
+    const row = inputEl.closest('tr');
+    if (!row) return;
+    const pkg = inputEl.dataset.pkg;
+    const idx = inputEl.dataset.idx;
+    const priceInput = row.querySelector(`input[data-field="price"]`);
+    const origInput = row.querySelector(`input[data-field="original"]`);
+    const chip = document.getElementById(`savingsChip_${pkg}_${idx}`);
+    if (!priceInput || !origInput || !chip) return;
+
+    const priceVal = Number(priceInput.value) || 0;
+    const origVal = Number(origInput.value) || 0;
+    const scopeSelect = document.getElementById('growPricingCountryScopeSelect');
+    let countryCode = scopeSelect?.value || 'IN';
+    if (countryCode === 'all') countryCode = 'IN';
+    const sym = GROW_COUNTRY_SYMBOLS[countryCode] || '₹';
+
+    if (origVal > priceVal && priceVal > 0) {
+      const diff = origVal - priceVal;
+      const pct = Math.round((diff / origVal) * 100);
+      chip.textContent = `Save ${sym}${diff.toLocaleString('en-IN')} (${pct}% OFF)`;
+      chip.style.display = 'inline-block';
+    } else {
+      chip.style.display = 'none';
+    }
+  };
+
 
   window.saveGrowPricing = async function() {
+    const scopeSelect = document.getElementById('growPricingCountryScopeSelect');
+    let countryCode = scopeSelect?.value || 'IN';
+    if (countryCode === 'all') countryCode = 'IN';
+
     const inputs = document.querySelectorAll('.grow-price-input');
     const pricing = {};
     inputs.forEach(input => {
@@ -5660,7 +7587,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const btn = document.getElementById('btnSaveGrowPricing');
-    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
     try {
       const auth = window.WedEazzyAuth;
       const token = auth ? auth.getToken() : null;
@@ -5670,11 +7597,12 @@ document.addEventListener("DOMContentLoaded", () => {
           'Authorization': token ? `Bearer ${token}` : '',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ pricing })
+        body: JSON.stringify({ pricing, countryCode })
       });
       const data = await res.json();
       if (data.ok) {
-        showToast('Grow Business pricing updated!', 'success');
+        showToast(`Grow Business pricing updated for ${GROW_COUNTRY_NAMES[countryCode] || countryCode}!`, 'success');
+        window.loadGrowPricingAndStats(scopeSelect?.value || countryCode);
       } else {
         showToast('Save failed: ' + (data.message || data.error || 'Error'), 'danger');
       }
@@ -5684,5 +7612,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save All Changes'; }
     }
   };
+
 
 });

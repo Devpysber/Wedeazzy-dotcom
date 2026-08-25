@@ -4,38 +4,44 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="theme-color" content="#DC1F30" />
-<title>Claim Your Business | WedEazzy.com</title>
-<meta name="description" content="Take control of your business listing on WedEazzy. Verify with OTP and unlock leads, photos and analytics." />
+<title>Vendor Acquisition & Listing Portal | WedEazzy</title>
+<meta name="description" content="Find and claim your existing wedding business listing or register a new business on WedEazzy." />
 <link rel="icon" type="image/png" href="../assets/images/logo.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link rel="stylesheet" href="../css/shared.css" />
 <link rel="stylesheet" href="../css/enhance.css?v=1" />
 <style>
-  body { background: linear-gradient(180deg, #FFF7F8 0%, #FBF7F2 40%); min-height: 100vh; }
+  body { background: linear-gradient(180deg, #FFF7F8 0%, #FBF7F2 40%); min-height: 100vh; font-family: 'Inter', sans-serif; }
 
   /* --- Hero --- */
-  .claim-hero { padding: 46px 0 24px; text-align: center; }
-  .claim-hero .eyebrow { display: inline-block; padding: 6px 14px; border-radius: 99px; background: rgba(220,31,48,0.08); color: #DC1F30; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-  .claim-hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(28px, 4.5vw, 42px); font-weight: 800; letter-spacing: -0.5px; line-height: 1.15; margin: 12px 0 8px; color: #1B1B1F; }
+  .claim-hero { padding: 40px 0 20px; text-align: center; }
+  .claim-hero .eyebrow { display: inline-block; padding: 6px 16px; border-radius: 99px; background: rgba(220,31,48,0.08); color: #DC1F30; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+  .claim-hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -0.5px; line-height: 1.15; margin: 12px 0 8px; color: #1B1B1F; }
   .claim-hero h1 em { color: #DC1F30; font-style: italic; }
-  .claim-hero .lede { max-width: 620px; margin: 0 auto; color: #5A5560; font-size: 16px; line-height: 1.6; }
+  .claim-hero .lede { max-width: 600px; margin: 0 auto; color: #5A5560; font-size: 15px; line-height: 1.6; }
+
+  /* --- Tab Switcher --- */
+  .mode-tabs { display: flex; justify-content: center; gap: 10px; margin: 24px auto 16px; max-width: 480px; padding: 4px; background: #EFE8E4; border-radius: 99px; }
+  .mode-tab { flex: 1; padding: 10px 18px; border-radius: 99px; font-size: 14px; font-weight: 700; text-align: center; cursor: pointer; border: none; background: transparent; color: #5A5560; transition: all 0.2s; }
+  .mode-tab.active { background: #DC1F30; color: #FFFFFF; box-shadow: 0 4px 12px rgba(220,31,48,0.3); }
 
   /* --- Step indicator --- */
-  .claim-steps { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 28px auto 20px; flex-wrap: wrap; max-width: 640px; }
-  .cstep { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 99px; background: #fff; border: 1px solid #eadfe1; font-size: 13px; font-weight: 700; color: #8a838f; }
-  .cstep .cs-num { width: 22px; height: 22px; border-radius: 50%; background: #eadfe1; color: #8a838f; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+  .claim-steps { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 16px auto 24px; flex-wrap: wrap; max-width: 640px; }
+  .cstep { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 99px; background: #fff; border: 1px solid #eadfe1; font-size: 12px; font-weight: 700; color: #8a838f; }
+  .cstep .cs-num { width: 20px; height: 20px; border-radius: 50%; background: #eadfe1; color: #8a838f; display: grid; place-items: center; font-size: 11px; font-weight: 800; }
   .cstep.active { border-color: #DC1F30; color: #DC1F30; background: rgba(220,31,48,0.06); }
   .cstep.active .cs-num { background: #DC1F30; color: #fff; }
   .cstep.done { border-color: #10b981; color: #10b981; background: rgba(16,185,129,0.08); }
   .cstep.done .cs-num { background: #10b981; color: #fff; }
-  .cs-line { width: 24px; height: 2px; background: #eadfe1; }
+  .cs-line { width: 20px; height: 2px; background: #eadfe1; }
   @media (max-width: 520px) { .cs-line { display: none; } }
 
   /* --- Card container --- */
   .claim-wrap { max-width: 680px; margin: 0 auto 60px; padding: 0 16px; }
-  .claim-card { background: #fff; border-radius: 22px; box-shadow: 0 20px 50px -30px rgba(80,40,20,0.2), 0 4px 16px -4px rgba(80,40,20,0.06); padding: 32px; border: 1px solid #f3ebeb; }
+  .claim-card { background: #fff; border-radius: 22px; box-shadow: 0 20px 50px -30px rgba(80,40,20,0.15), 0 4px 16px -4px rgba(80,40,20,0.05); padding: 32px; border: 1px solid #f3ebeb; }
   @media (max-width: 520px) { .claim-card { padding: 22px 18px; border-radius: 18px; } }
   .claim-card h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #1B1B1F; }
   .claim-card p.sub { color: #5A5560; font-size: 14.5px; line-height: 1.6; margin-bottom: 22px; }
@@ -44,12 +50,12 @@
   .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
   .field label { font-size: 13px; font-weight: 700; color: #1B1B1F; }
   .field input,
-  .field textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #e6dcdc; font-size: 15px; font-family: inherit; background: #fff; transition: border-color 0.15s, box-shadow 0.15s; }
+  .field select,
+  .field textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #e6dcdc; font-size: 15px; font-family: inherit; background: #fff; transition: border-color 0.15s, box-shadow 0.15s; box-sizing: border-box; }
   .field input:focus,
+  .field select:focus,
   .field textarea:focus { outline: none; border-color: #DC1F30; box-shadow: 0 0 0 3px rgba(220,31,48,0.14); }
   .field .hint { font-size: 12px; color: #8a838f; }
-  .field.err input, .field.err textarea { border-color: #dc2626; }
-  .field.err .hint { color: #dc2626; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
 
@@ -57,10 +63,8 @@
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 22px; border-radius: 12px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; transition: transform 0.12s, box-shadow 0.15s, background 0.15s; text-decoration: none; }
   .btn-primary { background: #DC1F30; color: #fff; box-shadow: 0 6px 16px -4px rgba(220,31,48,0.4); }
   .btn-primary:hover { background: #B3131F; transform: translateY(-1px); }
-  .btn-primary:active { transform: translateY(0); }
   .btn-primary:disabled { background: #d0c8ca; cursor: not-allowed; transform: none; box-shadow: none; }
   .btn-secondary { background: #fff; color: #DC1F30; border: 1.5px solid #DC1F30; }
-  .btn-secondary:hover { background: rgba(220,31,48,0.06); }
   .btn-ghost { background: none; color: #5A5560; padding: 8px 4px; font-weight: 600; }
   .btn-ghost:hover { color: #DC1F30; }
   .btn-full { width: 100%; }
@@ -69,27 +73,16 @@
   @keyframes sp { to { transform: rotate(360deg); } }
 
   /* --- Match cards --- */
-  .match-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
-  .match { padding: 14px; border-radius: 14px; border: 1.5px solid #e6dcdc; cursor: pointer; transition: all 0.15s; display: flex; align-items: flex-start; gap: 12px; background: #fff; }
-  .match:hover { border-color: #DC1F30; background: rgba(220,31,48,0.03); transform: translateY(-1px); }
-  .match.selected { border-color: #DC1F30; background: rgba(220,31,48,0.06); box-shadow: 0 0 0 3px rgba(220,31,48,0.12); }
-  .match.disabled { opacity: 0.6; cursor: not-allowed; }
-  .match.disabled:hover { border-color: #e6dcdc; background: #fff; transform: none; }
+  .match-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+  .match { padding: 16px; border-radius: 14px; border: 1.5px solid #e6dcdc; transition: all 0.15s; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; }
+  .match:hover { border-color: #DC1F30; background: rgba(220,31,48,0.02); }
   .match-avatar { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 12px; background: linear-gradient(135deg, #DC1F30 0%, #F0576A 100%); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 15px; text-transform: uppercase; }
   .match-body { flex: 1; min-width: 0; }
   .match-name { font-size: 15px; font-weight: 800; color: #1B1B1F; margin-bottom: 3px; }
   .match-meta { font-size: 12.5px; color: #5A5560; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .match-meta .dot { color: #cbc2c2; }
   .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
   .badge-red { background: rgba(220,31,48,0.1); color: #DC1F30; }
-  .badge-amber { background: rgba(234,88,12,0.1); color: #ea580c; }
   .badge-gray { background: #f4eeee; color: #8a838f; }
-
-  /* --- OTP inputs --- */
-  .otp-row { display: flex; gap: 8px; justify-content: center; margin: 8px 0 20px; }
-  .otp-row input { width: 46px; height: 54px; text-align: center; font-size: 24px; font-weight: 800; padding: 0; border-radius: 12px; border: 1.5px solid #e6dcdc; font-family: 'Inter', monospace; }
-  .otp-row input:focus { outline: none; border-color: #DC1F30; box-shadow: 0 0 0 3px rgba(220,31,48,0.14); }
-  @media (max-width: 400px) { .otp-row input { width: 40px; height: 48px; font-size: 20px; } }
 
   /* --- Alerts --- */
   .alert { padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start; }
@@ -97,26 +90,8 @@
   .alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #dbeafe; }
   .alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 
-  /* --- Success --- */
-  .success-icon { width: 74px; height: 74px; border-radius: 50%; background: #ecfdf5; color: #10b981; display: grid; place-items: center; margin: 0 auto 20px; font-size: 34px; animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  @keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
-
-  /* --- Info banner --- */
-  .info-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
-  .info-card { background: rgba(255,255,255,0.7); border: 1px solid #f3ebeb; border-radius: 14px; padding: 14px; text-align: center; }
-  .info-card .ic-icon { font-size: 22px; margin-bottom: 6px; }
-  .info-card .ic-title { font-size: 13px; font-weight: 800; color: #1B1B1F; margin-bottom: 4px; }
-  .info-card .ic-desc { font-size: 12px; color: #5A5560; line-height: 1.4; }
-
+  .success-icon { width: 74px; height: 74px; border-radius: 50%; background: #ecfdf5; color: #10b981; display: grid; place-items: center; margin: 0 auto 20px; font-size: 34px; }
   .divider { height: 1px; background: #f3ebeb; margin: 20px 0; }
-  .center { text-align: center; }
-  .link { color: #DC1F30; text-decoration: none; font-weight: 700; cursor: pointer; }
-  .link:hover { text-decoration: underline; }
-
-  /* --- Manual review confirmation --- */
-  .req-id { display: inline-block; padding: 8px 16px; border-radius: 8px; background: #f4eeee; color: #1B1B1F; font-family: monospace; font-size: 15px; font-weight: 800; letter-spacing: 1px; margin-top: 8px; }
-
-  /* --- Hidden by default --- */
   .hidden { display: none !important; }
 </style>
 </head>
@@ -126,258 +101,305 @@
   <div class="container header-inner">
     <a href="../index.html" class="brand"><img src="../assets/images/logo.png" alt="WedEazzy" /></a>
     <div class="header-right">
-      <a href="marketing.html" class="nav-link">List Your Business</a>
+      <a href="/pages/vendor-login.html" class="nav-link">Vendor Login</a>
       <a href="tel:+917498987620" class="call-link">+91 74989 87620</a>
-      <a href="https://wa.me/917498987620?text=Hi%20WedEazzy!" class="header-cta" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/></svg>
-        <span>Chat</span>
-      </a>
     </div>
   </div>
 </header>
 
 <section class="claim-hero">
   <div class="container">
-    <span class="eyebrow">Business Owners</span>
-    <h1>Claim <em>your</em> business</h1>
-    <p class="lede">
-      Your business may already be on WedEazzy. Verify ownership with a one-time code
-      and take full control — add photos, respond to enquiries, publish your prices.
+    <span class="eyebrow">Are You a Wedding Vendor?</span>
+    <h1 id="heroTitle">Find and claim <em>your</em> business</h1>
+    <p class="lede" id="heroLede">
+      Your business may already be listed on WedEazzy. Find your listing, verify ownership with your registered contact number, and start receiving leads.
     </p>
+
+    <!-- Mode Selector Tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabFind">Find Your Business</button>
+      <button class="mode-tab" id="tabRegister">Register Your Business</button>
+    </div>
   </div>
 </section>
 
 <div class="claim-wrap">
 
-  <!-- Step indicator (updates via JS) -->
+  <!-- Step indicator for Path A -->
   <div class="claim-steps" id="steps">
-    <span class="cstep active" data-step="1"><span class="cs-num">1</span> Find your business</span>
+    <span class="cstep active" data-step="1"><span class="cs-num">1</span> Find Business</span>
     <span class="cs-line"></span>
-    <span class="cstep" data-step="2"><span class="cs-num">2</span> Verify ownership</span>
+    <span class="cstep" data-step="2"><span class="cs-num">2</span> Verify Phone</span>
     <span class="cs-line"></span>
-    <span class="cstep" data-step="3"><span class="cs-num">3</span> Set up account</span>
+    <span class="cstep" data-step="3"><span class="cs-num">3</span> Enter Email</span>
+    <span class="cs-line"></span>
+    <span class="cstep" data-step="4"><span class="cs-num">4</span> Get Credentials</span>
   </div>
 
-  <!-- STATE: SEARCH -->
+  <!-- STATE 1: SEARCH -->
   <div class="claim-card" id="state-search">
-    <h2>Find your business</h2>
-    <p class="sub">Enter your business name and phone number. We'll look for matching listings that haven't been claimed yet.</p>
-
-    <div class="info-cards">
-      <div class="info-card"><div class="ic-icon">🔍</div><div class="ic-title">Search</div><div class="ic-desc">Find your existing listing on WedEazzy</div></div>
-      <div class="info-card"><div class="ic-icon">✉️</div><div class="ic-title">Verify</div><div class="ic-desc">Confirm ownership with an email code</div></div>
-      <div class="info-card"><div class="ic-icon">🚀</div><div class="ic-title">Take control</div><div class="ic-desc">Manage photos, leads and enquiries</div></div>
-    </div>
+    <h2>Find Your Business Listing</h2>
+    <p class="sub">Search below by your business name or city to locate your WedEazzy listing.</p>
 
     <div class="alert alert-error hidden" id="searchErr"></div>
 
     <form id="searchForm" autocomplete="off">
       <div class="field">
-        <label for="fBiz">Business name <span style="color:#DC1F30;">*</span></label>
-        <input type="text" id="fBiz" placeholder="e.g. Royal Palace Banquet" required minlength="2" />
+        <label for="fBiz">Business Name <span style="color:#DC1F30;">*</span></label>
+        <input type="text" id="fBiz" placeholder="Enter your business name (e.g. Royal Palace Banquet)" required minlength="2" />
       </div>
       <div class="field">
-        <label for="fPhone">Business phone (optional but helpful)</label>
-        <input type="tel" id="fPhone" placeholder="e.g. 9876543210" />
-        <span class="hint">If we already have this number on file, we can match faster.</span>
+        <label for="fCity">City (optional)</label>
+        <input type="text" id="fCity" placeholder="Select or enter city (e.g. Mumbai)" />
       </div>
-      <button type="submit" class="btn btn-primary btn-full" id="searchBtn">Search for my business</button>
+      <button type="submit" class="btn btn-primary btn-full" id="searchBtn">Find My Business</button>
     </form>
 
-    <!-- Results appear here -->
     <div id="searchResults" class="hidden" style="margin-top:24px;">
       <div class="divider"></div>
-      <h2 style="font-size:18px;">We found these matches</h2>
-      <p class="sub">Select the one that's yours.</p>
+      <h2 style="font-size:18px;">Matching Businesses</h2>
+      <p class="sub">Review the listings below and select yours.</p>
       <div class="match-list" id="matchList"></div>
 
-      <div class="alert alert-info" style="margin-top:8px;">
-        <span>❓</span>
+      <div class="alert alert-info" style="margin-top:12px;">
+        <i class="fa-solid fa-circle-info" style="margin-top:2px;"></i>
         <div>
-          <strong>Don't see your business?</strong><br>
-          <a class="link" id="showManual">Request manual verification</a> — our team will review within 2 business days.
+          <strong>Don't see your business listed?</strong><br />
+          Switch to <a class="link" id="linkSwitchRegister" style="color:#DC1F30; font-weight:700;">Register Your Business</a> or submit a <a class="link" id="showManual" style="color:#DC1F30; font-weight:700;">Manual Ownership Proof Request</a>.
         </div>
       </div>
     </div>
   </div>
 
-  <!-- STATE: OTP -->
-  <div class="claim-card hidden" id="state-otp">
-    <button class="btn btn-ghost" id="otpBack">← Back to search results</button>
-    <h2 style="margin-top:8px;">Verify ownership</h2>
-    <p class="sub">
-      We'll email a 6-digit code to prove you own <strong id="otpBizName"></strong>.
-    </p>
+  <!-- STATE 2: VERIFY PHONE -->
+  <div class="claim-card hidden" id="state-phone">
+    <button class="btn btn-ghost" id="phoneBack">← Back to search results</button>
+    <h2 style="margin-top:8px;">Verify Your Business Number</h2>
+    <p class="sub">To verify ownership of <strong id="phoneBizName"></strong>, enter the full registered contact phone number.</p>
 
-    <div class="alert alert-info" id="otpEmailInfo">
-      <span>ℹ️</span>
-      <div>Enter the email address associated with this business. We'll send a verification code there.</div>
+    <div class="alert alert-info">
+      <i class="fa-solid fa-lock" style="margin-top:2px;"></i>
+      <div>
+        <strong>Registered contact on file:</strong><br />
+        <span id="maskedPhoneDisplay" style="font-family:monospace; font-size:16px; font-weight:800; color:#1B1B1F;"></span>
+      </div>
     </div>
 
-    <div class="alert alert-error hidden" id="otpErr"></div>
+    <div class="alert alert-error hidden" id="phoneErr"></div>
 
-    <div id="otpEmailPrompt">
+    <form id="phoneForm" autocomplete="off">
       <div class="field">
-        <label for="fOtpEmail">Business email <span style="color:#DC1F30;">*</span></label>
-        <input type="email" id="fOtpEmail" placeholder="you@yourbusiness.com" required />
-        <span class="hint">Must be an email you can access right now.</span>
+        <label for="fFullPhone">Enter Full Registered Phone Number <span style="color:#DC1F30;">*</span></label>
+        <input type="tel" id="fFullPhone" placeholder="e.g. +91 98765 43123 or 9876543123" required />
+        <span class="hint">Must exactly match the contact number registered with this business listing.</span>
       </div>
-      <button class="btn btn-primary btn-full" id="sendOtpBtn">Send verification code</button>
-    </div>
-
-    <div id="otpCodePrompt" class="hidden">
-      <div class="alert alert-success">
-        <span>✓</span>
-        <div>Code sent to <strong id="otpSentTo"></strong>. Check your inbox (and spam folder). Expires in 10 minutes.</div>
-      </div>
-
-      <div class="field">
-        <label class="center" style="display:block;">Enter the 6-digit code</label>
-        <div class="otp-row" id="otpRow">
-          <input type="text" inputmode="numeric" maxlength="1" data-otp-i="0" />
-          <input type="text" inputmode="numeric" maxlength="1" data-otp-i="1" />
-          <input type="text" inputmode="numeric" maxlength="1" data-otp-i="2" />
-          <input type="text" inputmode="numeric" maxlength="1" data-otp-i="3" />
-          <input type="text" inputmode="numeric" maxlength="1" data-otp-i="4" />
-          <input type="text" inputmode="numeric" maxlength="1" data-otp-i="5" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="fName">Your full name <span style="color:#DC1F30;">*</span></label>
-        <input type="text" id="fName" placeholder="e.g. Priya Sharma" required minlength="2" />
-      </div>
-
-      <div class="field">
-        <label for="fPass">Choose a password <span style="color:#DC1F30;">*</span></label>
-        <input type="password" id="fPass" placeholder="At least 8 characters" required minlength="8" />
-        <span class="hint">You'll use this to log into your vendor account.</span>
-      </div>
-
-      <button class="btn btn-primary btn-full" id="verifyBtn">Verify &amp; create account</button>
-
-      <p class="center" style="margin-top:16px;font-size:13px;color:#5A5560;">
-        Didn't get the code? <a class="link" id="resendOtp">Resend</a> ·
-        <a class="link" id="changeEmail">Use different email</a>
-      </p>
-    </div>
+      <button type="submit" class="btn btn-primary btn-full" id="verifyPhoneBtn">Verify Phone Number</button>
+    </form>
   </div>
 
-  <!-- STATE: SUCCESS -->
+  <!-- STATE 3: EMAIL INPUT -->
+  <div class="claim-card hidden" id="state-email">
+    <h2 style="margin-top:8px;">Where should we send your login details?</h2>
+    <p class="sub">Phone verified! Enter your business email address and we will generate your temporary login credentials.</p>
+
+    <div class="alert alert-error hidden" id="emailErr"></div>
+
+    <form id="emailForm" autocomplete="off">
+      <div class="field">
+        <label for="fOwnerName">Your Name (Optional)</label>
+        <input type="text" id="fOwnerName" placeholder="e.g. Rajesh Sharma" />
+      </div>
+      <div class="field">
+        <label for="cCountry">Country / Location <span style="color:#DC1F30;">*</span></label>
+        <select id="cCountry" required>
+          <option value="IN" selected>🇮🇳 India (INR ₹)</option>
+          <option value="US">🇺🇸 USA (USD $)</option>
+          <option value="GB">🇬🇧 United Kingdom (GBP £)</option>
+          <option value="AE">🇦🇪 UAE (AED)</option>
+          <option value="CA">🇨🇦 Canada (CAD CA$)</option>
+          <option value="AU">🇦🇺 Australia (AUD A$)</option>
+        </select>
+        <span class="hint">Campaigns and subscription plan pricing will be set according to your country.</span>
+      </div>
+      <div class="field">
+        <label for="fClaimEmail">Business Email Address <span style="color:#DC1F30;">*</span></label>
+        <input type="email" id="fClaimEmail" placeholder="owner@yourbusiness.com" required />
+        <span class="hint">We will dispatch your temporary vendor password and login link here.</span>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" id="completeClaimBtn">Get My Login Details</button>
+    </form>
+  </div>
+
+  <!-- STATE 4: CLAIM SUCCESS -->
   <div class="claim-card hidden" id="state-success">
     <div class="success-icon">✓</div>
-    <h2 class="center">Ownership verified!</h2>
-    <p class="sub center">
-      You now own <strong id="successBizName"></strong> on WedEazzy.
-      We've set up your vendor account and you're logged in.
+    <h2 style="text-align:center;">Your Business Has Been Claimed!</h2>
+    <p class="sub" style="text-align:center;">
+      Ownership of <strong id="successBizName"></strong> has been verified successfully.
     </p>
 
-    <div class="info-cards" style="margin-top:20px;">
-      <div class="info-card"><div class="ic-icon">📸</div><div class="ic-title">Add photos</div><div class="ic-desc">Showcase your work</div></div>
-      <div class="info-card"><div class="ic-icon">💬</div><div class="ic-title">Answer leads</div><div class="ic-desc">Direct WhatsApp enquiries</div></div>
-      <div class="info-card"><div class="ic-icon">📊</div><div class="ic-title">See analytics</div><div class="ic-desc">Track views &amp; conversions</div></div>
+    <div class="alert alert-success">
+      <i class="fa-solid fa-envelope-circle-check" style="margin-top:2px;"></i>
+      <div>
+        We have dispatched your temporary login credentials to:<br />
+        <strong id="successEmailMasked" style="font-family:monospace; font-size:15px;"></strong>
+      </div>
     </div>
 
-    <button class="btn btn-primary btn-full" id="goToDashboard" style="margin-top:16px;">Go to my dashboard →</button>
+    <p style="font-size:13.5px; color:#5A5560; text-align:center; margin-top:16px; margin-bottom:24px;">
+      Please check your email inbox and log in with your temporary password. You will be prompted to create your new password upon first login.
+    </p>
+
+    <a href="/index.html?auth=login" class="btn btn-primary btn-full">Open Sign In Panel →</a>
   </div>
 
-  <!-- STATE: MANUAL REVIEW -->
+  <!-- STATE 5: REGISTER NEW BUSINESS (PATH B) -->
+  <div class="claim-card hidden" id="state-register">
+    <h2>Register Your Business</h2>
+    <p class="sub">Add your wedding business to WedEazzy and connect with couples across your country.</p>
+
+    <div class="alert alert-error hidden" id="registerErr"></div>
+    <div class="alert alert-info hidden" id="duplicateNotice"></div>
+
+    <form id="registerForm" autocomplete="off">
+      <div class="field">
+        <label for="rBizName">Business Name <span style="color:#DC1F30;">*</span></label>
+        <input type="text" id="rBizName" placeholder="e.g. Star Light Photography" required />
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="rCountry">Country / Location <span style="color:#DC1F30;">*</span></label>
+          <select id="rCountry" required onchange="window.updateClaimCities()">
+            <option value="IN" selected>🇮🇳 India (INR ₹)</option>
+            <option value="US">🇺🇸 USA (USD $)</option>
+            <option value="GB">🇬🇧 United Kingdom (GBP £)</option>
+            <option value="AE">🇦🇪 UAE (AED)</option>
+            <option value="CA">🇨🇦 Canada (CAD CA$)</option>
+            <option value="AU">🇦🇺 Australia (AUD A$)</option>
+          </select>
+          <span class="hint">Pricing for ad campaigns and subscription plans will be set for your country.</span>
+        </div>
+        <div class="field">
+          <label for="rCategory">Category <span style="color:#DC1F30;">*</span></label>
+          <select id="rCategory" required>
+            <option value="">Select Category</option>
+            <option value="Banquet Halls">Banquet Halls</option>
+            <option value="Marriage Gardens">Marriage Gardens</option>
+            <option value="Photographers">Photographers</option>
+            <option value="Makeup Artists">Makeup Artists</option>
+            <option value="Mehendi Artists">Mehendi Artists</option>
+            <option value="Wedding Planners">Wedding Planners</option>
+            <option value="Decorators">Decorators</option>
+            <option value="Caterers">Caterers</option>
+            <option value="Invitations">Invitations</option>
+            <option value="DJ & Entertainment">DJ & Entertainment</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="rCity">City <span style="color:#DC1F30;">*</span></label>
+        <select id="rCity" required>
+          <!-- Cities populated dynamically based on selected country -->
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="rArea">Area / Suburb</label>
+        <input type="text" id="rArea" placeholder="e.g. Chembur / Downtown" />
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="rPhone">Business Phone Number <span style="color:#DC1F30;">*</span></label>
+          <input type="tel" id="rPhone" placeholder="e.g. 9876543210" required />
+        </div>
+        <div class="field">
+          <label for="rEmail">Business Email Address <span style="color:#DC1F30;">*</span></label>
+          <input type="email" id="rEmail" placeholder="you@business.com" required />
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" id="registerBtn">Register Business</button>
+    </form>
+  </div>
+
+  <!-- STATE 6: MANUAL PROOF REVIEW -->
   <div class="claim-card hidden" id="state-manual">
     <button class="btn btn-ghost" id="manualBack">← Back</button>
-    <h2 style="margin-top:8px;">Manual verification</h2>
-    <p class="sub">
-      Can't access the business email or phone? No problem. Share some proof of ownership
-      and our team will review within 2 business days.
-    </p>
+    <h2 style="margin-top:8px;">Manual Verification Request</h2>
+    <p class="sub">Can't access the registered contact number? Share proof of ownership (website, Google Maps link, GST/PAN) and our team will review within 2 business days.</p>
 
     <div class="alert alert-error hidden" id="manualErr"></div>
 
-    <div class="field">
-      <label for="mName">Your full name <span style="color:#DC1F30;">*</span></label>
-      <input type="text" id="mName" required minlength="2" />
-    </div>
-    <div class="row2">
+    <form id="manualForm">
       <div class="field">
-        <label for="mEmail">Email <span style="color:#DC1F30;">*</span></label>
-        <input type="email" id="mEmail" required />
+        <label for="mName">Your Full Name <span style="color:#DC1F30;">*</span></label>
+        <input type="text" id="mName" required minlength="2" />
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="mEmail">Business Email <span style="color:#DC1F30;">*</span></label>
+          <input type="email" id="mEmail" required />
+        </div>
+        <div class="field">
+          <label for="mPhone">Contact Phone</label>
+          <input type="tel" id="mPhone" />
+        </div>
       </div>
       <div class="field">
-        <label for="mPhone">Phone</label>
-        <input type="tel" id="mPhone" />
+        <label for="mProof">Proof Link (Google Maps, Website, Instagram)</label>
+        <input type="url" id="mProof" placeholder="https://..." />
       </div>
-    </div>
-    <div class="field">
-      <label for="mProof">Proof link</label>
-      <input type="url" id="mProof" placeholder="https://... (Google Maps, website, Instagram, etc.)" />
-      <span class="hint">Any link that shows you own or represent this business.</span>
-    </div>
-    <div class="field">
-      <label for="mNotes">Additional notes</label>
-      <textarea id="mNotes" rows="4" placeholder="Anything else that helps us verify your claim..."></textarea>
-    </div>
+      <div class="field">
+        <label for="mNotes">Additional Details / Notes</label>
+        <textarea id="mNotes" rows="3" placeholder="Explain your relationship to this business..."></textarea>
+      </div>
 
-    <button class="btn btn-primary btn-full" id="submitManualBtn">Submit for review</button>
+      <button type="submit" class="btn btn-primary btn-full" id="submitManualBtn">Submit Manual Request</button>
+    </form>
   </div>
 
-  <!-- STATE: MANUAL SUCCESS -->
+  <!-- STATE 7: MANUAL REQUEST DONE -->
   <div class="claim-card hidden" id="state-manual-done">
     <div class="success-icon" style="background:#eff6ff;color:#2563eb;">📋</div>
-    <h2 class="center">Request received</h2>
-    <p class="sub center">
-      We'll review your claim and email you within 2 business days.
-    </p>
-    <p class="center" style="margin-bottom:24px;">
-      Your reference ID:
-      <br>
-      <span class="req-id" id="manualReqId"></span>
-    </p>
-    <a href="../index.html" class="btn btn-secondary btn-full">Back to homepage</a>
+    <h2 style="text-align:center;">Request Submitted</h2>
+    <p class="sub" style="text-align:center;">Our verification team will review your proof and contact you within 2 business days.</p>
+    <p style="text-align:center; font-weight:700;">Reference Ticket ID: <span id="manualReqId" style="font-family:monospace; color:#DC1F30;"></span></p>
+    <a href="../index.html" class="btn btn-secondary btn-full">Return to Homepage</a>
   </div>
 
 </div>
 
 <script src="../js/wedeazzy-enhance.js?v=1"></script>
 <script>
-/**
- * Claim Business — client
- * =======================
- * Single-page flow with 5 visual states: search / OTP-email / OTP-code / success /
- * manual review. State transitions live in setState(); each state does its own
- * bindings on mount so we can re-render without leaking listeners.
- */
 (function () {
   'use strict';
 
-  const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    ? 'http://localhost:4000'
-    : location.origin;
-
   const flow = {
+    mode: 'find',              // 'find' | 'register'
     matches: [],
-    selectedVendor: null,      // { id, businessName, ... }
-    otpEmail: null,            // where the OTP was sent
-    otpEmailMasked: null,
+    selectedVendor: null,
+    claimSessionId: null,
   };
 
   const el = (id) => document.getElementById(id);
-
   function show(id) { el(id).classList.remove('hidden'); }
   function hide(id) { el(id).classList.add('hidden'); }
 
-  /** Swap state cards and update the step indicator. */
   function setState(name) {
-    ['state-search', 'state-otp', 'state-success', 'state-manual', 'state-manual-done']
+    ['state-search', 'state-phone', 'state-email', 'state-success', 'state-register', 'state-manual', 'state-manual-done']
       .forEach(hide);
     show('state-' + name);
 
     const steps = document.querySelectorAll('.cstep');
     steps.forEach(s => s.classList.remove('active', 'done'));
+
     if (name === 'search') { steps[0].classList.add('active'); }
-    else if (name === 'otp') { steps[0].classList.add('done'); steps[1].classList.add('active'); }
-    else if (name === 'success') { steps[0].classList.add('done'); steps[1].classList.add('done'); steps[2].classList.add('done'); }
-    else if (name === 'manual' || name === 'manual-done') {
-      steps[0].classList.add('done'); steps[1].classList.add('active');
-    }
+    else if (name === 'phone') { steps[0].classList.add('done'); steps[1].classList.add('active'); }
+    else if (name === 'email') { steps[0].classList.add('done'); steps[1].classList.add('done'); steps[2].classList.add('active'); }
+    else if (name === 'success') { steps.forEach(s => s.classList.add('done')); }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -401,22 +423,15 @@
   }
 
   async function api(path, body) {
-    const res = await fetch(API + path, {
+    const res = await fetch(path, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body || {}),
     });
     let data;
-    try { data = await res.json(); } catch { data = { error: 'Bad response from server' }; }
-    if (!res.ok || !data.ok) {
-      const err = new Error(data.error || data.message || 'Something went wrong');
-      err.status = res.status;
-      err.code = data.code;
-      throw err;
+    try { data = await res.json(); } catch { data = { error: 'Bad server response' }; }
+    if (!res.ok || (data.ok === false && !data.isDuplicate)) {
+      throw new Error(data.error || data.message || 'Server error');
     }
     return data;
   }
@@ -424,30 +439,44 @@
   function setBtnLoading(btn, loading, label) {
     if (loading) {
       btn.disabled = true;
-      btn.dataset.origLabel = btn.dataset.origLabel || btn.textContent;
+      btn.dataset.orig = btn.innerHTML;
       btn.innerHTML = '<span class="spin"></span> ' + (label || 'Working...');
     } else {
       btn.disabled = false;
-      btn.innerHTML = btn.dataset.origLabel || btn.textContent;
+      btn.innerHTML = btn.dataset.orig || btn.innerHTML;
     }
   }
 
-  /* ===================================================================
-     STATE: SEARCH
-     =================================================================== */
+  // Tab Switcher
+  el('tabFind').addEventListener('click', () => {
+    flow.mode = 'find';
+    el('tabFind').classList.add('active');
+    el('tabRegister').classList.remove('active');
+    el('steps').style.display = 'flex';
+    setState('search');
+  });
+
+  el('tabRegister').addEventListener('click', () => {
+    flow.mode = 'register';
+    el('tabRegister').classList.add('active');
+    el('tabFind').classList.remove('active');
+    el('steps').style.display = 'none';
+    setState('register');
+  });
+
+  el('linkSwitchRegister').addEventListener('click', () => el('tabRegister').click());
+
+  /* --- SEARCH (PATH A) --- */
   el('searchForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     hideErr('searchErr');
     const businessName = el('fBiz').value.trim();
-    const phone = el('fPhone').value.trim();
-    if (businessName.length < 2) {
-      showErr('searchErr', 'Enter at least 2 characters of your business name.');
-      return;
-    }
+    const city = el('fCity').value.trim();
+
     const btn = el('searchBtn');
     setBtnLoading(btn, true, 'Searching...');
     try {
-      const data = await api('/api/claim/search', { businessName, phone });
+      const data = await api('/api/claim/search', { businessName, city });
       flow.matches = data.matches || [];
       renderMatches();
       show('searchResults');
@@ -462,241 +491,189 @@
     const list = el('matchList');
     if (!flow.matches.length) {
       list.innerHTML = `
-        <div class="alert alert-info" style="margin:0;">
-          <span>🔍</span>
-          <div>No listings match that name yet. If you're sure your business exists on WedEazzy, try a shorter search term.</div>
+        <div class="alert alert-info">
+          <div>No unclaimed listings match that search. If you are a new business, click <strong>Register Your Business</strong> above.</div>
         </div>`;
       return;
     }
     list.innerHTML = flow.matches.map((m, i) => {
-      const disabled = m.alreadyClaimed;
-      const badge = disabled
-        ? '<span class="badge badge-gray">Already claimed</span>'
-        : m.phoneMatch
-          ? '<span class="badge badge-red">Phone matches</span>'
-          : '';
+      const claimed = m.alreadyClaimed;
       return `
-        <div class="match ${disabled ? 'disabled' : ''}" data-i="${i}" tabindex="${disabled ? '-1' : '0'}">
-          <div class="match-avatar">${esc(initials(m.businessName))}</div>
-          <div class="match-body">
-            <div class="match-name">${esc(m.businessName)} ${badge}</div>
-            <div class="match-meta">
-              <span>${esc(m.category || '—')}</span>
-              <span class="dot">·</span>
-              <span>${esc(m.city || '—')}${m.country && m.country !== 'India' ? ', ' + esc(m.country) : ''}</span>
-              ${m.phoneMasked ? '<span class="dot">·</span><span>📞 ' + esc(m.phoneMasked) + '</span>' : ''}
+        <div class="match">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="match-avatar">${esc(initials(m.businessName))}</div>
+            <div class="match-body">
+              <div class="match-name">${esc(m.businessName)}</div>
+              <div class="match-meta">
+                <span>${esc(m.category || '—')}</span> ·
+                <span>${esc(m.city || '—')}${m.area ? ', ' + esc(m.area) : ''}</span> ·
+                <span>📞 ${esc(m.phoneMasked || 'Registered Number')}</span>
+              </div>
             </div>
+          </div>
+          <div>
+            ${claimed
+              ? '<span class="badge badge-gray">Already Claimed</span>'
+              : `<button class="btn btn-secondary btn-sm" onclick="window.wedeazzyStartClaim(${i})">This Is My Business</button>`
+            }
           </div>
         </div>`;
     }).join('');
-
-    list.querySelectorAll('.match').forEach(node => {
-      if (node.classList.contains('disabled')) {
-        node.addEventListener('click', () => {
-          alert('This business has already been claimed. If it\'s yours, log in with your existing account or use manual verification below.');
-        });
-        return;
-      }
-      node.addEventListener('click', () => selectMatch(parseInt(node.dataset.i, 10)));
-      node.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectMatch(parseInt(node.dataset.i, 10)); }
-      });
-    });
   }
 
-  function selectMatch(i) {
+  window.wedeazzyStartClaim = async function(i) {
+    hideErr('searchErr');
     flow.selectedVendor = flow.matches[i];
     if (!flow.selectedVendor) return;
-    el('otpBizName').textContent = flow.selectedVendor.businessName;
-    hideErr('otpErr');
-    show('otpEmailPrompt');
-    hide('otpCodePrompt');
-    el('fOtpEmail').value = '';
-    setState('otp');
-  }
 
-  el('showManual').addEventListener('click', () => {
-    if (!flow.selectedVendor && flow.matches.length) {
-      // Let them pick a business first, but if there's just one match and none selected, use it
-      flow.selectedVendor = flow.matches[0];
-    }
-    // If still no vendor, allow request without one — but we need vendorId
-    if (!flow.selectedVendor) {
-      alert('Please search for and select a business first, then use manual verification.');
-      return;
-    }
-    setState('manual');
-  });
-
-  /* ===================================================================
-     STATE: OTP
-     =================================================================== */
-  el('otpBack').addEventListener('click', () => setState('search'));
-
-  el('sendOtpBtn').addEventListener('click', async () => {
-    hideErr('otpErr');
-    const email = el('fOtpEmail').value.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      showErr('otpErr', 'Enter a valid email address.');
-      return;
-    }
-    if (!flow.selectedVendor) {
-      showErr('otpErr', 'Something went wrong — please start over.');
-      return;
-    }
-    const btn = el('sendOtpBtn');
-    setBtnLoading(btn, true, 'Sending code...');
     try {
-      const data = await api('/api/claim/send-otp', {
-        vendorId: flow.selectedVendor.id,
-        email,
-      });
-      flow.otpEmail = email;
-      flow.otpEmailMasked = data.emailMasked || email;
-      el('otpSentTo').textContent = flow.otpEmailMasked;
-      hide('otpEmailPrompt');
-      show('otpCodePrompt');
-      // Focus first OTP box
-      setTimeout(() => document.querySelector('[data-otp-i="0"]').focus(), 100);
+      const data = await api('/api/claim/start', { vendorId: flow.selectedVendor.id });
+      flow.claimSessionId = data.claimSessionId;
+      el('phoneBizName').textContent = flow.selectedVendor.businessName;
+      el('maskedPhoneDisplay').textContent = data.vendor.phoneMasked || flow.selectedVendor.phoneMasked;
+      el('fFullPhone').value = '';
+      setState('phone');
     } catch (err) {
-      showErr('otpErr', err.message);
-    } finally {
-      setBtnLoading(btn, false);
+      showErr('searchErr', err.message);
     }
-  });
+  };
 
-  // OTP inputs: auto-advance + paste-6 support
-  document.querySelectorAll('#otpRow input').forEach((inp, i, all) => {
-    inp.addEventListener('input', (e) => {
-      const v = e.target.value.replace(/[^0-9]/g, '');
-      e.target.value = v;
-      if (v && i < all.length - 1) all[i + 1].focus();
-    });
-    inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !e.target.value && i > 0) all[i - 1].focus();
-    });
-    inp.addEventListener('paste', (e) => {
-      const text = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
-      if (text.length >= 4) {
-        e.preventDefault();
-        for (let j = 0; j < Math.min(text.length, all.length); j++) all[j].value = text[j];
-        (all[Math.min(text.length, all.length) - 1] || all[all.length - 1]).focus();
-      }
-    });
-  });
+  /* --- PHONE VERIFICATION --- */
+  el('phoneBack').addEventListener('click', () => setState('search'));
 
-  function readOtp() {
-    return Array.from(document.querySelectorAll('#otpRow input')).map(i => i.value).join('');
-  }
+  el('phoneForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideErr('phoneErr');
+    const phone = el('fFullPhone').value.trim();
 
-  el('verifyBtn').addEventListener('click', async () => {
-    hideErr('otpErr');
-    const code = readOtp();
-    const name = el('fName').value.trim();
-    const password = el('fPass').value;
-
-    if (code.length !== 6) { showErr('otpErr', 'Enter the 6-digit code.'); return; }
-    if (name.length < 2) { showErr('otpErr', 'Enter your full name.'); return; }
-    if (password.length < 8) { showErr('otpErr', 'Password must be at least 8 characters.'); return; }
-
-    const btn = el('verifyBtn');
+    const btn = el('verifyPhoneBtn');
     setBtnLoading(btn, true, 'Verifying...');
     try {
-      const data = await api('/api/claim/verify', {
-        vendorId: flow.selectedVendor.id,
-        email: flow.otpEmail,
-        code, name, password,
+      await api('/api/claim/verify-phone', {
+        claimSessionId: flow.claimSessionId,
+        phone,
       });
-      // Store the JWT so the vendor is logged in
-      if (data.token) {
-        try {
-          localStorage.setItem('wedeazzy_token', data.token);
-          localStorage.setItem('wedeazzy_user', JSON.stringify(data.user || {}));
-        } catch (_) {}
-      }
-      el('successBizName').textContent = (data.vendor && data.vendor.businessName) || flow.selectedVendor.businessName;
-      setState('success');
+      setState('email');
     } catch (err) {
-      if (err.code === 'ERR_ALREADY_CLAIMED') {
-        showErr('otpErr', err.message + ' You can log in with your existing account instead.');
-      } else if (err.code === 'ERR_EMAIL_CONFLICT') {
-        showErr('otpErr', err.message);
-      } else {
-        showErr('otpErr', err.message);
-      }
+      showErr('phoneErr', err.message);
     } finally {
       setBtnLoading(btn, false);
     }
   });
 
-  el('resendOtp').addEventListener('click', async (e) => {
+  /* --- EMAIL INPUT & COMPLETE CLAIM --- */
+  el('emailForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    hideErr('otpErr');
+    hideErr('emailErr');
+    const email = el('fClaimEmail').value.trim();
+    const name = el('fOwnerName').value.trim();
+    const countryCode = el('cCountry') ? el('cCountry').value : 'IN';
+
+    const btn = el('completeClaimBtn');
+    setBtnLoading(btn, true, 'Processing Claim...');
     try {
-      const data = await api('/api/claim/send-otp', {
-        vendorId: flow.selectedVendor.id,
-        email: flow.otpEmail,
+      const data = await api('/api/claim/complete', {
+        claimSessionId: flow.claimSessionId,
+        email,
+        name,
+        countryCode,
       });
-      flow.otpEmailMasked = data.emailMasked || flow.otpEmail;
-      el('otpSentTo').textContent = flow.otpEmailMasked;
-      // Clear old digits
-      document.querySelectorAll('#otpRow input').forEach(i => i.value = '');
-      document.querySelector('[data-otp-i="0"]').focus();
+
+      el('successBizName').textContent = flow.selectedVendor.businessName;
+      el('successEmailMasked').textContent = data.emailMasked || email;
+      setState('success');
     } catch (err) {
-      showErr('otpErr', err.message);
+      showErr('emailErr', err.message);
+    } finally {
+      setBtnLoading(btn, false);
     }
   });
 
-  el('changeEmail').addEventListener('click', (e) => {
+  /* --- REGISTER NEW BUSINESS (PATH B) --- */
+  el('registerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    hideErr('otpErr');
-    hide('otpCodePrompt');
-    show('otpEmailPrompt');
-    el('fOtpEmail').focus();
+    hideErr('registerErr');
+    hide('duplicateNotice');
+
+    const payload = {
+      businessName: el('rBizName').value.trim(),
+      countryCode: el('rCountry') ? el('rCountry').value : 'IN',
+      category: el('rCategory').value,
+      city: el('rCity').value.trim(),
+      area: el('rArea').value.trim(),
+      phone: el('rPhone').value.trim(),
+      email: el('rEmail').value.trim(),
+    };
+
+    const btn = el('registerBtn');
+    setBtnLoading(btn, true, 'Registering Business...');
+    try {
+      const data = await api('/api/claim/register-business', payload);
+
+      if (data.isDuplicate && data.existingVendor) {
+        const v = data.existingVendor;
+        const box = el('duplicateNotice');
+        box.innerHTML = `
+          <div>
+            <strong>We found a business that may already be listed:</strong><br />
+            <strong>${esc(v.businessName)}</strong> (${esc(v.category)} · ${esc(v.city)})<br />
+            Registered phone: <code>${esc(v.phoneMasked)}</code><br />
+            <button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="window.wedeazzyClaimDuplicate('${v.id}')">Claim This Existing Listing</button>
+          </div>`;
+        box.classList.remove('hidden');
+        return;
+      }
+
+      el('successBizName').textContent = payload.businessName;
+      el('successEmailMasked').textContent = data.emailMasked || payload.email;
+      setState('success');
+    } catch (err) {
+      showErr('registerErr', err.message);
+    } finally {
+      setBtnLoading(btn, false);
+    }
   });
 
-  /* ===================================================================
-     STATE: SUCCESS
-     =================================================================== */
-  el('goToDashboard').addEventListener('click', () => {
-    // Placeholder — send them to vendor dashboard when it exists
-    location.href = 'bdashboard.html';
-  });
+  window.wedeazzyClaimDuplicate = async function(vendorId) {
+    try {
+      const data = await api('/api/claim/start', { vendorId });
+      flow.claimSessionId = data.claimSessionId;
+      flow.selectedVendor = data.vendor;
+      el('phoneBizName').textContent = data.vendor.businessName;
+      el('maskedPhoneDisplay').textContent = data.vendor.phoneMasked;
+      el('tabFind').click();
+      setState('phone');
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
-  /* ===================================================================
-     STATE: MANUAL
-     =================================================================== */
-  el('manualBack').addEventListener('click', () => {
-    // If they came from search results, go back there; otherwise back to search state.
-    if (flow.matches.length) setState('search'); else setState('search');
-  });
+  /* --- MANUAL REVIEW FALLBACK --- */
+  el('showManual').addEventListener('click', () => setState('manual'));
+  el('manualBack').addEventListener('click', () => setState('search'));
 
-  el('submitManualBtn').addEventListener('click', async () => {
+  el('manualForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
     hideErr('manualErr');
-    const claimantName = el('mName').value.trim();
-    const claimantEmail = el('mEmail').value.trim();
-    const claimantPhone = el('mPhone').value.trim();
-    const proofUrl = el('mProof').value.trim();
-    const proofNotes = el('mNotes').value.trim();
 
-    if (claimantName.length < 2) { showErr('manualErr', 'Enter your name.'); return; }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(claimantEmail)) { showErr('manualErr', 'Enter a valid email.'); return; }
-    if (!proofUrl && !proofNotes) {
-      showErr('manualErr', 'Give us a proof link (website / Google Maps / Instagram) OR notes explaining your ownership.');
-      return;
-    }
     if (!flow.selectedVendor) {
-      showErr('manualErr', 'Something went wrong. Start over from search.');
+      showErr('manualErr', 'Please search for and select a business first.');
       return;
     }
+
+    const payload = {
+      vendorId: flow.selectedVendor.id,
+      claimantName: el('mName').value.trim(),
+      claimantEmail: el('mEmail').value.trim(),
+      claimantPhone: el('mPhone').value.trim(),
+      proofUrl: el('mProof').value.trim(),
+      proofNotes: el('mNotes').value.trim(),
+    };
 
     const btn = el('submitManualBtn');
     setBtnLoading(btn, true, 'Submitting...');
     try {
-      const data = await api('/api/claim/request-manual', {
-        vendorId: flow.selectedVendor.id,
-        claimantName, claimantEmail, claimantPhone, proofUrl, proofNotes,
-      });
+      const data = await api('/api/claim/request-manual', payload);
       el('manualReqId').textContent = data.requestId || '—';
       setState('manual-done');
     } catch (err) {
@@ -706,16 +683,38 @@
     }
   });
 
-  /* ===================================================================
-     URL prefill — /pages/claim.html?business=Royal+Palace
-     =================================================================== */
+  /* --- DYNAMIC CITIES FILTERED BY COUNTRY --- */
+  const CLAIM_LOCATION_DATA = {
+    IN: ['Mumbai', 'Delhi NCR', 'Bengaluru', 'Jaipur', 'Pune', 'Goa', 'Ahmedabad', 'Chennai', 'Hyderabad', 'Lucknow', 'Kolkata', 'Ludhiana', 'Kochi', 'Indore'],
+    US: ['New York City', 'Los Angeles', 'Chicago', 'Miami', 'Houston', 'San Francisco', 'Las Vegas', 'Seattle', 'Atlanta', 'Boston', 'Dallas'],
+    GB: ['London', 'Birmingham', 'Manchester', 'Leeds', 'Edinburgh', 'Glasgow', 'Cardiff', 'Belfast'],
+    AE: ['Dubai City', 'Abu Dhabi City', 'Sharjah City', 'Ras Al Khaimah City', 'Ajman City', 'Al Ain'],
+    CA: ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa', 'Edmonton'],
+    AU: ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Gold Coast']
+  };
+
+  window.updateClaimCities = function() {
+    const cEl = el('rCountry');
+    const cityEl = el('rCity');
+    if (!cEl || !cityEl) return;
+
+    const code = cEl.value || 'IN';
+    const cities = CLAIM_LOCATION_DATA[code] || CLAIM_LOCATION_DATA.IN;
+
+    cityEl.innerHTML = `
+      <option value="">Select City</option>
+      ${cities.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+    `;
+  };
+
+  window.updateClaimCities();
+
+  // URL mode auto-trigger (?mode=register)
   try {
     const params = new URLSearchParams(location.search);
-    const preBiz = params.get('business') || params.get('name');
-    if (preBiz) el('fBiz').value = preBiz;
-    const prePhone = params.get('phone');
-    if (prePhone) el('fPhone').value = prePhone;
-    if (preBiz) el('searchForm').dispatchEvent(new Event('submit'));
+    if (params.get('mode') === 'register') {
+      el('tabRegister').click();
+    }
   } catch (_) {}
 })();
 </script>

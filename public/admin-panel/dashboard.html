@@ -6,7 +6,7 @@
   <title>Admin Dashboard Console - WedEazzy</title>
   
   <!-- Font Awesome Icons & Stylesheets -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   
   <!-- Modular Design stylesheets -->
   <link rel="stylesheet" href="assets/css/variables.css">
@@ -350,8 +350,8 @@
         
         <button class="nav-link-btn active" data-tab-trigger="dashboard">
           <span class="nav-link-left">
-            <i class="fa-solid fa-gauge-high"></i>
-            <span class="menu-label">Dashboard</span>
+            <i class="fa-solid fa-chart-pie"></i>
+            <span class="menu-label">Platform Overview</span>
           </span>
         </button>
 
@@ -434,10 +434,18 @@
           <a class="sub-link-item" onclick="window.triggerAddUserModal()">Add User</a>
         </div>
 
+        <!-- Locations / Country Management -->
+        <button class="nav-link-btn" data-tab-trigger="countries">
+          <span class="nav-link-left">
+            <i class="fa-solid fa-earth-americas" style="color: var(--brand-rose);"></i>
+            <span class="menu-label" style="font-weight: 600;">Countries</span>
+          </span>
+        </button>
+
         <button class="nav-link-btn" data-tab-trigger="city">
           <span class="nav-link-left">
             <i class="fa-solid fa-city"></i>
-            <span class="menu-label">City</span>
+            <span class="menu-label">Cities</span>
           </span>
         </button>
 
@@ -521,13 +529,6 @@
           </span>
         </button>
 
-        <!-- Reports -->
-        <button class="nav-link-btn" data-tab-trigger="reports">
-          <span class="nav-link-left">
-            <i class="fa-solid fa-chart-line"></i>
-            <span class="menu-label">Reports</span>
-          </span>
-        </button>
 
         <!-- Settings -->
         <button class="nav-link-btn" data-tab-trigger="settings">
@@ -588,8 +589,21 @@
           </div>
         </div>
 
-        <!-- RIGHT: Notification bell + Theme toggle + Avatar -->
+        <!-- RIGHT: Global Country Scope + Notification bell + Theme toggle + Avatar -->
         <div class="header-right-cluster">
+
+          <!-- GLOBAL COUNTRY SELECTOR -->
+          <div class="global-country-selector-wrap" style="position: relative;">
+            <select id="globalAdminCountrySelect" class="global-country-select" onchange="window.handleGlobalCountryChange(this.value)" aria-label="Global Admin Country Scope" style="background: var(--surface-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 10px; padding: 6px 12px 6px 10px; font-size: 0.82rem; font-weight: 600; cursor: pointer; outline: none; transition: all 0.18s ease; height: 36px; display: flex; align-items: center;">
+              <option value="all">🌍 All Countries</option>
+              <option value="IN" selected>🇮🇳 India</option>
+              <option value="AE">🇦🇪 UAE</option>
+              <option value="GB">🇬🇧 UK</option>
+              <option value="US">🇺🇸 USA</option>
+              <option value="CA">🇨🇦 Canada</option>
+              <option value="AU">🇦🇺 Australia</option>
+            </select>
+          </div>
 
           <!-- Notification Bell -->
           <div class="profile-dropdown-container">
@@ -667,8 +681,8 @@
   <!-- Approve Businesses views (CRM dashboard, registry, invitations, claims,
        CSV import). Loaded BEFORE app.js so window.WedEazzyCRM already exists
        when app.js's DOMContentLoaded init() attaches its helpers to it. -->
-  <script src="assets/js/crm.js?v=3"></script>
-  <script src="assets/js/app.js?v=4"></script>
+  <script src="assets/js/crm.js?v=6"></script>
+  <script src="assets/js/app.js?v=6"></script>
 
   <script>
     /**

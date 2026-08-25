@@ -1553,7 +1553,20 @@
     <nav class="header-nav">
       <a href="#categories" class="nav-link">Categories</a>
       <a href="#cities" class="nav-link">Destinations</a>
-      <button onclick="openAuthModal('signup', 'vendor')" class="btn-become-vendor-nav" style="border: none; cursor: pointer; font-family: var(--sans);">Become a Vendor</button>
+      
+      <!-- For Vendors Dropdown -->
+      <div class="vendor-nav-dropdown" style="position: relative; display: inline-block;">
+        <button class="nav-link dropdown-toggle" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 15.5px; font-weight: 600; color: var(--ink-soft); padding: 10px 16px;">
+          For Vendors <i class="fa-solid fa-chevron-down" style="font-size: 11px;"></i>
+        </button>
+        <div class="vendor-dropdown-menu" style="position: absolute; top: 100%; left: 0; background: #FFFFFF; min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border-radius: 12px; padding: 8px 0; display: none; z-index: 1000; border: 1px solid #EAE1D7;">
+          <a href="pages/claim.html" style="display: block; padding: 10px 18px; color: #1A1A1A; font-size: 14px; font-weight: 600; text-decoration: none;">Find Your Business</a>
+          <a href="pages/claim.html?mode=register" style="display: block; padding: 10px 18px; color: #1A1A1A; font-size: 14px; font-weight: 600; text-decoration: none;">Register Your Business</a>
+          <div style="height: 1px; background: #EAE1D7; margin: 4px 0;"></div>
+          <a href="pages/vendor-login.html" style="display: block; padding: 10px 18px; color: #DC1F30; font-size: 14px; font-weight: 700; text-decoration: none;">Vendor Login</a>
+        </div>
+      </div>
+
       <button onclick="openAuthModal('login')" class="btn-signin-nav" style="border: none; cursor: pointer; font-family: var(--sans);">Sign In</button>
       <button onclick="openAuthModal('signup')" class="btn-signup-primary">Sign Up</button>
       <a href="https://wa.me/917498987620?text=Hi%20WedEazzy!%20I%20need%20help%20planning%20my%20wedding..." class="header-cta" target="_blank" rel="noopener">
@@ -1694,301 +1707,457 @@
       </form>
     </div>
 
-    <!-- WedEazzy World: Destinations + International -->
-    <div id="cities" class="hero-cities" style="padding:32px 0 24px;">
-
-      <!-- Destination Index sidebar -->
-      <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-bottom:28px;">
-        <div style="flex:1 1 480px;">
-          <span class="hero-cities-eyebrow">Explore Top Wedding Destinations</span>
-          <h3 class="hero-cities-title" style="font-size:clamp(24px,3.5vw,34px);margin-bottom:8px;">Popular destinations</h3>
-          <p style="color:#5A5560;font-size:15px;line-height:1.6;max-width:560px;">
-            Start with high-demand Indian wedding markets, then plan expansion-ready destination coverage for
-            international couples across the US, UK, Australia, Canada and UAE.
+    <!-- WedEazzy World: Global Destinations -->
+    <section id="cities" class="destinations-section">
+      <div class="container">
+        <!-- Section Header -->
+        <div class="dest-headline-wrap">
+          <span class="dest-eyebrow">Explore WedEazzy's Wedding Destinations</span>
+          <h2 class="dest-headline">Wherever you're getting married, start here.</h2>
+          <p class="dest-subtitle">
+            Discover wedding venues, photographers, planners and wedding professionals across the destinations currently available on WedEazzy.
           </p>
         </div>
-        <div style="flex:0 0 auto;background:#fff;border:1px solid #f3ebeb;border-radius:18px;padding:20px 24px;min-width:220px;">
-          <div style="font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#DC1F30;margin-bottom:12px;">
-            Destination Index
-            <span style="display:block;width:30px;height:3px;background:#DC1F30;border-radius:3px;margin-top:6px;"></span>
+
+        <!-- Top Country Selector Tabs Bar -->
+        <div class="dest-country-tabs" role="tablist" aria-label="Select Country">
+          <button class="dest-country-btn active" data-dest-tab="IN" onclick="switchWedEazzyCountry('IN')">
+            <span class="flag">🇮🇳</span> <span>India</span>
+          </button>
+          <button class="dest-country-btn" data-dest-tab="AE" onclick="switchWedEazzyCountry('AE')">
+            <span class="flag">🇦🇪</span> <span>UAE</span>
+          </button>
+          <button class="dest-country-btn" data-dest-tab="GB" onclick="switchWedEazzyCountry('GB')">
+            <span class="flag">🇬🇧</span> <span>UK</span>
+          </button>
+          <button class="dest-country-btn" data-dest-tab="US" onclick="switchWedEazzyCountry('US')">
+            <span class="flag">🇺🇸</span> <span>USA</span>
+          </button>
+          <button class="dest-country-btn" data-dest-tab="CA" onclick="switchWedEazzyCountry('CA')">
+            <span class="flag">🇨🇦</span> <span>Canada</span>
+          </button>
+          <button class="dest-country-btn" data-dest-tab="AU" onclick="switchWedEazzyCountry('AU')">
+            <span class="flag">🇦🇺</span> <span>Australia</span>
+          </button>
+        </div>
+
+        <!-- Section Subheading -->
+        <div style="text-align:center;margin-bottom:28px;">
+          <h3 style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:#0A1D37;margin-bottom:4px;">
+            Explore Wedding Destinations
+          </h3>
+          <p style="font-size:14px;color:#6B6574;">
+            From celebrations across India to weddings in the UAE, UK, USA, Canada and Australia.
+          </p>
+        </div>
+
+        <!-- Main Desktop Panel Layout (Sidebar + Cities Grid) -->
+        <div class="dest-panel-layout">
+          <!-- Left Sidebar Tabs -->
+          <div class="dest-country-sidebar">
+            <div class="dest-sidebar-title">Select Country</div>
+            <button class="dest-side-btn active" data-dest-side="IN" onclick="switchWedEazzyCountry('IN')">
+              <span><span class="side-flag">🇮🇳</span> India</span>
+              <span class="side-count">9 Cities</span>
+            </button>
+            <button class="dest-side-btn" data-dest-side="AE" onclick="switchWedEazzyCountry('AE')">
+              <span><span class="side-flag">🇦🇪</span> UAE</span>
+              <span class="side-count">3 Cities</span>
+            </button>
+            <button class="dest-side-btn" data-dest-side="GB" onclick="switchWedEazzyCountry('GB')">
+              <span><span class="side-flag">🇬🇧</span> UK</span>
+              <span class="side-count">3 Cities</span>
+            </button>
+            <button class="dest-side-btn" data-dest-side="US" onclick="switchWedEazzyCountry('US')">
+              <span><span class="side-flag">🇺🇸</span> USA</span>
+              <span class="side-count">4 Cities</span>
+            </button>
+            <button class="dest-side-btn" data-dest-side="CA" onclick="switchWedEazzyCountry('CA')">
+              <span><span class="side-flag">🇨🇦</span> Canada</span>
+              <span class="side-count">3 Cities</span>
+            </button>
+            <button class="dest-side-btn" data-dest-side="AU" onclick="switchWedEazzyCountry('AU')">
+              <span><span class="side-flag">🇦🇺</span> Australia</span>
+              <span class="side-count">3 Cities</span>
+            </button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;">
-            <div>
-              <div style="font-size:26px;font-weight:800;color:#1B1B1F;line-height:1;">9</div>
-              <div style="font-size:11px;color:#8a838f;line-height:1.3;">Indian priority<br>markets</div>
+
+          <!-- Right Cities View Grid -->
+          <div class="dest-country-container">
+
+            <!-- INDIA CONTENT -->
+            <div class="dest-country-content active" id="dest-country-IN">
+              <div class="dest-country-header">
+                <h3><span>🇮🇳</span> India Destinations</h3>
+                <p>Explore royal palaces, coastal venues, and premier wedding markets across India.</p>
+              </div>
+              <div class="dest-cities-grid">
+
+                <a class="dest-city-card" href="pages/city.html?city=mumbai">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇮🇳 India</span>
+                    <img loading="lazy" src="assets/images/mumbai.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=600&h=400&fit=crop&q=80';" alt="Mumbai" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Mumbai</div>
+                    <div class="dest-city-count" data-city-count-slug="mumbai"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Mumbai →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=delhi-ncr">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇮🇳 India</span>
+                    <img loading="lazy" src="assets/images/delhi.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1587474260584-136574528ed5?w=600&h=400&fit=crop&q=80';" alt="Delhi NCR" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Delhi NCR</div>
+                    <div class="dest-city-count" data-city-count-slug="delhi-ncr"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Delhi NCR →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=pune">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇮🇳 India</span>
+                    <img loading="lazy" src="assets/images/pune.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1601999109332-542b18dbec57?w=600&h=400&fit=crop&q=80';" alt="Pune" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Pune</div>
+                    <div class="dest-city-count" data-city-count-slug="pune"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Pune →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=jaipur">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇮🇳 India</span>
+                    <img loading="lazy" src="assets/images/jaipur.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1599661046289-e31897846e41?w=600&h=400&fit=crop&q=80';" alt="Jaipur" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Jaipur</div>
+                    <div class="dest-city-count" data-city-count-slug="jaipur"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Jaipur →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=lucknow">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇮🇳 India</span>
+                    <img loading="lazy" src="assets/images/lucknow.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1609137144814-7d5269f8ad32?w=600&h=400&fit=crop&q=80';" alt="Lucknow" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Lucknow</div>
+                    <div class="dest-city-count" data-city-count-slug="lucknow"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Lucknow →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=patna">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇮🇳 India</span>
+                    <img loading="lazy" src="assets/images/patna.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?w=600&h=400&fit=crop&q=80';" alt="Patna" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Patna</div>
+                    <div class="dest-city-count" data-city-count-slug="patna"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Patna →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=navi-mumbai">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇮🇳 India</span>
+                    <img loading="lazy" src="assets/images/navi-mumbai.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1566838217578-1903568a76d9?w=600&h=400&fit=crop&q=80';" alt="Navi Mumbai" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Navi Mumbai</div>
+                    <div class="dest-city-count" data-city-count-slug="navi-mumbai"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Navi Mumbai →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=ahmedabad">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇮🇳 India</span>
+                    <img loading="lazy" src="assets/images/ahmedabad.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1603251483871-6fa79d9ab6fb?w=600&h=400&fit=crop&q=80';" alt="Ahmedabad" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Ahmedabad</div>
+                    <div class="dest-city-count" data-city-count-slug="ahmedabad"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Ahmedabad →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=bengaluru">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇮🇳 India</span>
+                    <img loading="lazy" src="assets/images/bengaluru.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=600&h=400&fit=crop&q=80';" alt="Bengaluru" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Bengaluru</div>
+                    <div class="dest-city-count" data-city-count-slug="bengaluru"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Bengaluru →</span>
+                  </div>
+                </a>
+
+              </div>
             </div>
-            <div>
-              <div style="font-size:26px;font-weight:800;color:#1B1B1F;line-height:1;">5</div>
-              <div style="font-size:11px;color:#8a838f;line-height:1.3;">International<br>regions</div>
+
+            <!-- UAE CONTENT -->
+            <div class="dest-country-content" id="dest-country-AE">
+              <div class="dest-country-header">
+                <h3><span>🇦🇪</span> UAE Destinations</h3>
+                <p>Luxury resort venues, desert retreats, and iconic skyline celebrations across Dubai, Abu Dhabi, and Sharjah.</p>
+              </div>
+              <div class="dest-cities-grid">
+
+                <a class="dest-city-card" href="pages/city.html?city=dubai">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇦🇪 UAE</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&h=400&fit=crop&q=80" alt="Dubai" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Dubai</div>
+                    <div class="dest-city-count" data-city-count-slug="dubai"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Dubai →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=abu-dhabi">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇦🇪 UAE</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1512632578888-169bbbc64f35?w=600&h=400&fit=crop&q=80" alt="Abu Dhabi" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Abu Dhabi</div>
+                    <div class="dest-city-count" data-city-count-slug="abu-dhabi"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Abu Dhabi →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=sharjah">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇦🇪 UAE</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=600&h=400&fit=crop&q=80" alt="Sharjah" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Sharjah</div>
+                    <div class="dest-city-count" data-city-count-slug="sharjah"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Sharjah →</span>
+                  </div>
+                </a>
+
+              </div>
             </div>
-            <div>
-              <div style="font-size:26px;font-weight:800;color:#1B1B1F;line-height:1;">2</div>
-              <div style="font-size:11px;color:#8a838f;line-height:1.3;">Discovery paths per<br>city</div>
+
+            <!-- UK CONTENT -->
+            <div class="dest-country-content" id="dest-country-GB">
+              <div class="dest-country-header">
+                <h3><span>🇬🇧</span> UK Destinations</h3>
+                <p>Historic estates, luxury city hotels, and countryside venues across London, Birmingham, and Manchester.</p>
+              </div>
+              <div class="dest-cities-grid">
+
+                <a class="dest-city-card" href="pages/city.html?city=london">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇬🇧 UK</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&h=400&fit=crop&q=80" alt="London" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">London</div>
+                    <div class="dest-city-count" data-city-count-slug="london"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore London →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=birmingham">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇬🇧 UK</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1605883746910-ee1182d04dd9?w=600&h=400&fit=crop&q=80" alt="Birmingham" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Birmingham</div>
+                    <div class="dest-city-count" data-city-count-slug="birmingham"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Birmingham →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=manchester">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇬🇧 UK</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1543832923-4368d9b538ab?w=600&h=400&fit=crop&q=80" alt="Manchester" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Manchester</div>
+                    <div class="dest-city-count" data-city-count-slug="manchester"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Manchester →</span>
+                  </div>
+                </a>
+
+              </div>
             </div>
-            <div>
-              <div style="font-size:26px;font-weight:800;color:#1B1B1F;line-height:1;">0%</div>
-              <div style="font-size:11px;color:#8a838f;line-height:1.3;">Booking<br>commission</div>
+
+            <!-- USA CONTENT -->
+            <div class="dest-country-content" id="dest-country-US">
+              <div class="dest-country-header">
+                <h3><span>🇺🇸</span> USA Destinations</h3>
+                <p>Metropolitan ballrooms, coastal retreats, and premier event professionals from Coast to Coast.</p>
+              </div>
+              <div class="dest-cities-grid">
+
+                <a class="dest-city-card" href="pages/city.html?city=new-york">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇺🇸 USA</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600&h=400&fit=crop&q=80" alt="New York" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">New York</div>
+                    <div class="dest-city-count" data-city-count-slug="new-york"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore New York →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=los-angeles">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇺🇸 USA</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1580655653885-65763b2597d0?w=600&h=400&fit=crop&q=80" alt="Los Angeles" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Los Angeles</div>
+                    <div class="dest-city-count" data-city-count-slug="los-angeles"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Los Angeles →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=miami">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇺🇸 USA</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1506966953602-c20cc11f75e3?w=600&h=400&fit=crop&q=80" alt="Miami" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Miami</div>
+                    <div class="dest-city-count" data-city-count-slug="miami"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Miami →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=chicago">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇺🇸 USA</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=600&h=400&fit=crop&q=80" alt="Chicago" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Chicago</div>
+                    <div class="dest-city-count" data-city-count-slug="chicago"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Chicago →</span>
+                  </div>
+                </a>
+
+              </div>
             </div>
+
+            <!-- CANADA CONTENT -->
+            <div class="dest-country-content" id="dest-country-CA">
+              <div class="dest-country-header">
+                <h3><span>🇨🇦</span> Canada Destinations</h3>
+                <p>Waterfront venues, mountain vistas, and top wedding professionals across Canada’s premier cities.</p>
+              </div>
+              <div class="dest-cities-grid">
+
+                <a class="dest-city-card" href="pages/city.html?city=toronto">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇨🇦 Canada</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1507992781348-310259076fe0?w=600&h=400&fit=crop&q=80" alt="Toronto" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Toronto</div>
+                    <div class="dest-city-count" data-city-count-slug="toronto"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Toronto →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=vancouver">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇨🇦 Canada</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1559511260-66a654ae982a?w=600&h=400&fit=crop&q=80" alt="Vancouver" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Vancouver</div>
+                    <div class="dest-city-count" data-city-count-slug="vancouver"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Vancouver →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=montreal">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇨🇦 Canada</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1519178614-68693b05be79?w=600&h=400&fit=crop&q=80" alt="Montreal" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Montreal</div>
+                    <div class="dest-city-count" data-city-count-slug="montreal"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Montreal →</span>
+                  </div>
+                </a>
+
+              </div>
+            </div>
+
+            <!-- AUSTRALIA CONTENT -->
+            <div class="dest-country-content" id="dest-country-AU">
+              <div class="dest-country-header">
+                <h3><span>🇦🇺</span> Australia Destinations</h3>
+                <p>Harbour views, vineyard estates, and coastal venues across Sydney, Melbourne, and Brisbane.</p>
+              </div>
+              <div class="dest-cities-grid">
+
+                <a class="dest-city-card" href="pages/city.html?city=sydney">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇦🇺 Australia</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=600&h=400&fit=crop&q=80" alt="Sydney" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Sydney</div>
+                    <div class="dest-city-count" data-city-count-slug="sydney"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Sydney →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=melbourne">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇦🇺 Australia</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1514395462725-fb4566210144?w=600&h=400&fit=crop&q=80" alt="Melbourne" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Melbourne</div>
+                    <div class="dest-city-count" data-city-count-slug="melbourne"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Melbourne →</span>
+                  </div>
+                </a>
+
+                <a class="dest-city-card" href="pages/city.html?city=brisbane">
+                  <div class="dest-city-img-wrap">
+                    <span class="dest-city-flag-badge">🇦🇺 Australia</span>
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=600&h=400&fit=crop&q=80" alt="Brisbane" />
+                  </div>
+                  <div class="dest-city-body">
+                    <div class="dest-city-name">Brisbane</div>
+                    <div class="dest-city-count" data-city-count-slug="brisbane"><span class="badge-dot"></span><span>Wedding vendors &amp; venues</span></div>
+                    <span class="dest-city-link">Explore Brisbane →</span>
+                  </div>
+                </a>
+
+              </div>
+            </div>
+
           </div>
         </div>
+
       </div>
+    </section>
 
-      <!-- India City Coverage -->
-      <div style="margin-bottom:10px;">
-        <span style="font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#DC1F30;">India City Coverage</span>
-        <div style="width:100%;height:1px;background:linear-gradient(90deg,#DC1F30 0%,#f3ebeb 30%);margin-top:6px;"></div>
-      </div>
-
-      <div class="city-grid">
-        <!-- Mumbai -->
-        <div class="city-card">
-          <div class="city-thumbnail-wrapper">
-            <img loading="lazy" src="assets/images/mumbai.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=200&h=200&fit=crop&q=80';" alt="Mumbai" />
-          </div>
-          <div class="city-info">
-            <strong class="city-name">Mumbai</strong>
-            <div class="city-links">
-              <a class="city-link" href="pages/category.html?cat=banquet-halls&city=mumbai">Venue</a>
-              <span class="city-link-sep">|</span>
-              <a class="city-link" href="pages/city.html?city=mumbai">Vendor</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Lucknow -->
-        <div class="city-card">
-          <div class="city-thumbnail-wrapper">
-            <img loading="lazy" src="assets/images/lucknow.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1609137144814-7d5269f8ad32?w=200&h=200&fit=crop&q=80';" alt="Lucknow" />
-          </div>
-          <div class="city-info">
-            <strong class="city-name">Lucknow</strong>
-            <div class="city-links">
-              <a class="city-link" href="pages/category.html?cat=banquet-halls&city=lucknow">Venue</a>
-              <span class="city-link-sep">|</span>
-              <a class="city-link" href="pages/city.html?city=lucknow">Vendor</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Patna -->
-        <div class="city-card">
-          <div class="city-thumbnail-wrapper">
-            <img loading="lazy" src="assets/images/patna.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0?w=200&h=200&fit=crop&q=80';" alt="Patna" />
-          </div>
-          <div class="city-info">
-            <strong class="city-name">Patna</strong>
-            <div class="city-links">
-              <a class="city-link" href="pages/category.html?cat=banquet-halls&city=patna">Venue</a>
-              <span class="city-link-sep">|</span>
-              <a class="city-link" href="pages/city.html?city=patna">Vendor</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Delhi -->
-        <div class="city-card">
-          <div class="city-thumbnail-wrapper">
-            <img loading="lazy" src="assets/images/delhi.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1587474260584-136574528ed5?w=200&h=200&fit=crop&q=80';" alt="Delhi" />
-          </div>
-          <div class="city-info">
-            <strong class="city-name">Delhi</strong>
-            <div class="city-links">
-              <a class="city-link" href="pages/category.html?cat=banquet-halls&city=delhi-ncr">Venue</a>
-              <span class="city-link-sep">|</span>
-              <a class="city-link" href="pages/city.html?city=delhi-ncr">Vendor</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pune -->
-        <div class="city-card">
-          <div class="city-thumbnail-wrapper">
-            <img loading="lazy" src="assets/images/pune.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1601999109332-542b18dbec57?w=200&h=200&fit=crop&q=80';" alt="Pune" />
-          </div>
-          <div class="city-info">
-            <strong class="city-name">Pune</strong>
-            <div class="city-links">
-              <a class="city-link" href="pages/category.html?cat=banquet-halls&city=pune">Venue</a>
-              <span class="city-link-sep">|</span>
-              <a class="city-link" href="pages/city.html?city=pune">Vendor</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Jaipur -->
-        <div class="city-card">
-          <div class="city-thumbnail-wrapper">
-            <img loading="lazy" src="assets/images/jaipur.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1599661046289-e31897846e41?w=200&h=200&fit=crop&q=80';" alt="Jaipur" />
-          </div>
-          <div class="city-info">
-            <strong class="city-name">Jaipur</strong>
-            <div class="city-links">
-              <a class="city-link" href="pages/category.html?cat=banquet-halls&city=jaipur">Venue</a>
-              <span class="city-link-sep">|</span>
-              <a class="city-link" href="pages/city.html?city=jaipur">Vendor</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Navi Mumbai -->
-        <div class="city-card">
-          <div class="city-thumbnail-wrapper">
-            <img loading="lazy" src="assets/images/navi-mumbai.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1566838217578-1903568a76d9?w=200&h=200&fit=crop&q=80';" alt="Navi Mumbai" />
-          </div>
-          <div class="city-info">
-            <strong class="city-name">Navi Mumbai</strong>
-            <div class="city-links">
-              <a class="city-link" href="pages/category.html?cat=banquet-halls&city=navi-mumbai">Venue</a>
-              <span class="city-link-sep">|</span>
-              <a class="city-link" href="pages/city.html?city=navi-mumbai">Vendor</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Ahmedabad -->
-        <div class="city-card">
-          <div class="city-thumbnail-wrapper">
-            <img loading="lazy" src="assets/images/ahmedabad.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1603251483871-6fa79d9ab6fb?w=200&h=200&fit=crop&q=80';" alt="Ahmedabad" />
-          </div>
-          <div class="city-info">
-            <strong class="city-name">Ahmedabad</strong>
-            <div class="city-links">
-              <a class="city-link" href="pages/category.html?cat=banquet-halls&city=ahmedabad">Venue</a>
-              <span class="city-link-sep">|</span>
-              <a class="city-link" href="pages/city.html?city=ahmedabad">Vendor</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bengaluru -->
-        <div class="city-card">
-          <div class="city-thumbnail-wrapper">
-            <img loading="lazy" src="assets/images/bengaluru.png" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=200&h=200&fit=crop&q=80';" alt="Bengaluru" />
-          </div>
-          <div class="city-info">
-            <strong class="city-name">Bengaluru</strong>
-            <div class="city-links">
-              <a class="city-link" href="pages/category.html?cat=banquet-halls&city=bengaluru">Venue</a>
-              <span class="city-link-sep">|</span>
-              <a class="city-link" href="pages/city.html?city=bengaluru">Vendor</a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- International Destinations -->
-      <div style="margin-top:40px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-          <div>
-            <h3 style="font-family:'Inter',sans-serif;font-size:clamp(18px,2.5vw,22px);font-weight:800;color:#1a1a1a;margin:0 0 4px;">
-              Expanding Horizons
-            </h3>
-            <p style="font-size:13.5px;color:#79706A;margin:0;">Explore our global locations across 3 regions</p>
-          </div>
-        </div>
-
-        <style>
-          .intl-region { margin-bottom: 28px; }
-          .intl-region-label { font-size: 11px; font-weight: 800; color: #DC1F30; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-          .intl-region-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(220,31,48,0.2), transparent); }
-          .intl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-          .intl-card { background: #fff; border: 1px solid #F0E8E0; border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform 0.18s ease, box-shadow 0.18s ease; will-change: transform; }
-          .intl-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px -8px rgba(80,40,20,0.14); }
-          .intl-card-flag { height: 80px; display: grid; place-items: center; font-size: 3rem; position: relative; overflow: hidden; }
-          .intl-card-body { padding: 12px 14px 14px; }
-          .intl-card-name { font-size: 14px; font-weight: 800; color: #1a1a1a; margin: 0 0 6px; }
-          .intl-card-desc { font-size: 11.5px; color: #79706A; margin: 0 0 8px; line-height: 1.4; }
-          .intl-chips { display: flex; flex-wrap: wrap; gap: 4px; }
-          .intl-chip { padding: 2px 8px; border-radius: 20px; background: #FBF7F2; border: 1px solid #E8DFD4; color: #3A3530; font-size: 10.5px; font-weight: 600; }
-        </style>
-
-        <!-- North America -->
-        <div class="intl-region">
-          <div class="intl-region-label">🌎 North America</div>
-          <div class="intl-grid">
-            <div class="intl-card" onclick="window.location.href='pages/category.html?country=usa'">
-              <div class="intl-card-flag" style="background:linear-gradient(135deg,#0d47a1 0%,#1565c0 50%,#b71c1c 100%);">🇺🇸</div>
-              <div class="intl-card-body">
-                <p class="intl-card-name">United States</p>
-                <p class="intl-card-desc">Iconic cities & coastal venues</p>
-                <div class="intl-chips">
-                  <span class="intl-chip">New York</span>
-                  <span class="intl-chip">Los Angeles</span>
-                  <span class="intl-chip">Miami</span>
-                  <span class="intl-chip">Chicago</span>
-                </div>
-              </div>
-            </div>
-            <div class="intl-card" onclick="window.location.href='pages/category.html?country=canada'">
-              <div class="intl-card-flag" style="background:linear-gradient(135deg,#b71c1c 0%,#ef5350 50%,#b71c1c 100%);">🇨🇦</div>
-              <div class="intl-card-body">
-                <p class="intl-card-name">Canada</p>
-                <p class="intl-card-desc">CN Tower & coastal venues</p>
-                <div class="intl-chips">
-                  <span class="intl-chip">Toronto</span>
-                  <span class="intl-chip">Vancouver</span>
-                  <span class="intl-chip">Montreal</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Europe & Oceania -->
-        <div class="intl-region">
-          <div class="intl-region-label">🌏 Europe & Oceania</div>
-          <div class="intl-grid">
-            <div class="intl-card" onclick="window.location.href='pages/category.html?country=uk'">
-              <div class="intl-card-flag" style="background:linear-gradient(135deg,#1a237e 0%,#283593 50%,#c62828 100%);">🇬🇧</div>
-              <div class="intl-card-body">
-                <p class="intl-card-name">United Kingdom</p>
-                <p class="intl-card-desc">Heritage estates & manor houses</p>
-                <div class="intl-chips">
-                  <span class="intl-chip">London</span>
-                  <span class="intl-chip">Birmingham</span>
-                  <span class="intl-chip">Manchester</span>
-                </div>
-              </div>
-            </div>
-            <div class="intl-card" onclick="window.location.href='pages/category.html?country=australia'">
-              <div class="intl-card-flag" style="background:linear-gradient(135deg,#0d47a1 0%,#1976d2 60%,#283593 100%);">🇦🇺</div>
-              <div class="intl-card-body">
-                <p class="intl-card-name">Australia</p>
-                <p class="intl-card-desc">Opera House & coastal venues</p>
-                <div class="intl-chips">
-                  <span class="intl-chip">Sydney</span>
-                  <span class="intl-chip">Melbourne</span>
-                  <span class="intl-chip">Brisbane</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Middle East -->
-        <div class="intl-region">
-          <div class="intl-region-label">🌍 Middle East</div>
-          <div class="intl-grid">
-            <div class="intl-card" onclick="window.location.href='pages/category.html?country=uae'">
-              <div class="intl-card-flag" style="background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 40%,#b71c1c 100%);">🇦🇪</div>
-              <div class="intl-card-body">
-                <p class="intl-card-name">UAE</p>
-                <p class="intl-card-desc">Luxury desert & skyline venues</p>
-                <div class="intl-chips">
-                  <span class="intl-chip">Dubai</span>
-                  <span class="intl-chip">Abu Dhabi</span>
-                  <span class="intl-chip">Sharjah</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Claim Your Business CTA -->
+    <!-- Claim Your Business CTA -->
 <section style="background:linear-gradient(135deg,#DC1F30 0%,#F0576A 100%);padding:48px 0;">
   <div class="container" style="text-align:center;color:#fff;">
     <h2 style="font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,36px);font-weight:800;margin-bottom:10px;">Is your business listed on WedEazzy?</h2>
@@ -2416,6 +2585,19 @@
   </div>
 </section>
 
+<!-- ARE YOU A WEDDING VENDOR CTA SECTION -->
+<section class="vendor-cta-section" style="background: linear-gradient(135deg, #1B1B1F 0%, #2A2A30 100%); color: #FFFFFF; padding: 60px 20px; text-align: center; margin: 40px 0 0 0;">
+  <div class="container" style="max-width: 800px; margin: 0 auto;">
+    <span style="display: inline-block; padding: 6px 16px; border-radius: 99px; background: rgba(220, 31, 48, 0.2); color: #FF4D5E; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px;">Partner With WedEazzy</span>
+    <h2 style="font-family: 'Playfair Display', serif; font-size: clamp(28px, 4vw, 38px); font-weight: 800; color: #FFFFFF; margin: 0 0 12px 0;">Are You a Wedding Vendor?</h2>
+    <p style="font-size: 16px; color: #D1D5DB; line-height: 1.6; margin: 0 0 28px 0;">Your business may already be listed on WedEazzy. Find your business, claim your listing, and start managing your profile.</p>
+    <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+      <a href="pages/claim.html" class="btn" style="background: #DC1F30; color: #FFFFFF; padding: 14px 28px; border-radius: 12px; font-weight: 700; text-decoration: none; box-shadow: 0 6px 20px rgba(220, 31, 48, 0.4);">Find Your Business</a>
+      <a href="pages/claim.html?mode=register" class="btn" style="background: transparent; color: #FFFFFF; border: 2px solid #FFFFFF; padding: 14px 28px; border-radius: 12px; font-weight: 700; text-decoration: none;">Register Your Business</a>
+    </div>
+  </div>
+</section>
+
 <footer>
   <div class="container">
     <div class="footer-grid">
@@ -2558,7 +2740,6 @@
         <a href="pages/terms.html">Terms &amp; Conditions</a>
         <a href="pages/terms.html">Refund Policy</a>
         <a href="https://wa.me/917498987620">Contact Us</a>
-        <a href="admin-panel/login.html" style="font-weight: 600; color: #E6C462;">Admin Portal</a>
       </div>
     </div>
   </div>
@@ -2752,11 +2933,17 @@
 
       <form onsubmit="handleAuthSubmit(event, 'force-password-change')">
         <div class="auth-form-group">
-          <label for="forcePwNew">New Password</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="forcePwNew" style="margin: 0;">New Password *</label>
+            <button type="button" onclick="toggleModalPasswordVisibility('forcePwNew', this)" style="font-size: 12.5px; color: var(--gold); font-weight: 600; background: none; border: none; cursor: pointer; font-family: inherit;">Show</button>
+          </div>
           <input type="password" id="forcePwNew" class="auth-input" placeholder="At least 8 characters, mixed case, number, symbol" required>
         </div>
         <div class="auth-form-group">
-          <label for="forcePwConfirm">Confirm New Password</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="forcePwConfirm" style="margin: 0;">Confirm New Password *</label>
+            <button type="button" onclick="toggleModalPasswordVisibility('forcePwConfirm', this)" style="font-size: 12.5px; color: var(--gold); font-weight: 600; background: none; border: none; cursor: pointer; font-family: inherit;">Show</button>
+          </div>
           <input type="password" id="forcePwConfirm" class="auth-input" placeholder="Re-enter your new password" required>
         </div>
 
@@ -2770,7 +2957,15 @@
 </div>
 
 <script>
-  // Header scroll handled by wedeazzy-enhance.js (rAF-throttled, passive listener)
+  // Dynamic header class on scroll
+  window.addEventListener('scroll', () => {
+    const header = document.querySelector('.header');
+    if (window.scrollY > 20) {
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
+    }
+  });
 
   function doSearch() {
     var cat = document.getElementById('hCat').value;
@@ -2842,15 +3037,15 @@
     }
   }
 
-  function toggleModalPasswordVisibility(inputId) {
+  function toggleModalPasswordVisibility(inputId, btnTarget) {
     const input = document.getElementById(inputId);
-    const btn = event.target;
+    const btn = btnTarget || (typeof event !== 'undefined' ? event.target : null);
     if (input.type === 'password') {
       input.type = 'text';
-      btn.textContent = 'Hide';
+      if (btn) btn.textContent = 'Hide';
     } else {
       input.type = 'password';
-      btn.textContent = 'Show';
+      if (btn) btn.textContent = 'Show';
     }
   }
 
@@ -3092,6 +3287,22 @@
 
   // On Page Load: Check if redirected with auth request (e.g. from expired dashboard)
   window.addEventListener('DOMContentLoaded', () => {
+    // For Vendors dropdown toggle
+    const dropdown = document.querySelector('.vendor-nav-dropdown');
+    if (dropdown) {
+      const toggleBtn = dropdown.querySelector('.dropdown-toggle');
+      const menu = dropdown.querySelector('.vendor-dropdown-menu');
+      if (toggleBtn && menu) {
+        dropdown.addEventListener('mouseenter', () => { menu.style.display = 'block'; });
+        dropdown.addEventListener('mouseleave', () => { menu.style.display = 'none'; });
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        });
+        document.addEventListener('click', () => { menu.style.display = 'none'; });
+      }
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const authAction = urlParams.get('auth');
     if (authAction === 'login') {
@@ -3107,6 +3318,48 @@
   <!-- Premium Glassmorphic Support Concierge Chat -->
   <script src="js/support-widget.js"></script>
   <script src="js/faq-chatbot.js"></script>
-  <script src="js/wedeazzy-enhance.js?v=1"></script>
+  <script>
+    function switchWedEazzyCountry(countryCode) {
+      // Top tabs
+      document.querySelectorAll('.dest-country-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-dest-tab') === countryCode);
+      });
+      // Sidebar buttons
+      document.querySelectorAll('.dest-side-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-dest-side') === countryCode);
+      });
+      // Content containers
+      document.querySelectorAll('.dest-country-content').forEach(content => {
+        content.classList.toggle('active', content.id === 'dest-country-' + countryCode);
+      });
+    }
+
+    // Hydrate real city counts from public API /api/public/meta
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/public/meta');
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.cities)) {
+          const countsMap = {};
+          data.cities.forEach(c => {
+            if (c.slug) countsMap[c.slug.toLowerCase()] = c.count || 0;
+          });
+
+          document.querySelectorAll('[data-city-count-slug]').forEach(el => {
+            const slug = el.getAttribute('data-city-count-slug');
+            if (slug && countsMap[slug.toLowerCase()] !== undefined) {
+              const count = countsMap[slug.toLowerCase()];
+              if (count > 0) {
+                el.innerHTML = '<span class="badge-dot"></span><span>' + count.toLocaleString() + ' Verified Vendors</span>';
+              }
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Could not hydrate real city counts:', e);
+      }
+    });
+  </script>
+  <script src="js/wedeazzy-enhance.js?v=2"></script>
 </body>
 </html>

@@ -525,5 +525,31 @@ module.exports = {
     `);
     const text = `Account Suspended: Your WedEazzy account has been suspended by our administration team. Contact support for more information.`;
     return sendMail({ to, subject: 'Important: Your WedEazzy Account Status', html, text });
+  },
+
+  /**
+   * Send Temporary Vendor Account Credentials Email upon business claim or new vendor registration.
+   */
+  async sendVendorCredentialsEmail(to, businessName, tempPassword, loginEmail) {
+    const title = 'Your WedEazzy Vendor Account Is Ready';
+    const heading = 'Welcome to WedEazzy Vendor Portal';
+    const loginUrl = `${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/admin-login.html`;
+    const html = renderHtmlFrame(title, heading, `
+      <p>Hello,</p>
+      <p>Your business <strong>${esc(businessName)}</strong> has been successfully set up on WedEazzy.</p>
+      <p>Here are your temporary login details to access your Vendor Dashboard:</p>
+      <div style="background: #F9FAFB; border: 1px solid #E5E7EB; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 4px 0;"><strong>Business Name:</strong> ${esc(businessName)}</p>
+        <p style="margin: 4px 0;"><strong>Login Email:</strong> ${esc(loginEmail || to)}</p>
+        <p style="margin: 4px 0;"><strong>Temporary Password:</strong> <code style="background: #EBF5FF; color: #1E429F; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${esc(tempPassword)}</code></p>
+      </div>
+      <p style="color: #6B7280; font-size: 13px;">For security reasons, you will be required to change your temporary password when you first log in.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${loginUrl}" class="btn">Login to Vendor Dashboard</a>
+      </div>
+      <p>Best regards,<br>The WedEazzy Team</p>
+    `);
+    const text = `Welcome to WedEazzy! Your business "${businessName}" is ready. Login Email: ${loginEmail || to}, Temporary Password: ${tempPassword}. Login at: ${loginUrl}`;
+    return sendMail({ to, subject: 'Your WedEazzy Vendor Account Credentials', html, text });
   }
 };

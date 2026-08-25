@@ -14,8 +14,8 @@ const { sanitizeFields } = require('../utils/sanitize');
  * isn't a recognised, priced package (caller then falls back to the
  * client-submitted custom amount, floored at the package's listed minimum).
  */
-function resolvePlanPricing(packageType, planDays) {
-  const pricing = getGrowCampaignsPricing();
+function resolvePlanPricing(packageType, planDays, countryCode) {
+  const pricing = getGrowCampaignsPricing(countryCode);
   const pkg = pricing && pricing[packageType];
   if (!pkg || !Array.isArray(pkg.plans)) return null;
   const days = parseInt(planDays, 10);
@@ -27,10 +27,8 @@ function resolvePlanPricing(packageType, planDays) {
   return { totalAmount, baseAmount, gstAmount };
 }
 
-/** The "Custom Campaign" tier's listed starting price — used as a floor so a
- * custom campaign can't be created for an arbitrarily low amount. */
-function customPlanFloor(packageType) {
-  const pricing = getGrowCampaignsPricing();
+function customPlanFloor(packageType, countryCode) {
+  const pricing = getGrowCampaignsPricing(countryCode);
   const pkg = pricing && pricing[packageType];
   const customPlan = pkg && Array.isArray(pkg.plans) && pkg.plans.find((p) => p.custom);
   return customPlan && Number.isFinite(Number(customPlan.price)) ? Math.round(Number(customPlan.price)) : null;
@@ -107,19 +105,20 @@ async function createCampaign(req, res, next) {
     let finalBaseAmount = null;
     let finalGstAmount = null;
     if (packageType) {
-      const resolved = resolvePlanPricing(packageType, planDays);
+      const vCountry = vendor.countryCode || vendor.country || 'IN';
+      const resolved = resolvePlanPricing(packageType, planDays, vCountry);
       if (resolved) {
         finalTotalAmount = resolved.totalAmount;
         finalBaseAmount = resolved.baseAmount;
         finalGstAmount = resolved.gstAmount;
       } else {
-        const floor = customPlanFloor(packageType);
+        const floor = customPlanFloor(packageType, vCountry);
         const submittedTotal = parseInt(totalAmount, 10);
         if (!Number.isFinite(submittedTotal) || submittedTotal <= 0) {
           throw new HttpError(400, 'A valid campaign amount is required', 'ERR_INPUT');
         }
         if (floor != null && submittedTotal < floor) {
-          throw new HttpError(400, `Custom campaigns for ${packageType} start at ₹${floor.toLocaleString('en-IN')}`, 'ERR_INPUT');
+          throw new HttpError(400, `Custom campaigns for ${packageType} start at ${floor}`, 'ERR_INPUT');
         }
         finalTotalAmount = submittedTotal;
         finalBaseAmount = Math.round(finalTotalAmount / 1.18);

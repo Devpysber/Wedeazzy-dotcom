@@ -14,8 +14,8 @@ const env = require('../config/env');
 /** Weighted profile-completeness check used for `isProfileComplete` and dashboard progress bars. */
 function computeCompletion(v) {
   const checks = [
-    // 1. Personal Information (whatsapp, city, pincode)
-    !!v.whatsappNumber && !!v.city && !!v.pincode,
+    // 1. Personal Information (whatsapp, city)
+    !!v.whatsappNumber && !!v.city,
     // 2. Business Information (businessName, address, description >= 40 chars)
     !!v.businessName && !!v.address && (!!v.description && v.description.length >= 40),
     // 3. Category
@@ -77,6 +77,10 @@ async function signupOrAttach(user, payload) {
 
   const slug = await uniqueSlug(prisma, 'vendor', businessName + '-' + city);
 
+  const countryCode = String(payload.countryCode || payload.country || 'IN').trim().toUpperCase();
+  const COUNTRY_NAMES = { IN: 'India', US: 'USA', GB: 'UK', AE: 'UAE', CA: 'Canada', AU: 'Australia' };
+  const country = COUNTRY_NAMES[countryCode] || 'India';
+
   const vendor = await prisma.vendor.create({
     data: {
       userId: user.id,
@@ -86,6 +90,8 @@ async function signupOrAttach(user, payload) {
       categorySlug: slugify(category),
       city,
       citySlug: slugify(city),
+      country,
+      countryCode: COUNTRY_NAMES[countryCode] ? countryCode : 'IN',
       subscriptionPlan: activePlan,
     },
   });
@@ -126,7 +132,7 @@ async function updateProfile(user, patch, vendorId = null) {
   }
 
   const allowed = [
-    'businessName', 'category', 'city', 'area', 'address', 'pincode',
+    'businessName', 'category', 'city', 'state', 'country', 'countryCode', 'area', 'address', 'pincode',
     'googleCid', 'description', 'priceMin', 'priceMax', 'capacity',
     'services', 'whatsappNumber',
     'alternateMobile', 'website', 'instagram', 'facebook', 'youtube', 'businessTimings',
@@ -146,6 +152,19 @@ async function updateProfile(user, patch, vendorId = null) {
   if (data.priceMin !== undefined) data.priceMin = data.priceMin === '' || data.priceMin == null ? null : Math.max(0, Math.round(Number(data.priceMin)) || 0);
   if (data.priceMax !== undefined) data.priceMax = data.priceMax === '' || data.priceMax == null ? null : Math.max(0, Math.round(Number(data.priceMax)) || 0);
   if (data.capacity !== undefined) data.capacity = data.capacity === '' || data.capacity == null ? null : Math.max(0, Math.round(Number(data.capacity)) || 0);
+
+  // Lock country once set: if country is already set on the vendor profile, prevent changing it
+  if (v.countryCode && String(v.countryCode).trim().length > 0) {
+    delete data.country;
+    delete data.countryCode;
+  } else if (data.countryCode || data.country) {
+    const code = String(data.countryCode || data.country).trim().toUpperCase();
+    const COUNTRY_NAMES = { IN: 'India', US: 'USA', GB: 'UK', AE: 'UAE', CA: 'Canada', AU: 'Australia' };
+    if (COUNTRY_NAMES[code]) {
+      data.countryCode = code;
+      data.country = COUNTRY_NAMES[code];
+    }
+  }
 
   if (data.category)     data.categorySlug = slugify(data.category);
   if (data.city)         data.citySlug = slugify(data.city);

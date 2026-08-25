@@ -308,22 +308,22 @@
     <!-- Header Brand Info -->
     <div class="login-header">
       <img src="assets/logo.png" alt="WedEazzy" class="brand-logo-img" style="height:36px; margin-bottom:14px;">
-      <h2>Secured Staff Access</h2>
-      <p id="subTitleText">Enter administrator credentials to moderate services.</p>
+      <h2>WedEazzy Portal Sign In</h2>
+      <p id="subTitleText">Enter your email and password to access your Vendor Dashboard or Control Center.</p>
     </div>
 
     <!-- STAGE 1: Standard Credentials Forms -->
     <form id="formCredentials" class="form-stage active">
       <div class="input-group">
-        <label for="adminEmail">Staff Identity Email</label>
+        <label for="adminEmail">Email Address</label>
         <div class="input-icon-wrapper">
           <i class="fa-regular fa-envelope"></i>
-          <input type="email" id="adminEmail" class="premium-input" placeholder="e.g. wedeazzy@gmail.com" autocomplete="email" required>
+          <input type="email" id="adminEmail" class="premium-input" placeholder="e.g. you@yourbusiness.com" autocomplete="email" required>
         </div>
       </div>
 
       <div class="input-group">
-        <label for="adminPassword">Master Passphrase</label>
+        <label for="adminPassword">Password</label>
         <div class="input-icon-wrapper">
           <i class="fa-solid fa-lock"></i>
           <input type="password" id="adminPassword" class="premium-input" placeholder="••••••••••••" autocomplete="current-password" required>
@@ -342,7 +342,7 @@
       </div>
 
       <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem;">
-        <i class="fa-solid fa-shield-halved"></i> Authenticate Credentials
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In to Account
       </button>
     </form>
 
@@ -605,33 +605,66 @@
       el.formCreds.addEventListener("submit", async (e) => {
         e.preventDefault();
         
-        el.loaderText.textContent = "Verifying Security Keys...";
+        el.loaderText.textContent = "Authenticating Credentials...";
         el.loader.style.display = "flex";
 
         try {
+          // 1. Try standard login for Vendors & Users
+          const stdRes = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: el.email.value.trim(), password: el.pass.value })
+          });
+          const stdData = await stdRes.json();
+          if (stdRes.ok && stdData.token && stdData.user) {
+            el.loader.style.display = "none";
+            const role = stdData.user.role;
+            if (role === 'vendor') {
+              sessionStorage.setItem('wedeazzy_token', stdData.token);
+              localStorage.setItem('wedeazzy_token', stdData.token);
+              sessionStorage.setItem('wedeazzy_vendor_token', stdData.token);
+              localStorage.setItem('wedeazzy_vendor_token', stdData.token);
+              if (stdData.user.mustChangePassword) {
+                showToast("First login detected. Redirecting to set your password...", "info");
+                setTimeout(() => { window.location.href = "../pages/change-password.html"; }, 800);
+                return;
+              }
+              showToast("Login successful! Opening vendor dashboard...", "success");
+              setTimeout(() => { window.location.href = "../pages/bdashboard.html"; }, 800);
+              return;
+            }
+          }
+
+          // 2. Fallback to Staff 2FA authentication
           const response = await window.WedEazzyAuth.validateCredentials(el.email.value, el.pass.value);
           el.loader.style.display = "none";
 
           if (response.success) {
-            if (response.emailDelivered === false) {
-              const detail = response.emailError ? ` SMTP error: ${response.emailError}` : '';
-              const fallbackHint = response.devCode ? ` Fallback code: ${response.devCode}` : '';
-              showToast(`Credentials valid, but the verification email could not be sent.${detail}${fallbackHint} Check server logs / ask your administrator.`, "danger");
-            } else {
-              showToast("Credentials validated! Redirecting to MFA OTP Lock.", "success");
-            }
             switchStage(el.formOTP, "Enter the 6-digit verification code to complete sign-in.");
             // Reset OTP inputs
             el.otpInputs.forEach(i => i.value = "");
             if (response.devCode) {
               populateOtpCode(response.devCode);
-              showToast(`Fallback code inserted automatically: ${response.devCode}`, "warning");
+              showToast(`Development Mode: Security OTP (${response.devCode}) auto-filled. Click Verify to continue.`, "info");
+            } else if (response.emailDelivered === false) {
+              const detail = response.emailError ? ` SMTP error: ${response.emailError}` : '';
+              showToast(`Credentials valid, but the verification email could not be sent.${detail} Check server logs or contact administrator.`, "danger");
             } else {
+              showToast("Credentials validated! Verification code sent to your email.", "success");
               el.otpInputs[0].focus();
             }
             startOTPTimer();
           } else {
-            showToast(response.error, "danger");
+            // Report the failure that actually happened. Step 1 (/api/auth/login)
+            // runs first and its response body was being shown unconditionally,
+            // so a 5xx there displayed the errorHandler's generic "Internal
+            // server error" as if it were a rejected credential — masking both
+            // the real server fault and whatever the admin step reported.
+            if (stdRes.status >= 500) {
+              showToast("Login service is unavailable (server error). Check the server logs — this is not a password problem.", "danger");
+            } else {
+              showToast(response.error || stdData?.message || "Invalid email or password.", "danger");
+            }
           }
         } catch (err) {
           el.loader.style.display = "none";

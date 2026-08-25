@@ -40,10 +40,11 @@ async function requireAuth(req, res, next) {
       throw new HttpError(401, 'Session expired - please log in again', 'ERR_BAD_TOKEN');
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
+    const userId = payload.sub || payload.id || payload.userId;
+    const user = userId ? await prisma.user.findUnique({
+      where: { id: userId },
       include: { vendor: true, couple: true },
-    });
+    }) : null;
     if (!user) throw new HttpError(401, 'User not found', 'ERR_NO_USER');
 
     // 2. Validate token issued time against user's revoked_before timestamp

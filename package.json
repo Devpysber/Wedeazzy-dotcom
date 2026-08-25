@@ -12,10 +12,14 @@
     "start": "node backend/src/server.js",
     "seed:admin": "npm run seed:admin --prefix backend",
     "seed:vendors": "npm run seed:vendors --prefix backend",
+    "seed:demo": "node backend/src/scripts/seed-demo-credentials.js",
     "install:backend": "npm install --prefix backend",
     "prisma:gen": "npm run prisma:gen --prefix backend",
     "prisma:deploy": "npm run prisma:deploy --prefix backend",
-    "prisma:migrate": "npm run prisma:migrate --prefix backend"
+    "prisma:migrate": "npm run prisma:migrate --prefix backend",
+    "db:repair": "npm run db:repair --prefix backend",
+    "db:repair:force": "npm run db:repair:force --prefix backend",
+    "db:check": "npm run db:check --prefix backend"
   },
   "prisma": {
     "schema": "backend/prisma/schema.prisma"

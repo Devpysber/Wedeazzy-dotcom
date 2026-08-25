@@ -3,7 +3,7 @@
 const prisma = require('../config/db');
 const { HttpError } = require('../middleware/error');
 const { askChatbot } = require('../services/chatbot.service');
-const { getGrowCampaignsPricing: getGrowCampaignsPricingConfig } = require('../config/growCampaignsPricingConfig');
+const { getGrowCampaignsPricing: getGrowCampaignsPricingConfig, getSupportedGrowCountries, COUNTRY_METADATA } = require('../config/growCampaignsPricingConfig');
 
 // Categories/cities barely change and this endpoint is hit on every homepage
 // load (filter dropdowns) — cache the computed result briefly instead of
@@ -348,7 +348,13 @@ const path = require('path');
 
 function getPlans(req, res, next) {
   try {
-    const plans = require('../config/plansConfig').getPlansConfig();
+    const plansConfig = require('../config/plansConfig');
+    const countryCode = req.query.countryCode || req.query.country;
+    if (req.query.all === 'true' || countryCode === 'all') {
+      const plans = plansConfig.loadFullConfig();
+      return res.json({ ok: true, plans });
+    }
+    const plans = plansConfig.getPlansConfig(countryCode);
     res.json({ ok: true, plans });
   } catch (err) {
     next(err);
@@ -432,7 +438,17 @@ async function postChatbotMessage(req, res, next) {
  * Business tab. Admin-editable via PUT /api/admin/grow-campaigns-pricing.
  */
 function getGrowCampaignsPricing(req, res) {
-  res.json({ ok: true, pricing: getGrowCampaignsPricingConfig() });
+  const { countryCode } = req.query || {};
+  const code = (countryCode && countryCode !== 'all') ? countryCode.toUpperCase() : 'IN';
+  const meta = COUNTRY_METADATA[code] || { name: code, code, currency: 'INR', symbol: '₹', flag: '🌐' };
+  res.json({
+    ok: true,
+    countryCode: code,
+    countryMeta: meta,
+    currencySymbol: meta.symbol,
+    supportedCountries: getSupportedGrowCountries(),
+    pricing: getGrowCampaignsPricingConfig(code)
+  });
 }
 
 module.exports = {

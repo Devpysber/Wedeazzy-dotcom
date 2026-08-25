@@ -208,7 +208,50 @@ app.use(express.static(STATIC_ROOT, {
 }));
 
 // --- Health ---
-app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now(), env: env.NODE_ENV }));
+// Boot-time database state, filled in by startServer() below. `/health`
+// reports it so a broken schema is visible from a single curl instead of
+// only from a 500 on some unrelated endpoint.
+const dbStatus = {
+  migrations: env.NODE_ENV === 'production' ? 'pending' : 'skipped',
+  adminSeed: env.NODE_ENV === 'production' ? 'pending' : 'skipped',
+  detail: null,
+};
+
+app.get('/health', async (req, res) => {
+  // Actually touch the database. A process that boots fine while every query
+  // fails is the exact failure this endpoint exists to catch, and the old
+  // unconditional `{ ok: true }` reported healthy right through it.
+  let database = 'ok';
+  let databaseError = null;
+  try {
+    const prismaInstance = require('./config/db');
+    await prismaInstance.$queryRaw`SELECT 1`;
+  } catch (err) {
+    database = 'unreachable';
+    // Prisma puts the P-code on `code` for request errors but on `errorCode`
+    // for initialization errors (P1001 "Can't reach database server" is the
+    // latter), so checking only one of them loses the most useful case.
+    databaseError = err.code || err.errorCode || 'connection failed';
+  }
+
+  const schemaOk = dbStatus.migrations !== 'failed';
+  const ok = database === 'ok' && schemaOk;
+
+  res.status(ok ? 200 : 503).json({
+    ok,
+    ts: Date.now(),
+    env: env.NODE_ENV,
+    database,
+    databaseError: databaseError || undefined,
+    schema: schemaOk ? 'ok' : 'broken',
+    migrations: dbStatus.migrations,
+    adminSeed: dbStatus.adminSeed,
+    detail: dbStatus.detail || undefined,
+    // Actionable, because the fix is a single command and the operator
+    // reading this is usually staring at a 500 with no other clue.
+    fix: ok ? undefined : 'From the backend folder run: node src/scripts/db-repair.js',
+  });
+});
 
 // --- Page Navigation Routes ---
 app.get('/admin', (req, res) => res.redirect('/admin-panel/login.html'));
@@ -361,22 +404,60 @@ async function startServer() {
           require('fs').chmodSync(path.join(enginesDir, f), 0o755);
         }
       } catch (_) { /* engines dir missing */ }
-      if (require('fs').existsSync(prismaCliPath)) {
-        logger.info('Ensuring Prisma migrations are deployed via local CLI...');
-        execSync(`"${nodeBin}" "${prismaCliPath}" migrate deploy --schema=prisma/schema.prisma`, { stdio: 'inherit', cwd: execCwd });
-      } else {
-        logger.warn('Local Prisma CLI not found in node_modules, falling back to npx...');
-        execSync('npx prisma migrate deploy --schema=prisma/schema.prisma', { stdio: 'inherit', cwd: execCwd });
+      // Migration and seeding are deliberately handled as two independent
+      // steps. They used to share one try block, so a migrate failure skipped
+      // the admin seed entirely — the operator got a database with no usable
+      // login on top of whatever the migration problem already was.
+      try {
+        if (require('fs').existsSync(prismaCliPath)) {
+          logger.info('Ensuring Prisma migrations are deployed via local CLI...');
+          execSync(`"${nodeBin}" "${prismaCliPath}" migrate deploy --schema=prisma/schema.prisma`, { stdio: 'inherit', cwd: execCwd });
+        } else {
+          logger.warn('Local Prisma CLI not found in node_modules, falling back to npx...');
+          execSync('npx prisma migrate deploy --schema=prisma/schema.prisma', { stdio: 'inherit', cwd: execCwd });
+        }
+        dbStatus.migrations = 'ok';
+      } catch (err) {
+        // A failed `migrate deploy` is not a transient hiccup — the schema the
+        // Prisma Client was generated against does not match the live
+        // database, so essentially every query 500s while the process itself
+        // looks perfectly healthy. Previously this was logged as one generic
+        // line and the server carried on serving a broken API with no signal
+        // anywhere that the schema was the cause.
+        const detail = `${err.stdout || ''}${err.stderr || ''}${err.message || ''}`;
+        dbStatus.migrations = 'failed';
+        dbStatus.detail = /P3009/.test(detail)
+          ? 'P3009: a previous migration is recorded as failed, so no further migrations will be applied.'
+          : 'migrate deploy failed — the live schema does not match prisma/schema.prisma.';
+
+        logger.error(
+          { err },
+          `DATABASE SCHEMA IS NOT USABLE — ${dbStatus.detail} ` +
+          'The API will return 500s on database-backed routes until this is fixed. ' +
+          'Repair it without losing data by running, from the backend folder: ' +
+          'node src/scripts/db-repair.js  (see /health for current status)'
+        );
       }
-      
-      logger.info('Seeding admin credentials...');
-      execSync(`"${nodeBin}" src/scripts/seed-admin.js`, { stdio: 'inherit', cwd: execCwd });
+
+      // Seeding runs even when migrations failed: if the schema happens to be
+      // usable it gets the admin account in place, and if it is not, the error
+      // it logs is a second independent confirmation of the schema problem.
+      try {
+        logger.info('Seeding admin credentials...');
+        execSync(`"${nodeBin}" src/scripts/seed-admin.js`, { stdio: 'inherit', cwd: execCwd });
+        dbStatus.adminSeed = 'ok';
+      } catch (err) {
+        dbStatus.adminSeed = 'failed';
+        logger.error({ err }, 'Admin seeding failed — no admin account may exist yet. Check ADMIN_EMAIL/ADMIN_PASSWORD in .env.');
+      }
 
       // NOTE: Demo/sample data is NEVER auto-seeded on startup (production or
       // otherwise). It ships fake vendors/couples/bookings and must never land
       // in a real database. Seed it manually only when needed for local dev:
       //   ALLOW_DEMO_SEED=true node src/scripts/seed-demo.js
     } catch (err) {
+      dbStatus.migrations = 'failed';
+      dbStatus.detail = 'Could not run the Prisma CLI at all.';
       logger.error({ err }, 'Failed to complete production database setup');
     }
   }

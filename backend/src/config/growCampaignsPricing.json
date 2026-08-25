@@ -25,5 +25,181 @@
       { "days": 90, "label": "3 Months", "price": 139999, "original": 159997 },
       { "days": 0, "label": "Custom Campaign", "price": 50000, "custom": true }
     ]
+  },
+  "countries": {
+    "IN": {
+      "whatsapp_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 4999 },
+          { "days": 20, "label": "20 Days", "price": 8999 },
+          { "days": 30, "label": "30 Days", "price": 13999, "recommended": true, "original": 15999 },
+          { "days": 90, "label": "3 Months", "price": 34999, "original": 41997 },
+          { "days": 0, "label": "Custom Campaign", "price": 20000, "custom": true }
+        ]
+      },
+      "more_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 8999 },
+          { "days": 20, "label": "20 Days", "price": 16999 },
+          { "days": 30, "label": "30 Days", "price": 23999, "recommended": true, "original": 26997 },
+          { "days": 90, "label": "3 Months", "price": 59999, "original": 71997 },
+          { "days": 0, "label": "Custom Campaign", "price": 30000, "custom": true }
+        ]
+      },
+      "website_sales": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 20000 },
+          { "days": 20, "label": "20 Days", "price": 37999 },
+          { "days": 30, "label": "30 Days", "price": 52999, "recommended": true, "original": 59997 },
+          { "days": 90, "label": "3 Months", "price": 139999, "original": 159997 },
+          { "days": 0, "label": "Custom Campaign", "price": 50000, "custom": true }
+        ]
+      }
+    },
+    "AE": {
+      "whatsapp_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 249 },
+          { "days": 20, "label": "20 Days", "price": 449 },
+          { "days": 30, "label": "30 Days", "price": 699, "recommended": true, "original": 799 },
+          { "days": 90, "label": "3 Months", "price": 1749, "original": 2099 },
+          { "days": 0, "label": "Custom Campaign", "price": 1000, "custom": true }
+        ]
+      },
+      "more_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 449 },
+          { "days": 20, "label": "20 Days", "price": 849 },
+          { "days": 30, "label": "30 Days", "price": 1199, "recommended": true, "original": 1349 },
+          { "days": 90, "label": "3 Months", "price": 2999, "original": 3599 },
+          { "days": 0, "label": "Custom Campaign", "price": 1500, "custom": true }
+        ]
+      },
+      "website_sales": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 999 },
+          { "days": 20, "label": "20 Days", "price": 1899 },
+          { "days": 30, "label": "30 Days", "price": 2649, "recommended": true, "original": 2999 },
+          { "days": 90, "label": "3 Months", "price": 6999, "original": 7999 },
+          { "days": 0, "label": "Custom Campaign", "price": 2500, "custom": true }
+        ]
+      }
+    },
+    "GB": {
+      "whatsapp_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 49 },
+          { "days": 20, "label": "20 Days", "price": 89 },
+          { "days": 30, "label": "30 Days", "price": 139, "recommended": true, "original": 159 },
+          { "days": 90, "label": "3 Months", "price": 349, "original": 419 },
+          { "days": 0, "label": "Custom Campaign", "price": 200, "custom": true }
+        ]
+      },
+      "more_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 89 },
+          { "days": 20, "label": "20 Days", "price": 169 },
+          { "days": 30, "label": "30 Days", "price": 239, "recommended": true, "original": 269 },
+          { "days": 90, "label": "3 Months", "price": 599, "original": 719 },
+          { "days": 0, "label": "Custom Campaign", "price": 300, "custom": true }
+        ]
+      },
+      "website_sales": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 199 },
+          { "days": 20, "label": "20 Days", "price": 379 },
+          { "days": 30, "label": "30 Days", "price": 529, "recommended": true, "original": 599 },
+          { "days": 90, "label": "3 Months", "price": 1399, "original": 1599 },
+          { "days": 0, "label": "Custom Campaign", "price": 500, "custom": true }
+        ]
+      }
+    },
+    "US": {
+      "whatsapp_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 69 },
+          { "days": 20, "label": "20 Days", "price": 119 },
+          { "days": 30, "label": "30 Days", "price": 189, "recommended": true, "original": 219 },
+          { "days": 90, "label": "3 Months", "price": 499, "original": 599 },
+          { "days": 0, "label": "Custom Campaign", "price": 250, "custom": true }
+        ]
+      },
+      "more_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 119 },
+          { "days": 20, "label": "20 Days", "price": 229 },
+          { "days": 30, "label": "30 Days", "price": 329, "recommended": true, "original": 369 },
+          { "days": 90, "label": "3 Months", "price": 799, "original": 959 },
+          { "days": 0, "label": "Custom Campaign", "price": 400, "custom": true }
+        ]
+      },
+      "website_sales": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 269 },
+          { "days": 20, "label": "20 Days", "price": 499 },
+          { "days": 30, "label": "30 Days", "price": 699, "recommended": true, "original": 799 },
+          { "days": 90, "label": "3 Months", "price": 1899, "original": 2199 },
+          { "days": 0, "label": "Custom Campaign", "price": 650, "custom": true }
+        ]
+      }
+    },
+    "CA": {
+      "whatsapp_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 89 },
+          { "days": 20, "label": "20 Days", "price": 159 },
+          { "days": 30, "label": "30 Days", "price": 249, "recommended": true, "original": 289 },
+          { "days": 90, "label": "3 Months", "price": 649, "original": 769 },
+          { "days": 0, "label": "Custom Campaign", "price": 350, "custom": true }
+        ]
+      },
+      "more_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 159 },
+          { "days": 20, "label": "20 Days", "price": 299 },
+          { "days": 30, "label": "30 Days", "price": 429, "recommended": true, "original": 489 },
+          { "days": 90, "label": "3 Months", "price": 999, "original": 1249 },
+          { "days": 0, "label": "Custom Campaign", "price": 500, "custom": true }
+        ]
+      },
+      "website_sales": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 349 },
+          { "days": 20, "label": "20 Days", "price": 649 },
+          { "days": 30, "label": "30 Days", "price": 949, "recommended": true, "original": 1099 },
+          { "days": 90, "label": "3 Months", "price": 2499, "original": 2899 },
+          { "days": 0, "label": "Custom Campaign", "price": 850, "custom": true }
+        ]
+      }
+    },
+    "AU": {
+      "whatsapp_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 99 },
+          { "days": 20, "label": "20 Days", "price": 179 },
+          { "days": 30, "label": "30 Days", "price": 279, "recommended": true, "original": 319 },
+          { "days": 90, "label": "3 Months", "price": 699, "original": 839 },
+          { "days": 0, "label": "Custom Campaign", "price": 380, "custom": true }
+        ]
+      },
+      "more_leads": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 179 },
+          { "days": 20, "label": "20 Days", "price": 339 },
+          { "days": 30, "label": "30 Days", "price": 479, "recommended": true, "original": 539 },
+          { "days": 90, "label": "3 Months", "price": 1199, "original": 1439 },
+          { "days": 0, "label": "Custom Campaign", "price": 550, "custom": true }
+        ]
+      },
+      "website_sales": {
+        "plans": [
+          { "days": 10, "label": "10 Days", "price": 399 },
+          { "days": 20, "label": "20 Days", "price": 749 },
+          { "days": 30, "label": "30 Days", "price": 1049, "recommended": true, "original": 1199 },
+          { "days": 90, "label": "3 Months", "price": 2799, "original": 3199 },
+          { "days": 0, "label": "Custom Campaign", "price": 950, "custom": true }
+        ]
+      }
+    }
   }
 }

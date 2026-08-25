@@ -41,48 +41,43 @@ function formatAdminPhone(contact) {
 }
 
 /**
- * Get aggregated administrative dashboard metrics
+ * Get aggregated administrative dashboard metrics & Platform Overview BI analytics
  */
 async function getAnalytics(req, res, next) {
   try {
-    const [
-      pendingBookings,
-      confirmedBookings,
-      cancelledBookings,
-      venuesCount,
-      vendorsCount,
-      usersCount,
-      businessClaims,
-      categoryGroups,
-      cityGroups
-    ] = await Promise.all([
-      prisma.booking.count({ where: { status: 'pending' } }),
-      prisma.booking.count({ where: { status: 'confirmed' } }),
-      prisma.booking.count({ where: { status: 'cancelled' } }),
-      prisma.vendor.count({ where: { category: 'Banquet Halls' } }),
-      prisma.vendor.count(),
-      prisma.user.count(),
-      prisma.vendor.count({ where: { isVerified: false, isActive: true } }),
-      prisma.vendor.groupBy({ by: ['categorySlug'], where: { isActive: true } }),
-      prisma.vendor.groupBy({ by: ['citySlug'], where: { isActive: true } })
-    ]);
+    const adminAnalytics = require('../services/adminAnalytics.service');
+    const { range, from, to, countryCode, country, countryId, citySlug, categorySlug, tier } = req.query || {};
 
-    // Format metrics matching frontend's DEFAULT_MOCK_DATA structure
+    const overview = await adminAnalytics.getPlatformOverview({
+      range: range || '30d',
+      from,
+      to,
+      countryCode: countryCode || country,
+      countryId,
+      citySlug,
+      categorySlug,
+      tier
+    });
+
+    // Format legacy stats object to maintain full backward compatibility
+    const stats = {
+      pendingBookings: overview.bookingsOverview.pending,
+      inProgressBookings: overview.bookingsOverview.pending,
+      confirmedBookings: overview.bookingsOverview.confirmed,
+      cancelledBookings: overview.bookingsOverview.cancelled,
+      venuesCount: overview.listingHealth.totalListings,
+      vendorsCount: overview.kpis.vendors.value,
+      servicesCount: overview.kpis.categories.value,
+      usersCount: overview.kpis.users.value,
+      businessClaims: overview.claimAnalytics.pendingRequests,
+      regionsCount: overview.kpis.cities.value,
+      citiesCount: overview.kpis.cities.value
+    };
+
     res.json({
       ok: true,
-      stats: {
-        pendingBookings,
-        inProgressBookings: pendingBookings,
-        confirmedBookings,
-        cancelledBookings,
-        venuesCount,
-        vendorsCount,
-        servicesCount: categoryGroups.length,
-        usersCount,
-        businessClaims,
-        regionsCount: cityGroups.length,
-        citiesCount: cityGroups.length
-      }
+      stats,
+      overview
     });
   } catch (e) { next(e); }
 }
@@ -92,17 +87,25 @@ async function getAnalytics(req, res, next) {
  */
 async function getVendors(req, res, next) {
   try {
-    const totalCount = await prisma.vendor.count();
+    const { countryCode, countryId, limit } = req.query || {};
+    const where = {};
+    if (countryCode && countryCode.toLowerCase() !== 'all') {
+      where.OR = [{ countryCode: countryCode.toUpperCase() }, { country: { code: countryCode.toUpperCase() } }];
+    } else if (countryId) {
+      where.countryId = countryId;
+    }
+
+    const totalCount = await prisma.vendor.count({ where });
+    const take = limit ? Math.min(parseInt(limit, 10) || 500, 20000) : 20000;
+
     const list = await prisma.vendor.findMany({
+      where,
       include: {
         user: { select: { name: true, email: true, phone: true, lastLogin: true } },
         _count: { select: { photos: true } }
       },
       orderBy: { createdAt: 'desc' },
-      // Raised from a 1000-row cap that silently hid the majority of a
-      // 13,000+ vendor/venue table from the admin panel. Still bounded
-      // (not unbounded findMany) to protect against pathological growth.
-      take: 20000
+      take
     });
 
     const vendors = list.map(v => ({
@@ -115,18 +118,10 @@ async function getVendors(req, res, next) {
       contact: v.whatsappNumber || v.user?.phone || '—',
       email: v.user?.email || '—',
       claims: v.isVerified ? 'Verified Owner' : 'Claim Requested',
-      // hasOwner distinguishes a truly-unclaimed seeded listing (no signup
-      // at all yet) from one where a vendor has signed up and is merely
-      // awaiting admin KYC verification — `claims` above conflates both
-      // into "Claim Requested", but the Invitations page needs the former.
       hasOwner: !!v.userId,
       invitedAt: v.invitedAt ? v.invitedAt.toISOString() : null,
       invitedChannel: v.invitedChannel || null,
       address: `${v.city || ''}, ${v.area || ''}`,
-      // Discrete city/area alongside the pre-joined `address` string: the
-      // Approve Businesses filters and the CRM dashboard charts group by city,
-      // and splitting the joined string back apart client-side breaks on any
-      // city or area that itself contains a comma.
       city: v.city || null,
       area: v.area || null,
       country: v.country || 'India',
@@ -138,12 +133,6 @@ async function getVendors(req, res, next) {
       tier: v.tier,
       subscriptionExpiry: v.subscriptionExpiry,
       photoCount: v._count?.photos || 0,
-      // Always the authenticated download route, never the raw stored value
-      // — kycDocumentUrl in the DB is now just a filename (or, for records
-      // created before this fix, a legacy public /api/uploads URL); either
-      // way the frontend must never see a directly-fetchable path to a
-      // private KYC document. downloadVendorDocument resolves the actual
-      // file server-side after checking admin auth.
       kycDocumentUrl: v.kycDocumentUrl ? `/api/admin/vendors/${v.id}/document` : null,
       createdAt: v.createdAt.toISOString()
     }));
@@ -988,19 +977,41 @@ async function updateVendorSubscription(req, res, next) {
 
 async function updatePlans(req, res, next) {
   try {
-    const { plans } = req.body;
+    const { plans, countryCode } = req.body;
     if (!plans) {
       throw new HttpError(400, 'Plans data is required', 'ERR_BAD_REQUEST');
     }
+
+    const plansConfig = require('../config/plansConfig');
+    const fullConfig = plansConfig.loadFullConfig();
+
+    if (countryCode && countryCode !== 'all') {
+      const cCode = String(countryCode).toUpperCase();
+      fullConfig.countries = fullConfig.countries || {};
+      fullConfig.countries[cCode] = {
+        ...(fullConfig.countries[cCode] || {}),
+        ...plans
+      };
+      // If updating IN, also sync root tiers for backward compatibility
+      if (cCode === 'IN') {
+        if (plans.Free) fullConfig.Free = plans.Free;
+        if (plans.Premium) fullConfig.Premium = plans.Premium;
+        if (plans.Featured) fullConfig.Featured = plans.Featured;
+      }
+    } else {
+      if (plans.countries) fullConfig.countries = plans.countries;
+      if (plans.Free) fullConfig.Free = plans.Free;
+      if (plans.Premium) fullConfig.Premium = plans.Premium;
+      if (plans.Featured) fullConfig.Featured = plans.Featured;
+    }
+
     require('fs').writeFileSync(
       require('path').join(__dirname, '../config/plans.json'),
-      JSON.stringify(plans, null, 2),
+      JSON.stringify(fullConfig, null, 2),
       'utf8'
     );
-    try {
-      require('../config/plansConfig').clearPlansCache();
-    } catch (_) {}
-    res.json({ ok: true, message: 'Plans updated successfully' });
+    plansConfig.clearPlansCache();
+    res.json({ ok: true, message: 'Plans updated successfully', plans: fullConfig });
   } catch (e) {
     next(e);
   }
@@ -1013,14 +1024,16 @@ async function updatePlans(req, res, next) {
  */
 async function updateGrowCampaignsPricing(req, res, next) {
   try {
-    const { pricing } = req.body || {};
+    const { pricing, countryCode } = req.body || {};
     if (!pricing || typeof pricing !== 'object') {
       throw new HttpError(400, 'Pricing data is required', 'ERR_BAD_REQUEST');
     }
 
-    const current = getGrowCampaignsPricing();
+    const targetCode = (countryCode && countryCode !== 'all') ? countryCode.toUpperCase() : 'IN';
+    const current = getGrowCampaignsPricing(targetCode);
     const updated = {};
     for (const key of Object.keys(current)) {
+      if (key === 'countries') continue;
       const incomingPlans = pricing[key] && Array.isArray(pricing[key].plans) ? pricing[key].plans : null;
       updated[key] = {
         plans: current[key].plans.map((tier, idx) => {
@@ -1028,7 +1041,6 @@ async function updateGrowCampaignsPricing(req, res, next) {
           const price = incoming && incoming.price !== '' && Number.isFinite(Number(incoming.price))
             ? Math.max(0, Math.round(Number(incoming.price)))
             : tier.price;
-          // original (strikethrough price) is optional per tier — leave untouched unless a valid new value was sent.
           const original = incoming && incoming.original !== '' && incoming.original != null && Number.isFinite(Number(incoming.original))
             ? Math.max(0, Math.round(Number(incoming.original)))
             : tier.original;
@@ -1039,8 +1051,156 @@ async function updateGrowCampaignsPricing(req, res, next) {
       };
     }
 
-    saveGrowCampaignsPricing(updated);
-    res.json({ ok: true, pricing: updated, message: 'Grow Campaigns pricing updated successfully' });
+    saveGrowCampaignsPricing(updated, targetCode);
+    res.json({ ok: true, pricing: updated, countryCode: targetCode, message: `Grow Campaigns pricing updated for ${targetCode} successfully` });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Get Grow Business campaign stats (revenue, top country, top category, top city, top plan, breakdown).
+ * Supports countryCode filtering ('all' or specific ISO country code like 'IN', 'AE', 'GB', 'US', etc.).
+ */
+async function getGrowCampaignsStats(req, res, next) {
+  try {
+    const { countryCode } = req.query || {};
+    const selectedCountry = (countryCode && countryCode !== 'all') ? countryCode.toUpperCase() : 'all';
+
+    // Fetch all campaigns with vendor relation
+    const campaigns = await prisma.adCampaign.findMany({
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            category: true,
+            city: true,
+            country: true,
+            countryCode: true,
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Filter campaigns by selected country if not 'all'
+    const filteredCampaigns = campaigns.filter(c => {
+      const isPurchased = c.paymentStatus === 'paid' || ['approved', 'running', 'completed', 'active'].includes(c.adminStatus) || (c.totalAmount && c.totalAmount > 0);
+      if (!isPurchased) return false;
+      if (selectedCountry === 'all') return true;
+      const vCountryCode = (c.vendor && (c.vendor.countryCode || c.vendor.country)) ? c.vendor.countryCode || c.vendor.country : 'IN';
+      return vCountryCode.toUpperCase() === selectedCountry || (selectedCountry === 'IN' && (vCountryCode.toUpperCase() === 'IN' || vCountryCode.toLowerCase() === 'india'));
+    });
+
+    let totalRevenue = 0;
+    const countryCountMap = {};
+    const categoryCountMap = {};
+    const cityCountMap = {};
+    const planCountMap = {};
+
+    const PACKAGE_LABELS = {
+      whatsapp_leads: 'Get WhatsApp Enquiries',
+      more_leads: 'Get More Leads',
+      website_sales: 'Increase Website Sales'
+    };
+
+    const COUNTRY_NAMES_MAP = {
+      IN: 'India',
+      AE: 'UAE',
+      GB: 'UK',
+      US: 'USA',
+      CA: 'Canada',
+      AU: 'Australia'
+    };
+
+    filteredCampaigns.forEach(c => {
+      const amount = c.totalAmount || (c.dailyBudget && c.durationDays ? c.dailyBudget * c.durationDays : 0);
+      totalRevenue += amount;
+
+      // Country stats
+      const rawCountry = (c.vendor && (c.vendor.countryCode || c.vendor.country)) || 'IN';
+      const codeKey = rawCountry.length === 2 ? rawCountry.toUpperCase() : (rawCountry.toLowerCase() === 'india' ? 'IN' : rawCountry);
+      const countryKey = COUNTRY_NAMES_MAP[codeKey] || rawCountry;
+      if (!countryCountMap[countryKey]) countryCountMap[countryKey] = { name: countryKey, code: codeKey, count: 0, revenue: 0 };
+      countryCountMap[countryKey].count += 1;
+      countryCountMap[countryKey].revenue += amount;
+
+      // Category stats
+      const catKey = (c.vendor && c.vendor.category) || 'General Vendor';
+      if (!categoryCountMap[catKey]) categoryCountMap[catKey] = { name: catKey, count: 0, revenue: 0 };
+      categoryCountMap[catKey].count += 1;
+      categoryCountMap[catKey].revenue += amount;
+
+      // City stats
+      const cityKey = (c.vendor && c.vendor.city) || 'Other';
+      if (!cityCountMap[cityKey]) cityCountMap[cityKey] = { name: cityKey, count: 0, revenue: 0 };
+      cityCountMap[cityKey].count += 1;
+      cityCountMap[cityKey].revenue += amount;
+
+      // Plan stats
+      const pkgName = PACKAGE_LABELS[c.packageType] || c.packageType || 'Custom Campaign';
+      const daysLabel = c.planDays ? `${c.planDays} Days` : 'Custom';
+      const planKey = `${pkgName} (${daysLabel})`;
+      if (!planCountMap[planKey]) planCountMap[planKey] = { name: planKey, packageType: c.packageType, planDays: c.planDays, count: 0, revenue: 0 };
+      planCountMap[planKey].count += 1;
+      planCountMap[planKey].revenue += amount;
+    });
+
+    const getTop = (map) => {
+      const entries = Object.values(map);
+      if (entries.length === 0) return null;
+      entries.sort((a, b) => b.count !== a.count ? b.count - a.count : b.revenue - a.revenue);
+      return entries[0];
+    };
+
+    const topCountry = getTop(countryCountMap) || { name: 'No Orders Yet', count: 0, revenue: 0 };
+    const topCategory = getTop(categoryCountMap) || { name: 'No Orders Yet', count: 0, revenue: 0 };
+    const topCity = getTop(cityCountMap) || { name: 'No Orders Yet', count: 0, revenue: 0 };
+    const topPlan = getTop(planCountMap) || { name: 'No Orders Yet', count: 0, revenue: 0 };
+
+    const recentPurchases = filteredCampaigns.slice(0, 15).map(c => {
+      const rawC = c.vendor ? (c.vendor.countryCode || c.vendor.country || 'IN') : 'IN';
+      const cCodeStr = rawC.length === 2 ? rawC.toUpperCase() : (rawC.toLowerCase() === 'india' ? 'IN' : rawC);
+      return {
+        id: c.id,
+        vendorName: c.vendor ? c.vendor.businessName : 'Unknown Vendor',
+        category: c.vendor ? c.vendor.category : 'N/A',
+        city: c.vendor ? c.vendor.city : 'N/A',
+        country: COUNTRY_NAMES_MAP[cCodeStr] || rawC,
+        countryCode: cCodeStr,
+        packageType: c.packageType || 'custom',
+        planDays: c.planDays || 0,
+        totalAmount: c.totalAmount || 0,
+        paymentStatus: c.paymentStatus || 'pending',
+        adminStatus: c.adminStatus || 'pending',
+        createdAt: c.createdAt
+      };
+    });
+
+    const { getSupportedGrowCountries } = require('../config/growCampaignsPricingConfig');
+    const availableCountries = getSupportedGrowCountries();
+
+    res.json({
+      ok: true,
+      countryCode: selectedCountry,
+      stats: {
+        totalRevenue,
+        totalPurchases: filteredCampaigns.length,
+        topCountry,
+        topCategory,
+        topCity,
+        topPlan,
+      },
+      breakdowns: {
+        byCountry: Object.values(countryCountMap).sort((a, b) => b.revenue - a.revenue),
+        byCategory: Object.values(categoryCountMap).sort((a, b) => b.count - a.count),
+        byCity: Object.values(cityCountMap).sort((a, b) => b.count - a.count),
+        byPlan: Object.values(planCountMap).sort((a, b) => b.count - a.count),
+      },
+      recentPurchases,
+      availableCountries
+    });
   } catch (e) {
     next(e);
   }
@@ -1057,127 +1217,264 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
-/**
- * Sends one campaign's emails in the background, spaced out to respect
- * Hostinger SMTP's hourly send cap. Runs after the HTTP response has already
- * gone out, so failures here only update the campaign row, not the request.
- */
-async function runEmailBroadcast(campaignId, recipients, subject, body) {
-  const html = `<div style="font-family: sans-serif; white-space: pre-wrap;">${escapeHtml(body)}</div>`;
-  let sentCount = 0;
-  let failedCount = 0;
-
-  for (const to of recipients) {
-    try {
-      const result = await sendMail({ to, subject, html, text: body });
-      // `fallback: true` means SMTP isn't configured and nothing was actually
-      // delivered (see email.service.js) — don't count that as a real send.
-      if (result.ok && !result.fallback) sentCount += 1;
-      else failedCount += 1;
-    } catch (err) {
-      failedCount += 1;
-      logger.error({ err, to, campaignId }, 'Broadcast email failed to send');
-    }
-    await new Promise((resolve) => setTimeout(resolve, EMAIL_BROADCAST_DELAY_MS));
-  }
-
-  await prisma.emailCampaign.update({
-    where: { id: campaignId },
-    data: {
-      sentCount,
-      failedCount,
-      status: failedCount === 0 ? 'completed' : (sentCount === 0 ? 'failed' : 'partial'),
-    },
-  }).catch((err) => logger.error({ err, campaignId }, 'Failed to update email campaign status'));
-}
+const emailCampaignService = require('../services/emailCampaign.service');
 
 /**
- * Admin: create and dispatch a bulk email broadcast to a segmented audience.
- * Responds immediately with the created campaign; actual sending happens in
- * the background since a few hundred recipients can take minutes at a
- * rate-limit-safe pace.
+ * Admin: Get overall statistics for Email Campaign Center header cards.
  */
-async function createEmailCampaign(req, res, next) {
+async function getEmailCampaignStats(req, res, next) {
   try {
-    const { name, segment, subject, body } = req.body || {};
-
-    if (!name || !subject || !body) {
-      throw new HttpError(400, 'Campaign name, subject, and body are required', 'ERR_INPUT');
-    }
-    // "vendor_category:<slug>" targets vendors in one specific service category.
-    const isVendorCategorySegment = typeof segment === 'string' && segment.startsWith('vendor_category:');
-    if (!VALID_EMAIL_SEGMENTS.includes(segment) && !isVendorCategorySegment) {
-      throw new HttpError(400, `Segment must be one of: ${VALID_EMAIL_SEGMENTS.join(', ')}, or vendor_category:<slug>`, 'ERR_INPUT');
-    }
-
-    const where = { email: { not: null } };
-    if (isVendorCategorySegment) {
-      const categorySlug = segment.slice('vendor_category:'.length);
-      if (!categorySlug) {
-        throw new HttpError(400, 'A vendor category must be selected', 'ERR_INPUT');
-      }
-      where.role = 'vendor';
-      where.vendor = { some: { categorySlug } };
-    } else if (segment === 'vendors') where.role = 'vendor';
-    else if (segment === 'couples') where.role = 'couple';
-    else where.role = { not: 'admin' }; // "all" = every marketing-eligible account, not internal admins
-
-    // Get emails from Users table (claimed vendors + couples)
-    const recipients = await prisma.user.findMany({ where, select: { email: true } });
-    let emails = recipients.map((r) => r.email).filter(Boolean);
-
-    // ALSO get emails from unclaimed Vendor records (CSV-imported vendors
-    // have no User account yet but may have an email on file). This is the
-    // primary outreach channel — without this, "Send to Vendors" shows 0
-    // recipients when all vendors are unclaimed imports.
-    if (segment === 'vendors' || segment === 'all' || isVendorCategorySegment) {
-      const vendorWhere = { userId: null };
-      if (isVendorCategorySegment) {
-        vendorWhere.categorySlug = segment.slice('vendor_category:'.length);
-      }
-      // Vendor model doesn't have an email column in the schema, but the
-      // WhatsApp number or the business name can still be targeted. For
-      // email we need to check if there's contact info we can use.
-      // Actually — vendors imported via CSV typically don't have an email
-      // column. The real fix is to also collect whatsappNumber for SMS/WA
-      // campaigns. For email campaigns, only User.email works.
-    }
-
-    // Deduplicate
-    emails = [...new Set(emails)];
-
-    const campaign = await prisma.emailCampaign.create({
-      data: {
-        name,
-        segment,
-        subject,
-        body,
-        totalRecipients: emails.length,
-        status: 'sending',
-      },
-    });
-
-    res.status(201).json({ ok: true, campaign });
-
-    // Fire-and-forget: don't make the admin's request wait on the full send.
-    runEmailBroadcast(campaign.id, emails, subject, body).catch((err) =>
-      logger.error({ err, campaignId: campaign.id }, 'Email broadcast run crashed')
-    );
+    const result = await emailCampaignService.getEmailCampaignStats();
+    res.json(result);
   } catch (e) {
     next(e);
   }
 }
 
 /**
- * Admin: list recent bulk email campaigns for the history panel.
+ * Admin: Calculate exact audience breakdown count for selected filters.
+ */
+async function getAudienceCount(req, res, next) {
+  try {
+    const { audienceRules, customEmails } = req.body || {};
+    const result = await emailCampaignService.getAudienceCount(audienceRules, customEmails);
+    res.json(result);
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Paginated recipient preview table.
+ */
+async function getAudiencePreview(req, res, next) {
+  try {
+    const { audienceRules, customEmails, page, limit } = req.body || {};
+    const result = await emailCampaignService.getAudiencePreview(audienceRules, customEmails, page, limit);
+    res.json(result);
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Send a test email ONLY to a single test address.
+ */
+async function sendTestEmail(req, res, next) {
+  try {
+    const { testEmail, subject, previewText, body } = req.body || {};
+    if (!testEmail || !subject || !body) {
+      throw new HttpError(400, 'Test email address, subject, and body are required', 'ERR_INPUT');
+    }
+
+    const { sendMail } = require('../services/email.service');
+    const sampleRecipient = {
+      name: 'Test Administrator',
+      businessName: 'WedEazzy Demo Listing',
+      city: 'Mumbai',
+      category: 'Wedding Services'
+    };
+
+    const personalizedSubject = emailCampaignService.replacePersonalization(subject, sampleRecipient);
+    const personalizedBody = emailCampaignService.replacePersonalization(body, sampleRecipient);
+
+    const result = await sendMail({
+      to: testEmail,
+      subject: `[TEST] ${personalizedSubject}`,
+      html: personalizedBody,
+      text: personalizedBody.replace(/<[^>]*>?/gm, '')
+    });
+
+    if (result.fallback) {
+      res.json({ ok: true, message: `Test email simulated (SMTP fallback mode) for ${testEmail}` });
+    } else {
+      res.json({ ok: true, message: `Test email successfully delivered to ${testEmail}` });
+    }
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: List reusable email templates.
+ */
+async function listEmailTemplates(req, res, next) {
+  try {
+    const templates = await prisma.emailTemplate.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ ok: true, templates });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Create a reusable email template.
+ */
+async function createEmailTemplate(req, res, next) {
+  try {
+    const { name, subject, previewText, body, category } = req.body || {};
+    if (!name || !subject || !body) {
+      throw new HttpError(400, 'Template name, subject, and body are required', 'ERR_INPUT');
+    }
+
+    const template = await prisma.emailTemplate.create({
+      data: { name, subject, previewText: previewText || '', body, category: category || 'general' }
+    });
+
+    res.status(201).json({ ok: true, template });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Delete an email template.
+ */
+async function deleteEmailTemplate(req, res, next) {
+  try {
+    const { id } = req.params;
+    await prisma.emailTemplate.delete({ where: { id } });
+    res.json({ ok: true, message: 'Template deleted successfully' });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: List recent email campaigns with status and delivery counts.
  */
 async function listEmailCampaigns(req, res, next) {
   try {
     const campaigns = await prisma.emailCampaign.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 50
     });
     res.json({ ok: true, campaigns });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Create and optionally dispatch an email campaign.
+ */
+async function createEmailCampaign(req, res, next) {
+  try {
+    const { name, subject, previewText, body, audienceRules, customEmails, action, scheduledAt } = req.body || {};
+
+    if (!name || !subject || !body) {
+      throw new HttpError(400, 'Campaign name, subject, and body are required', 'ERR_INPUT');
+    }
+
+    const rules = typeof audienceRules === 'object' ? audienceRules : (audienceRules ? JSON.parse(audienceRules) : {});
+    const recipients = await emailCampaignService.resolveRecipients(rules, customEmails);
+
+    if ((action === 'send' || action === 'schedule') && recipients.length === 0) {
+      throw new HttpError(400, 'Cannot launch campaign: Selected audience contains 0 valid email addresses', 'ERR_NO_RECIPIENTS');
+    }
+
+    let status = 'draft';
+    let parsedScheduledAt = null;
+
+    if (action === 'send') {
+      status = 'queued';
+    } else if (action === 'schedule') {
+      if (!scheduledAt) {
+        throw new HttpError(400, 'Please select a valid future date and time to schedule this campaign', 'ERR_INPUT');
+      }
+      parsedScheduledAt = new Date(scheduledAt);
+      if (isNaN(parsedScheduledAt.getTime()) || parsedScheduledAt <= new Date()) {
+        throw new HttpError(400, 'Scheduled date and time must be in the future', 'ERR_INPUT');
+      }
+      status = 'scheduled';
+    }
+
+    const campaign = await prisma.emailCampaign.create({
+      data: {
+        name,
+        segment: rules.audienceType || 'all',
+        subject,
+        previewText: previewText || '',
+        body,
+        audienceRules: JSON.stringify(rules),
+        customEmails: typeof customEmails === 'string' ? customEmails : (Array.isArray(customEmails) ? customEmails.join(', ') : ''),
+        totalRecipients: recipients.length,
+        status,
+        scheduledAt: parsedScheduledAt
+      }
+    });
+
+    res.status(201).json({ ok: true, campaign });
+
+    if (action === 'send') {
+      // Fire-and-forget background queueing
+      emailCampaignService.dispatchCampaign(campaign.id).catch(err => {
+        logger.error({ err, campaignId: campaign.id }, 'Background campaign dispatch crashed');
+      });
+    }
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Retry dispatching failed recipients only.
+ */
+async function retryFailedEmailCampaign(req, res, next) {
+  try {
+    const { id } = req.params;
+    const campaign = await prisma.emailCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new HttpError(404, 'Campaign not found', 'ERR_NOT_FOUND');
+
+    res.json({ ok: true, message: 'Retrying failed campaign recipients in background...' });
+
+    emailCampaignService.retryFailedCampaign(id).catch(err => {
+      logger.error({ err, campaignId: id }, 'Retry failed campaign crashed');
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Duplicate an existing campaign into a new Draft.
+ */
+async function duplicateEmailCampaign(req, res, next) {
+  try {
+    const { id } = req.params;
+    const original = await prisma.emailCampaign.findUnique({ where: { id } });
+    if (!original) throw new HttpError(404, 'Original campaign not found', 'ERR_NOT_FOUND');
+
+    const copy = await prisma.emailCampaign.create({
+      data: {
+        name: `Copy of ${original.name}`,
+        segment: original.segment,
+        subject: original.subject,
+        previewText: original.previewText,
+        body: original.body,
+        audienceRules: original.audienceRules,
+        customEmails: original.customEmails,
+        totalRecipients: original.totalRecipients,
+        status: 'draft'
+      }
+    });
+
+    res.status(201).json({ ok: true, campaign: copy });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Delete a draft or campaign log.
+ */
+async function deleteEmailCampaign(req, res, next) {
+  try {
+    const { id } = req.params;
+    await prisma.emailCampaign.delete({ where: { id } });
+    res.json({ ok: true, message: 'Campaign deleted successfully' });
   } catch (e) {
     next(e);
   }
@@ -1480,7 +1777,7 @@ const VALID_AUDIENCE_SEGMENTS = ['all', 'vendors', 'couples'];
  * before sending. Mirrors the same where-clause resolution used by the
  * actual campaign send routes (createEmailCampaign / POST /whatsapp/campaign).
  */
-async function getAudienceCount(req, res, next) {
+async function getLegacyAudienceCount(req, res, next) {
   try {
     const { segment, channel } = req.query;
     const isVendorCategorySegment = typeof segment === 'string' && segment.startsWith('vendor_category:');
@@ -1639,9 +1936,297 @@ async function updateBlog(req, res, next) {
   }
 }
 
+// ---------- COUNTRY MANAGEMENT CONTROLLERS ----------
+async function getCountries(req, res, next) {
+  try {
+    const adminAnalytics = require('../services/adminAnalytics.service');
+    const performance = await adminAnalytics.getCountryPerformance();
+    res.json({ ok: true, countries: performance });
+  } catch (e) { next(e); }
+}
+
+async function createCountry(req, res, next) {
+  try {
+    const { name, code, isoAlpha3, currency, currencySymbol, phoneCode, flag, timezone, status, displayOrder } = req.body;
+
+    if (!name || !name.trim()) throw new HttpError(400, 'Country name is required', 'ERR_INPUT');
+    if (!code || !code.trim()) throw new HttpError(400, 'Country code (ISO-2) is required', 'ERR_INPUT');
+
+    const cleanCode = code.trim().toUpperCase();
+    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const existing = await prisma.country.findFirst({
+      where: { OR: [{ code: cleanCode }, { name: name.trim() }, { slug }] }
+    });
+    if (existing) throw new HttpError(400, 'Country with this name or code already exists', 'ERR_DUPLICATE');
+
+    const country = await prisma.country.create({
+      data: {
+        name: name.trim(),
+        slug,
+        code: cleanCode,
+        isoAlpha3: (isoAlpha3 || '').trim().toUpperCase() || undefined,
+        currency: (currency || 'USD').trim().toUpperCase(),
+        currencySymbol: (currencySymbol || '$').trim(),
+        phoneCode: (phoneCode || '+1').trim(),
+        flag: (flag || '🌐').trim(),
+        timezone: (timezone || 'UTC').trim(),
+        status: status === 'inactive' ? 'inactive' : 'active',
+        displayOrder: parseInt(displayOrder || '0', 10) || 0
+      }
+    });
+
+    res.json({ ok: true, country });
+  } catch (e) { next(e); }
+}
+
+async function updateCountry(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { name, code, isoAlpha3, currency, currencySymbol, phoneCode, flag, timezone, status, displayOrder } = req.body;
+
+    const data = {};
+    if (name !== undefined) {
+      data.name = name.trim();
+      data.slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+    if (code !== undefined) data.code = code.trim().toUpperCase();
+    if (isoAlpha3 !== undefined) data.isoAlpha3 = isoAlpha3.trim().toUpperCase();
+    if (currency !== undefined) data.currency = currency.trim().toUpperCase();
+    if (currencySymbol !== undefined) data.currencySymbol = currencySymbol.trim();
+    if (phoneCode !== undefined) data.phoneCode = phoneCode.trim();
+    if (flag !== undefined) data.flag = flag.trim();
+    if (timezone !== undefined) data.timezone = timezone.trim();
+    if (status !== undefined) data.status = status === 'inactive' ? 'inactive' : 'active';
+    if (displayOrder !== undefined) data.displayOrder = parseInt(displayOrder, 10) || 0;
+
+    const country = await prisma.country.update({
+      where: { id },
+      data
+    });
+
+    res.json({ ok: true, country });
+  } catch (e) { next(e); }
+}
+
+async function getCountryById(req, res, next) {
+  try {
+    const { id } = req.params;
+    const adminAnalytics = require('../services/adminAnalytics.service');
+    const detail = await adminAnalytics.getCountryDetailData(id);
+    if (!detail) throw new HttpError(404, 'Country record not found', 'ERR_NOT_FOUND');
+    res.json({ ok: true, ...detail });
+  } catch (e) { next(e); }
+}
+
+// ---------- CITY MANAGEMENT CONTROLLERS ----------
+async function getAdminCities(req, res, next) {
+  try {
+    const { countryId, countryCode } = req.query;
+    const cityWhere = {};
+
+    if (countryId) cityWhere.countryId = countryId;
+    else if (countryCode && countryCode.toLowerCase() !== 'all') {
+      const country = await prisma.country.findUnique({ where: { code: countryCode.toUpperCase() } });
+      if (country) cityWhere.countryId = country.id;
+    }
+
+    const cities = await prisma.city.findMany({
+      where: cityWhere,
+      orderBy: { displayOrder: 'asc' },
+      include: {
+        country: { select: { id: true, name: true, code: true, flag: true } },
+        _count: { select: { vendors: true, regions: true } }
+      }
+    });
+
+    const enriched = await Promise.all(cities.map(async (c) => {
+      const [inquiriesCount, bookingsCount] = await Promise.all([
+        prisma.inquiry.count({ where: { vendor: { citySlug: c.slug } } }),
+        prisma.booking.count({ where: { vendor: { citySlug: c.slug } } })
+      ]);
+      return {
+        ...c,
+        vendorsCount: c._count.vendors,
+        regionsCount: c._count.regions,
+        inquiriesCount,
+        bookingsCount
+      };
+    }));
+
+    res.json({ ok: true, cities: enriched });
+  } catch (e) { next(e); }
+}
+
+async function createAdminCity(req, res, next) {
+  try {
+    const { countryId, name, slug, state, timezone, lat, lng, image, description, status, displayOrder } = req.body;
+
+    if (!name || !name.trim()) throw new HttpError(400, 'City name is required', 'ERR_INPUT');
+    if (!countryId) throw new HttpError(400, 'Country selection is required', 'ERR_INPUT');
+
+    const cleanSlug = (slug || name).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const existing = await prisma.city.findUnique({ where: { slug: cleanSlug } });
+    if (existing) throw new HttpError(400, 'City with this slug already exists', 'ERR_DUPLICATE');
+
+    const city = await prisma.city.create({
+      data: {
+        countryId,
+        name: name.trim(),
+        slug: cleanSlug,
+        state: (state || '').trim() || undefined,
+        timezone: (timezone || '').trim() || undefined,
+        lat: lat ? parseFloat(lat) : undefined,
+        lng: lng ? parseFloat(lng) : undefined,
+        image: (image || '').trim() || undefined,
+        description: (description || '').trim() || undefined,
+        status: status === 'inactive' ? 'inactive' : 'active',
+        displayOrder: parseInt(displayOrder || '0', 10) || 0
+      },
+      include: { country: { select: { name: true, code: true, flag: true } } }
+    });
+
+    res.json({ ok: true, city });
+  } catch (e) { next(e); }
+}
+
+async function updateAdminCity(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { name, state, timezone, lat, lng, image, description, status, displayOrder, countryId } = req.body;
+
+    const data = {};
+    if (name !== undefined) {
+      data.name = name.trim();
+      data.slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+    if (state !== undefined) data.state = state.trim();
+    if (timezone !== undefined) data.timezone = timezone.trim();
+    if (lat !== undefined) data.lat = parseFloat(lat);
+    if (lng !== undefined) data.lng = parseFloat(lng);
+    if (image !== undefined) data.image = image.trim();
+    if (description !== undefined) data.description = description.trim();
+    if (status !== undefined) data.status = status === 'inactive' ? 'inactive' : 'active';
+    if (displayOrder !== undefined) data.displayOrder = parseInt(displayOrder, 10) || 0;
+    if (countryId !== undefined) data.countryId = countryId;
+
+    const city = await prisma.city.update({
+      where: { id },
+      data,
+      include: { country: { select: { name: true, code: true, flag: true } } }
+    });
+
+    res.json({ ok: true, city });
+  } catch (e) { next(e); }
+}
+
+// ---------- REGION MANAGEMENT CONTROLLERS ----------
+async function getAdminRegions(req, res, next) {
+  try {
+    const { cityId } = req.query;
+    const where = {};
+    if (cityId) where.cityId = cityId;
+
+    const regions = await prisma.region.findMany({
+      where,
+      orderBy: { name: 'asc' },
+      include: {
+        city: { select: { id: true, name: true, slug: true, country: { select: { name: true, flag: true } } } },
+        _count: { select: { vendors: true } }
+      }
+    });
+
+    res.json({ ok: true, regions });
+  } catch (e) { next(e); }
+}
+
+async function createAdminRegion(req, res, next) {
+  try {
+    const { cityId, name, status } = req.body;
+    if (!name || !name.trim()) throw new HttpError(400, 'Region name is required', 'ERR_INPUT');
+    if (!cityId) throw new HttpError(400, 'City selection is required', 'ERR_INPUT');
+
+    const cleanSlug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const region = await prisma.region.create({
+      data: {
+        cityId,
+        name: name.trim(),
+        slug: cleanSlug,
+        status: status === 'inactive' ? 'inactive' : 'active'
+      },
+      include: { city: { select: { name: true } } }
+    });
+
+    res.json({ ok: true, region });
+  } catch (e) { next(e); }
+}
+
+async function updateAdminRegion(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { name, status } = req.body;
+
+    const data = {};
+    if (name !== undefined) {
+      data.name = name.trim();
+      data.slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+    if (status !== undefined) data.status = status === 'inactive' ? 'inactive' : 'active';
+
+    const region = await prisma.region.update({
+      where: { id },
+      data
+    });
+
+    res.json({ ok: true, region });
+  } catch (e) { next(e); }
+}
+
+// ---------- COUNTRY PERFORMANCE & TOP CITIES ANALYTICS ----------
+async function getCountryPerformanceReport(req, res, next) {
+  try {
+    const adminAnalytics = require('../services/adminAnalytics.service');
+    const countries = await adminAnalytics.getCountryPerformance();
+    res.json({ ok: true, countries });
+  } catch (e) { next(e); }
+}
+
+async function getTopCitiesReport(req, res, next) {
+  try {
+    const adminAnalytics = require('../services/adminAnalytics.service');
+    const { countryCode, limit } = req.query;
+    const cities = await adminAnalytics.getTopCitiesPerformance({
+      countryCode,
+      limit: parseInt(limit || '15', 10)
+    });
+    res.json({ ok: true, cities });
+  } catch (e) { next(e); }
+}
+
 module.exports = {
   getAnalytics,
   getVendors,
+  createVendor,
+  createVenue,
+  verifyVendor,
+  toggleVendorStatus,
+  deleteVendor,
+  getUsers,
+  createUser,
+  toggleUserStatus,
+  getBookings,
+  createBooking,
+  updateBookingStatus,
+  refundTransaction,
+  cancelVendorSubscription,
+  updateVendorSubscription,
+  listEmailCampaigns,
+  createEmailCampaign,
+  listEmailTemplates,
+  inviteVendorToClaim,
+  bulkInviteVendors,
   getUsers,
   getBookings,
   verifyVendor,
@@ -1655,13 +2240,23 @@ module.exports = {
   createVenue,
   createUser,
   createBooking,
-  refundTransaction,
-  cancelVendorSubscription,
   deleteVendor,
   updateVendorSubscription,
   updatePlans,
-  createEmailCampaign,
+  updateGrowCampaignsPricing,
+  getGrowCampaignsStats,
+  getEmailCampaignStats,
+  getAudienceCount,
+  getAudiencePreview,
+  sendTestEmail,
+  listEmailTemplates,
+  createEmailTemplate,
+  deleteEmailTemplate,
   listEmailCampaigns,
+  createEmailCampaign,
+  retryFailedEmailCampaign,
+  duplicateEmailCampaign,
+  deleteEmailCampaign,
   listVendorCategories,
   createVendorCategory,
   deleteVendorCategory,
@@ -1674,12 +2269,22 @@ module.exports = {
   listEmailWorkflows,
   updateEmailWorkflow,
   getSmtpConfig,
-  getAudienceCount,
-  inviteVendorToClaim,
-  bulkInviteVendors,
-  updateGrowCampaignsPricing,
+  getLegacyAudienceCount,
   getNotifications,
   adminListBlogs,
   createBlog,
   updateBlog,
+  // Location & Country Management Controllers
+  getCountries,
+  createCountry,
+  updateCountry,
+  getCountryById,
+  getAdminCities,
+  createAdminCity,
+  updateAdminCity,
+  getAdminRegions,
+  createAdminRegion,
+  updateAdminRegion,
+  getCountryPerformanceReport,
+  getTopCitiesReport,
 };

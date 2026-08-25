@@ -59,19 +59,17 @@ const CSV_MIME_TYPES = [
   'text/csv',
   'application/csv',
   'text/plain',
-  'application/vnd.ms-excel',       // what Windows/Excel labels a .csv as
+  'text/tab-separated-values',
+  'application/vnd.ms-excel',       // what Windows/Excel labels a .csv or .xls as
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
   'application/octet-stream',       // some browsers when the type is unknown
 ];
 const csvUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    // Trust the extension here rather than the mimetype alone: browsers are
-    // wildly inconsistent about CSV types, and the file is never written to
-    // disk or served back, so the stored-XSS concern that drives the strict
-    // mimetype-only rule for images/KYC docs does not apply.
-    const ok = CSV_MIME_TYPES.includes(file.mimetype) || /\.csv$/i.test(file.originalname || '');
-    cb(ok ? null : new Error('Only .csv files can be imported'), ok);
+    const ok = CSV_MIME_TYPES.includes(file.mimetype) || /\.(csv|tsv|xlsx|xls)$/i.test(file.originalname || '');
+    cb(ok ? null : new Error('Only .csv, .tsv, .xlsx, or .xls files can be imported'), ok);
   },
 });
 
@@ -94,6 +92,25 @@ router.use(requireRole('admin'));
 
 // Admin Management APIs
 router.get('/analytics', ctrl.getAnalytics);
+router.get('/analytics/country-performance', ctrl.getCountryPerformanceReport);
+router.get('/analytics/top-cities', ctrl.getTopCitiesReport);
+
+// Country Management APIs
+router.get('/countries', ctrl.getCountries);
+router.post('/countries', ctrl.createCountry);
+router.get('/countries/:id', ctrl.getCountryById);
+router.patch('/countries/:id', ctrl.updateCountry);
+
+// City Management APIs
+router.get('/locations/cities', ctrl.getAdminCities);
+router.post('/locations/cities', ctrl.createAdminCity);
+router.patch('/locations/cities/:id', ctrl.updateAdminCity);
+
+// Region Management APIs
+router.get('/locations/regions', ctrl.getAdminRegions);
+router.post('/locations/regions', ctrl.createAdminRegion);
+router.patch('/locations/regions/:id', ctrl.updateAdminRegion);
+
 router.get('/vendors', ctrl.getVendors);
 router.get('/users', ctrl.getUsers);
 router.get('/bookings', ctrl.getBookings);
@@ -115,6 +132,8 @@ router.patch('/vendors/:id/subscription', ctrl.updateVendorSubscription);
 // --- Bulk listing import (Approve Businesses > Import Listings) ---
 // preview parses + reports duplicates and writes nothing; commit persists.
 router.get('/vendors/import/template', importCtrl.downloadImportTemplate);
+router.get('/vendors/import/history', importCtrl.getImportHistory);
+router.get('/vendors/import/error-report/:batchId', importCtrl.downloadErrorReport);
 router.post('/vendors/import/preview', csvUpload.single('file'), importCtrl.previewVendorImport);
 router.post('/vendors/import/commit', importCtrl.commitVendorImport);
 
@@ -123,11 +142,23 @@ router.post('/venues', ctrl.createVenue);
 router.post('/users', ctrl.createUser);
 router.post('/bookings', ctrl.createBooking);
 router.put('/plans', ctrl.updatePlans);
+router.get('/grow-campaigns-stats', ctrl.getGrowCampaignsStats);
 router.put('/grow-campaigns-pricing', ctrl.updateGrowCampaignsPricing);
 
+// ---------- Email Campaign Center Routes ----------
+router.get('/email-campaigns/stats', ctrl.getEmailCampaignStats);
+router.post('/email-campaigns/audience-count', ctrl.getAudienceCount);
+router.post('/email-campaigns/audience-preview', ctrl.getAudiencePreview);
+router.post('/email-campaigns/send-test', ctrl.sendTestEmail);
 router.get('/email-campaigns', ctrl.listEmailCampaigns);
 router.post('/email-campaigns', ctrl.createEmailCampaign);
-router.get('/email-campaigns/recipient-count', ctrl.getEmailRecipientCount);
+router.post('/email-campaigns/:id/retry-failed', ctrl.retryFailedEmailCampaign);
+router.post('/email-campaigns/:id/duplicate', ctrl.duplicateEmailCampaign);
+router.delete('/email-campaigns/:id', ctrl.deleteEmailCampaign);
+
+router.get('/email-templates', ctrl.listEmailTemplates);
+router.post('/email-templates', ctrl.createEmailTemplate);
+router.delete('/email-templates/:id', ctrl.deleteEmailTemplate);
 
 router.get('/vendor-categories', ctrl.listVendorCategories);
 router.post('/vendor-categories', ctrl.createVendorCategory);
@@ -144,7 +175,7 @@ router.delete('/suburbs/:slug', ctrl.deleteSuburb);
 router.get('/email-workflows', ctrl.listEmailWorkflows);
 router.patch('/email-workflows/:id', ctrl.updateEmailWorkflow);
 router.get('/smtp-config', ctrl.getSmtpConfig);
-router.get('/audience-count', ctrl.getAudienceCount);
+router.get('/audience-count', ctrl.getLegacyAudienceCount);
 
 router.get('/notifications', ctrl.getNotifications);
 

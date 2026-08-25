@@ -568,7 +568,7 @@ html { scroll-behavior: smooth; }
 .wz-chip-gold   { background: rgba(212,175,55,0.14); color: #b8860b; border-color: rgba(212,175,55,0.3); }
 
 /* Icon action buttons */
-.wz-actions { display: inline-flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.wz-actions { display: inline-flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: nowrap; white-space: nowrap; }
 .wz-icon-btn {
   width: 30px; height: 30px;
   border-radius: 8px;
@@ -1198,4 +1198,332 @@ html { scroll-behavior: smooth; }
   border-color: var(--brand-red) !important;
   background: var(--brand-red-soft) !important;
   color: var(--brand-red) !important;
+}
+
+/* ============================================================
+   BUSINESS DATA INTELLIGENCE & IMPORT REVIEW STYLES
+   ============================================================ */
+.wz-confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.wz-confidence-badge.high {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.wz-confidence-badge.medium {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.wz-confidence-badge.review {
+  background: rgba(239, 68, 68, 0.14);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.wz-quality-box {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-color);
+}
+.wz-quality-score {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(220, 31, 48, 0.25);
+}
+.wz-quality-score .val { font-size: 1.4rem; font-weight: 900; line-height: 1; }
+.wz-quality-score .lbl { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; opacity: 0.9; margin-top: 2px; }
+
+.wz-quality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px 16px;
+  flex: 1;
+}
+.wz-quality-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wz-quality-item-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+.wz-quality-bar-track {
+  height: 7px;
+  background: var(--border-subtle);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.wz-quality-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--brand-red);
+  transition: width 0.6s ease;
+}
+
+.wz-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.wz-matrix-table th, .wz-matrix-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+}
+.wz-matrix-table th {
+  background: var(--canvas-bg);
+  font-weight: 700;
+  color: var(--text-main);
+}
+.wz-matrix-table td.city-name {
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-main);
+  background: var(--canvas-bg);
+}
+
+.wz-diff-drawer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 14px;
+}
+.wz-diff-col {
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--canvas-bg);
+}
+.wz-diff-col h5 {
+  font-size: 0.84rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wz-diff-field {
+  margin-bottom: 8px;
+  font-size: 0.76rem;
+}
+.wz-diff-field .lbl { color: var(--text-muted); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
+.wz-diff-field .val { font-weight: 600; color: var(--text-main); word-break: break-word; }
+.wz-diff-field .val.match { color: #10b981; }
+.wz-diff-field .val.diff { color: #dc2626; background: rgba(239, 68, 68, 0.08); padding: 2px 4px; border-radius: 4px; }
+
+@media (max-width: 768px) {
+  .wz-diff-drawer { grid-template-columns: 1fr; }
+  .wz-quality-box { flex-direction: column; text-align: center; }
+}
+
+/* Data Intelligence Extended Components */
+.wz-intel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.wz-intel-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+.wz-intel-subtitle {
+  font-size: 0.84rem;
+  color: var(--text-sub);
+}
+.wz-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: var(--canvas-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 99px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-top: 10px;
+}
+.wz-meta-pill-tag {
+  background: var(--brand-red);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.wz-stepper-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 24px;
+  margin-bottom: 20px;
+}
+.wz-stepper-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.wz-stepper-step.active {
+  color: var(--brand-red);
+}
+.wz-stepper-step.done {
+  color: #10b981;
+}
+.wz-stepper-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--canvas-bg);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.76rem;
+}
+.wz-stepper-step.active .wz-stepper-num {
+  background: var(--brand-red);
+  color: #fff;
+  border-color: var(--brand-red);
+}
+.wz-stepper-step.done .wz-stepper-num {
+  background: #10b981;
+  color: #fff;
+  border-color: #10b981;
+}
+
+.wz-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.wz-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: var(--surface-bg);
+  color: var(--text-sub);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+.wz-chip:hover {
+  border-color: var(--brand-red);
+  color: var(--brand-red);
+}
+.wz-chip.active {
+  background: rgba(229, 43, 58, 0.08);
+  border-color: var(--brand-red);
+  color: var(--brand-red);
+  font-weight: 700;
+}
+.wz-chip-count {
+  background: rgba(0,0,0,0.06);
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-size: 0.68rem;
+}
+.wz-chip.active .wz-chip-count {
+  background: var(--brand-red);
+  color: #fff;
+}
+
+.wz-math-summary-box {
+  background: linear-gradient(135deg, rgba(229, 43, 58, 0.04) 0%, rgba(229, 43, 58, 0.01) 100%);
+  border: 1.5px solid rgba(229, 43, 58, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.wz-math-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 16px;
+  text-align: center;
+}
+.wz-math-item .num {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--text-main);
+}
+.wz-math-item .lbl {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.wz-math-op {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--text-muted);
+}
+
+.wz-insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.wz-insight-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--canvas-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
 }

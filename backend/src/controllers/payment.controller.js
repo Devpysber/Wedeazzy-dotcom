@@ -287,9 +287,13 @@ async function initiatePayment(req, res, next) {
     const vendor = await getVendorForRequest(req);
     if (!vendor) throw new HttpError(404, 'Vendor profile not found. Please register first.', 'ERR_NO_VENDOR');
 
+    const countryCode = String(vendor.countryCode || vendor.country || 'IN').toUpperCase();
+    const COUNTRY_CURRENCIES = { IN: 'INR', US: 'USD', GB: 'GBP', AE: 'AED', CA: 'CAD', AU: 'AUD' };
+    const currency = COUNTRY_CURRENCIES[countryCode] || 'INR';
+
     let amountPaise = 0;
     let purpose = '';
-    let meta = { vendorId: vendor.id };
+    let meta = { vendorId: vendor.id, countryCode, currency };
 
     if (campaignId) {
       const campaign = await prisma.adCampaign.findUnique({ where: { id: campaignId } });
@@ -297,20 +301,21 @@ async function initiatePayment(req, res, next) {
         throw new HttpError(404, 'Campaign not found or does not belong to you', 'ERR_NOT_FOUND');
       }
       const totalAmount = campaign.totalAmount || (campaign.dailyBudget * campaign.durationDays);
-      amountPaise       = totalAmount * 100;
+      amountPaise       = Math.round(totalAmount * 100);
       purpose           = `campaign:${campaignId}`;
       meta.campaignId   = campaignId;
       meta.baseAmount   = campaign.baseAmount || Math.round(totalAmount / 1.18);
     } else {
-      const pricingMap = getPlanPricing();
-      if (!planName || !pricingMap[planName]) {
+      const countryPlans = require('../config/plansConfig').getPlansConfig(countryCode);
+      if (!planName || !countryPlans[planName]) {
         throw new HttpError(400, 'Invalid subscription plan selected', 'ERR_INPUT');
       }
-      const pricing   = pricingMap[planName];
-      amountPaise     = pricing.totalPaise;
-      purpose         = `subscription:${planName}`;
-      meta.planName   = planName;
-      meta.baseAmount = pricing.base;
+      const planDetails = countryPlans[planName];
+      const base        = planDetails.price;
+      amountPaise       = Math.round(base * 1.18 * 100);
+      purpose           = `subscription:${planName}`;
+      meta.planName     = planName;
+      meta.baseAmount   = base;
 
       if (planName === 'Featured') {
         if (vendor.pincode && vendor.categorySlug) {
@@ -362,16 +367,16 @@ async function initiatePayment(req, res, next) {
     });
 
     // Create Razorpay order
-    logger.info(`Creating Razorpay order for txn: ${txnId}, amount: ${amountPaise} paise`);
+    logger.info(`Creating Razorpay order for txn: ${txnId}, amount: ${amountPaise} in ${currency}`);
     let razorpayOrder;
     try {
       const resp = await razorpayRequest('/orders', {
         method: 'POST',
         body: JSON.stringify({
           amount: amountPaise,
-          currency: 'INR',
+          currency: currency,
           receipt: txnId,
-          notes: { vendorId: vendor.id, purpose, txnId }
+          notes: { vendorId: vendor.id, purpose, txnId, countryCode, currency }
         })
       });
       razorpayOrder = await resp.json();
@@ -400,7 +405,7 @@ async function initiatePayment(req, res, next) {
       orderId: razorpayOrder.id,
       transactionId: txnId,
       amount: amountPaise,
-      currency: 'INR',
+      currency: currency,
       keyId: env.RAZORPAY.keyId
     });
   } catch (err) {

@@ -48,17 +48,88 @@
     Object.keys(chartRegistry).forEach(destroyChart);
   }
 
+  function matchesCountryScope(v, scope) {
+    if (!v) return true;
+    if (!scope || String(scope).toLowerCase() === 'all') return true;
+    const s = String(scope).toUpperCase();
+
+    const rawCountry = String(v.country || '').trim().toUpperCase();
+    const rawCode = String(v.countryCode || '').trim().toUpperCase();
+    const rawLoc = String(v.location || v.address || '').trim().toUpperCase();
+
+    let vendorCode = rawCode;
+    if (!vendorCode) {
+      if (rawCountry.includes('USA') || rawCountry.includes('UNITED STATES') || rawCountry === 'US') vendorCode = 'US';
+      else if (rawCountry.includes('UK') || rawCountry.includes('UNITED KINGDOM') || rawCountry === 'GB') vendorCode = 'GB';
+      else if (rawCountry.includes('UAE') || rawCountry.includes('EMIRATES') || rawCountry === 'AE') vendorCode = 'AE';
+      else if (rawCountry.includes('CANADA') || rawCountry === 'CA') vendorCode = 'CA';
+      else if (rawCountry.includes('AUSTRALIA') || rawCountry === 'AU') vendorCode = 'AU';
+      else if (rawCountry.includes('INDIA') || rawCountry === 'IN') vendorCode = 'IN';
+      else if (rawLoc.includes('USA') || rawLoc.includes('UNITED STATES')) vendorCode = 'US';
+      else if (rawLoc.includes('UNITED KINGDOM')) vendorCode = 'GB';
+      else if (rawLoc.includes('EMIRATES') || rawLoc.includes('DUBAI')) vendorCode = 'AE';
+      else vendorCode = 'IN';
+    }
+
+    if (s === 'IN' || s === 'INDIA') return vendorCode === 'IN';
+    if (s === 'AE' || s === 'UAE') return vendorCode === 'AE';
+    if (s === 'GB' || s === 'UK') return vendorCode === 'GB';
+    if (s === 'US' || s === 'USA') return vendorCode === 'US';
+    if (s === 'CA' || s === 'CANADA') return vendorCode === 'CA';
+    if (s === 'AU' || s === 'AUSTRALIA') return vendorCode === 'AU';
+
+    return vendorCode === s || rawCode === s;
+  }
+
+  function renderCrmCountryScopeHeader() {
+    const rawScope = window.WedEazzyCountryScope || 'all';
+    const currentScope = rawScope.toUpperCase();
+    return `
+      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--surface-bg); padding: 14px 20px; border-radius: 14px; border: 1px solid var(--border-color); margin-bottom: 20px; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(220, 31, 48, 0.1); color: var(--brand-rose); display: flex; align-items: center; justify-content: center; font-size: 1.15rem;">
+            🌐
+          </div>
+          <div>
+            <div style="font-size: 0.92rem; font-weight: 800; color: var(--text-main);">Country Scope & Filter</div>
+            <div style="font-size: 0.76rem; color: var(--text-sub);">Filter business registry & moderation data dynamically</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-sub);">Country Scope:</label>
+          <select class="global-country-select" style="background: var(--surface-subtle); color: var(--text-main); border: 1.5px solid var(--border-color); font-weight: 800; font-size: 0.84rem; padding: 7px 14px; border-radius: 10px; cursor: pointer; outline: none;"
+            onchange="window.handleGlobalCountryChange(this.value)">
+            <option value="all" ${currentScope === 'ALL' ? 'selected' : ''}>🌐 All Countries (Global Platform)</option>
+            <option value="IN" ${currentScope === 'IN' ? 'selected' : ''}>🇮🇳 India (INR ₹)</option>
+            <option value="AE" ${currentScope === 'AE' ? 'selected' : ''}>🇦🇪 UAE (AED)</option>
+            <option value="GB" ${currentScope === 'GB' ? 'selected' : ''}>🇬🇧 UK (GBP £)</option>
+            <option value="US" ${currentScope === 'US' ? 'selected' : ''}>🇺🇸 USA (USD $)</option>
+            <option value="CA" ${currentScope === 'CA' ? 'selected' : ''}>🇨🇦 Canada (CAD CA$)</option>
+            <option value="AU" ${currentScope === 'AU' ? 'selected' : ''}>🇦🇺 Australia (AUD A$)</option>
+          </select>
+        </div>
+      </div>
+    `;
+  }
+
   /* ============================================================
      View state — persists across re-renders within a session
      ============================================================ */
   const view = {
-    vendors:     { page: 1, search: '', category: '', city: '', country: '', approval: '', plan: '', dateFrom: '', selected: new Set() },
-    invitations: { page: 1, search: '', channel: '', selected: new Set() },
-    claimed:     { page: 1, search: '', status: '' },
-    importer:    { step: 1, file: null, importId: null, preview: null, busy: false },
+    vendors:     { page: 1, pageSize: 15, search: '', category: '', city: '', country: '', approval: '', plan: '', dateFrom: '', selected: new Set() },
+    invitations: { page: 1, pageSize: 15, search: '', channel: '', selected: new Set() },
+    claimed:     { page: 1, pageSize: 15, search: '', status: '' },
+    importer:    {
+      step: 1, file: null, importId: null, preview: null, result: null, busy: false,
+      targetCountry: null,
+      customMapping: {}, excludedCities: new Set(), excludedCategories: new Set(),
+      duplicateAction: 'skip',
+      filters: { onlyPhone: false, onlyEmail: false, onlyWebsite: false, minRating: 0, minCompleteness: 0 },
+      history: null,
+    },
   };
 
-  const PAGE_SIZE = 25;
+  const PAGE_SIZE = 15;
 
   /* ============================================================
      Utilities
@@ -109,8 +180,7 @@
     return { items: list.slice(start, start + size), total, current, count: list.length };
   }
 
-  function pager(current, total, fnName) {
-    if (total <= 1) return '';
+  function pager(current, total, fnName, currentSize = 15, setSizeFn = 'setVendorPageSize') {
     const btn = (p, label, disabled, active) => `
       <button class="wz-btn-sm ${active ? 'brand' : 'ghost'}" ${disabled ? 'disabled' : ''}
               onclick="${disabled ? '' : `window.WedEazzyCRM.${fnName}(${p})`}">${label}</button>`;
@@ -124,10 +194,25 @@
     if (to < total) nums.push(btn(total, String(total), false, false));
 
     return `
-      <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;padding:16px 0 4px;">
-        ${btn(current - 1, '<i class="fa-solid fa-chevron-left"></i>', current === 1, false)}
-        ${nums.join('')}
-        ${btn(current + 1, '<i class="fa-solid fa-chevron-right"></i>', current === total, false)}
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px 16px 8px;border-top:1px solid var(--border-color, rgba(0,0,0,0.06));margin-top:12px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--text-muted, #6b7280);font-weight:600;">
+          <span>Show</span>
+          <select class="wz-select-sm" style="padding:4px 10px;border-radius:8px;font-weight:700;font-size:0.82rem;background:var(--surface-bg, #fff);color:var(--text-main);border:1.5px solid var(--border-color, #e5e7eb);cursor:pointer;outline:none;"
+                  onchange="window.WedEazzyCRM.${setSizeFn}(this.value)">
+            <option value="15" ${Number(currentSize) === 15 ? 'selected' : ''}>15 per page</option>
+            <option value="25" ${Number(currentSize) === 25 ? 'selected' : ''}>25 per page</option>
+            <option value="50" ${Number(currentSize) === 50 ? 'selected' : ''}>50 per page</option>
+            <option value="100" ${Number(currentSize) === 100 ? 'selected' : ''}>100 per page</option>
+          </select>
+          <span>listings</span>
+        </div>
+
+        ${total > 1 ? `
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          ${btn(current - 1, '<i class="fa-solid fa-chevron-left"></i>', current === 1, false)}
+          ${nums.join('')}
+          ${btn(current + 1, '<i class="fa-solid fa-chevron-right"></i>', current === total, false)}
+        </div>` : ''}
       </div>`;
   }
 
@@ -289,7 +374,10 @@
      easier to understand in one view"
      ============================================================ */
   function renderCrmDashboard(store) {
-    const vendors = store.vendors || [];
+    const rawScope = window.WedEazzyCountryScope || 'all';
+    const currentScope = rawScope.toUpperCase();
+    const allVendors = store.vendors || [];
+    const vendors = allVendors.filter(v => matchesCountryScope(v, currentScope));
 
     const total = vendors.length;
     const invited = vendors.filter(v => v.invitedAt).length;
@@ -312,12 +400,40 @@
     const maxCat = topCategories.length ? topCategories[0].count : 1;
     const maxCity = topCities.length ? topCities[0].count : 1;
 
+    const countryNames = {
+      'IN': 'India 🇮🇳',
+      'US': 'USA 🇺🇸',
+      'GB': 'UK 🇬🇧',
+      'AE': 'UAE 🇦🇪',
+      'CA': 'Canada 🇨🇦',
+      'AU': 'Australia 🇦🇺',
+      'ALL': 'Global Platform 🌐'
+    };
+    const activeCountryLabel = countryNames[currentScope] || currentScope;
+
     ctx.portalBody.innerHTML = `
       <div class="spa-tab-wrapper">
         <div class="locator-breadcrumb">
           <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i>
           <span>Approve Businesses</span> <i class="fa-solid fa-angle-right"></i> <span>Dashboard</span>
         </div>
+
+        ${renderCrmCountryScopeHeader()}
+
+        ${currentScope !== 'ALL' && total === 0 ? `
+          <div style="background: rgba(59, 130, 246, 0.08); border: 1.5px solid rgba(59, 130, 246, 0.25); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.4rem;">📍</span>
+              <div>
+                <div style="font-weight: 800; font-size: 0.95rem; color: #1e3a8a;">Selected Scope: ${activeCountryLabel}</div>
+                <div style="font-size: 0.82rem; color: #3b82f6;">Currently 0 registered listings in ${activeCountryLabel}. Vendors signing up from this region will automatically appear here.</div>
+              </div>
+            </div>
+            <button onclick="window.handleGlobalCountryChange('IN')" style="background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 10px; font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+              🇮🇳 Switch to India (13,695 Listings)
+            </button>
+          </div>
+        ` : ''}
 
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
           <div>
@@ -491,8 +607,16 @@
      ============================================================ */
   function filteredVendors(store) {
     const s = view.vendors;
-    const term = s.search.trim().toLowerCase();
     let list = store.vendors || [];
+    const currentScope = String(window.WedEazzyCountryScope || 'all').toLowerCase();
+
+    if (currentScope !== 'all') {
+      list = list.filter(v => matchesCountryScope(v, currentScope));
+    } else if (s.country) {
+      list = list.filter(v => matchesCountryScope(v, s.country));
+    }
+
+    const term = s.search.trim().toLowerCase();
 
     if (term) {
       list = list.filter(v =>
@@ -506,7 +630,6 @@
     }
     if (s.category) list = list.filter(v => v.category === s.category);
     if (s.city) list = list.filter(v => vendorCity(v) === s.city);
-    if (s.country) list = list.filter(v => (v.country || 'India') === s.country);
     if (s.approval === 'approved') list = list.filter(v => v.status === 'approved');
     if (s.approval === 'blacklisted') list = list.filter(v => v.status === 'cancelled');
     if (s.approval === 'verified') list = list.filter(v => v.claims === 'Verified Owner');
@@ -524,24 +647,29 @@
     const s = view.vendors;
     const all = store.vendors || [];
     const list = filteredVendors(store);
-    const { items, total, current, count } = paginate(list, s.page, PAGE_SIZE);
+    const size = s.pageSize || 15;
+    const { items, total, current, count } = paginate(list, s.page, size);
     s.page = current;
 
     const categories = uniqueSorted(all.map(v => v.category));
-    // Only show cities relevant to selected country
-    const relevantVendors = s.country ? all.filter(v => (v.country || 'India') === s.country) : all;
+    const rawScope = window.WedEazzyCountryScope || 'all';
+    const currentScope = rawScope.toUpperCase();
+    const relevantVendors = currentScope !== 'ALL' 
+      ? all.filter(v => matchesCountryScope(v, currentScope)) 
+      : all;
     const cities = uniqueSorted(relevantVendors.map(vendorCity));
-    const countries = uniqueSorted(all.map(v => v.country || 'India'));
-    const anyFilter = s.search || s.category || s.city || s.country || s.approval || s.plan || s.dateFrom;
+    const anyFilter = s.search || s.category || s.city || (currentScope !== 'ALL') || s.approval || s.plan || s.dateFrom;
 
-    // Country stats
-    const countryStats = {};
-    all.forEach(v => {
-      const c = v.country || 'India';
-      countryStats[c] = (countryStats[c] || 0) + 1;
-    });
+    const KNOWN_COUNTRIES = [
+      { code: 'IN', name: 'India', flag: '🇮🇳' },
+      { code: 'AE', name: 'UAE', flag: '🇦🇪' },
+      { code: 'GB', name: 'UK', flag: '🇬🇧' },
+      { code: 'US', name: 'USA', flag: '🇺🇸' },
+      { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+      { code: 'AU', name: 'Australia', flag: '🇦🇺' }
+    ];
 
-    const FLAG = { 'India': '🇮🇳', 'USA': '🇺🇸', 'UK': '🇬🇧', 'Australia': '🇦🇺', 'UAE': '🇦🇪', 'Canada': '🇨🇦' };
+    const FLAG = { 'India': '🇮🇳', 'USA': '🇺🇸', 'UK': '🇬🇧', 'Australia': '🇦🇺', 'UAE': '🇦🇪', 'Canada': '🇨🇦', 'IN': '🇮🇳', 'US': '🇺🇸', 'GB': '🇬🇧', 'AU': '🇦🇺', 'AE': '🇦🇪', 'CA': '🇨🇦' };
 
     ctx.portalBody.innerHTML = `
       <div class="spa-tab-wrapper">
@@ -550,11 +678,13 @@
           <span>Approve Businesses</span> <i class="fa-solid fa-angle-right"></i> <span>All Businesses</span>
         </div>
 
+        ${renderCrmCountryScopeHeader()}
+
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
           <div>
             <h2 style="font-size:1.3rem;margin-bottom:4px;">
               Partner Service Vendors Registry
-              <span class="wz-chip wz-chip-brand" style="vertical-align:middle;margin-left:6px;">${fmtNum(store.vendorsTotalCount ?? all.length)} total</span>
+              <span class="wz-chip wz-chip-brand" style="vertical-align:middle;margin-left:6px;">${fmtNum(count)} matching (${fmtNum(store.vendorsTotalCount ?? all.length)} total)</span>
             </h2>
             <p style="font-size:0.82rem;color:var(--text-muted);">
               Photographers, venues, caterers, decorators, make-up artists and more.
@@ -572,16 +702,19 @@
 
         <!-- Country tabs -->
         <div class="wz-country-tabs">
-          <button class="wz-ctab ${!s.country ? 'active' : ''}" onclick="window.WedEazzyCRM.setCountryFilter('')">
-            🌏 All Countries
+          <button class="wz-ctab ${(currentScope === 'ALL' || !currentScope) ? 'active' : ''}" onclick="window.handleGlobalCountryChange('all')">
+            🌐 All Countries
             <span class="wz-ctab-count">${fmtNum(all.length)}</span>
           </button>
-          ${Object.entries(countryStats).sort((a,b) => b[1]-a[1]).map(([country, cnt]) => `
-            <button class="wz-ctab ${s.country === country ? 'active' : ''}"
-                    onclick="window.WedEazzyCRM.setCountryFilter('${esc(country)}')">
-              ${FLAG[country] || '🌐'} ${esc(country)}
-              <span class="wz-ctab-count">${fmtNum(cnt)}</span>
-            </button>`).join('')}
+          ${KNOWN_COUNTRIES.map(c => {
+            const cnt = all.filter(v => matchesCountryScope(v, c.code)).length;
+            const isActive = currentScope === c.code.toUpperCase();
+            return `
+              <button class="wz-ctab ${isActive ? 'active' : ''}" onclick="window.handleGlobalCountryChange('${c.code}')">
+                ${c.flag} ${c.name}
+                <span class="wz-ctab-count">${fmtNum(cnt)}</span>
+              </button>`;
+          }).join('')}
         </div>
 
         <div class="wz-filter-bar">
@@ -618,15 +751,6 @@
             </select>
           </span>
 
-          <span class="wz-select">
-            <i class="fa-solid fa-crown"></i>
-            <select id="vFilterPlan" class="${s.plan ? 'is-set' : ''}">
-              <option value="">Subscription</option>
-              <option value="paid" ${s.plan === 'paid' ? 'selected' : ''}>Paid plans</option>
-              <option value="free" ${s.plan === 'free' ? 'selected' : ''}>Free</option>
-            </select>
-          </span>
-
           <input type="date" id="vFilterDate" class="wz-date-input" value="${esc(s.dateFrom)}" title="Added on or after" />
 
           ${anyFilter ? `<button class="wz-reset-btn" onclick="window.WedEazzyCRM.resetVendorFilters()">
@@ -636,27 +760,26 @@
           <span class="wz-result-count">${fmtNum(count)} result${count === 1 ? '' : 's'}</span>
         </div>
 
-        <div class="panel-card" style="padding:0;overflow:hidden;">
-          <div class="table-viewport">
-            <table class="grid-table wz-cardable">
+        <div class="panel-card" style="padding:0;overflow:hidden;border-radius:14px;border:1px solid var(--border-color);">
+          <div class="table-viewport" style="overflow-x:auto;">
+            <table class="grid-table wz-cardable" style="width:100%;border-collapse:collapse;">
               <thead>
-                <tr>
-                  <th style="width:34px;"><input type="checkbox" class="wz-check" id="vSelectAll" title="Select all on this page" /></th>
-                  <th>Business</th>
-                  <th>Owner</th>
-                  <th>Category</th>
-                  <th>City</th>
-                  <th>Country</th>
-                  <th>Contact</th>
-                  <th>Added</th>
-                  <th>Verification</th>
-                  <th>Plan</th>
-                  <th style="text-align:right;">Actions</th>
+                <tr style="background:var(--surface-subtle,#f9fafb);border-bottom:1px solid var(--border-color,#e5e7eb);">
+                  <th style="width:38px;padding:12px 14px;"><input type="checkbox" class="wz-check" id="vSelectAll" title="Select all on this page" /></th>
+                  <th style="min-width:240px;padding:12px 14px;text-align:left;font-size:0.75rem;font-weight:800;color:var(--text-sub,#6b7280);text-transform:uppercase;letter-spacing:0.04em;">Business</th>
+                  <th style="min-width:110px;padding:12px 14px;text-align:left;font-size:0.75rem;font-weight:800;color:var(--text-sub,#6b7280);text-transform:uppercase;letter-spacing:0.04em;">Owner</th>
+                  <th style="min-width:130px;padding:12px 14px;text-align:left;font-size:0.75rem;font-weight:800;color:var(--text-sub,#6b7280);text-transform:uppercase;letter-spacing:0.04em;">Category</th>
+                  <th style="min-width:110px;padding:12px 14px;text-align:left;font-size:0.75rem;font-weight:800;color:var(--text-sub,#6b7280);text-transform:uppercase;letter-spacing:0.04em;">City</th>
+                  <th style="min-width:110px;padding:12px 14px;text-align:left;font-size:0.75rem;font-weight:800;color:var(--text-sub,#6b7280);text-transform:uppercase;letter-spacing:0.04em;">Country</th>
+                  <th style="min-width:150px;padding:12px 14px;text-align:left;font-size:0.75rem;font-weight:800;color:var(--text-sub,#6b7280);text-transform:uppercase;letter-spacing:0.04em;">Contact</th>
+                  <th style="min-width:95px;padding:12px 14px;text-align:left;font-size:0.75rem;font-weight:800;color:var(--text-sub,#6b7280);text-transform:uppercase;letter-spacing:0.04em;">Added</th>
+                  <th style="min-width:115px;padding:12px 14px;text-align:left;font-size:0.75rem;font-weight:800;color:var(--text-sub,#6b7280);text-transform:uppercase;letter-spacing:0.04em;">Verification</th>
+                  <th style="min-width:145px;padding:12px 14px;text-align:right;font-size:0.75rem;font-weight:800;color:var(--text-sub,#6b7280);text-transform:uppercase;letter-spacing:0.04em;">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 ${items.length === 0 ? `
-                  <tr><td colspan="10" data-primary>
+                  <tr><td colspan="9" data-primary style="padding:40px 20px;text-align:center;">
                     ${anyFilter
                       ? emptyState('fa-solid fa-filter-circle-xmark', 'No businesses match these filters',
                                    'Try widening the search, or reset the filters to see the full registry.')
@@ -666,64 +789,56 @@
                 ` : items.map(v => {
                   const verified = v.claims === 'Verified Owner';
                   const blacklisted = v.status === 'cancelled';
-                  const paid = v.subscriptionPlan && v.subscriptionPlan !== 'Free';
                   const city = vendorCity(v);
+                  const rawC = String(v.country || 'India').trim().toUpperCase();
+                  const countryName = rawC.includes('US') ? 'USA' : (rawC.includes('GB') || rawC.includes('UK') ? 'UK' : (rawC.includes('AE') || rawC.includes('UAE') ? 'UAE' : (rawC.includes('CA') ? 'Canada' : (rawC.includes('AU') ? 'Australia' : 'India'))));
+                  const flagIcon = FLAG[countryName] || '🌐';
                   return `
-                  <tr data-vendor-id="${esc(v.id)}">
-                    <td data-label="Select">
+                  <tr data-vendor-id="${esc(v.id)}" style="border-bottom:1px solid var(--border-color,#f3f4f6);transition:background 0.15s ease;">
+                    <td data-label="Select" style="padding:12px 14px;vertical-align:middle;">
                       <input type="checkbox" class="wz-check wz-row-check" value="${esc(v.id)}"
                              ${s.selected.has(v.id) ? 'checked' : ''} />
                     </td>
-                    <td data-primary>
-                      <div class="wz-biz">
-                        <div class="wz-biz-avatar">${esc(initials(v.name))}</div>
-                        <div class="wz-biz-text">
-                          <div class="wz-biz-name" title="${esc(v.name)}">${esc(v.name)}</div>
-                          <div class="wz-biz-meta">
-                            <span><i class="fa-solid fa-star" style="color:var(--brand-gold);"></i> ${v.rating ?? '—'}</span>
+                    <td data-primary style="padding:12px 14px;vertical-align:middle;">
+                      <div class="wz-biz" style="display:flex;align-items:center;gap:10px;">
+                        <div class="wz-biz-avatar" style="width:34px;height:34px;border-radius:8px;font-size:0.8rem;">${esc(initials(v.name))}</div>
+                        <div class="wz-biz-text" style="min-width:0;">
+                          <div class="wz-biz-name" title="${esc(v.name)}" style="font-size:0.86rem;font-weight:700;color:var(--text-main,#111827);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;">${esc(v.name)}</div>
+                          <div class="wz-biz-meta" style="font-size:0.72rem;color:var(--text-muted,#6b7280);">
+                            <span><i class="fa-solid fa-star" style="color:var(--brand-gold,#f59e0b);"></i> ${v.rating ?? '—'}</span>
                             <span>·</span>
                             <span>#${esc(String(v.id).slice(-8))}</span>
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td data-label="Owner">
+                    <td data-label="Owner" style="padding:12px 14px;vertical-align:middle;">
                       ${v.vendorName && v.vendorName !== '—'
-                        ? `<span style="font-size:0.8rem;font-weight:600;">${esc(v.vendorName)}</span>`
+                        ? `<span style="font-size:0.8rem;font-weight:600;color:var(--text-main,#374151);">${esc(v.vendorName)}</span>`
                         : `<span class="wz-chip wz-chip-grey">Unclaimed</span>`}
                     </td>
-                    <td data-label="Category"><span class="wz-chip wz-chip-brand">${esc(v.category)}</span></td>
-                    <td data-label="City"><span style="font-size:0.8rem;">${esc(city) || '—'}</span></td>
-                    <td data-label="Country">
-                      <span style="font-size:0.8rem;">${FLAG[v.country || 'India'] || '🌐'} ${esc(v.country || 'India')}</span>
+                    <td data-label="Category" style="padding:12px 14px;vertical-align:middle;"><span class="wz-chip wz-chip-brand">${esc(v.category)}</span></td>
+                    <td data-label="City" style="padding:12px 14px;vertical-align:middle;"><span style="font-size:0.8rem;font-weight:600;color:var(--text-sub,#4b5563);">${esc(city) || '—'}</span></td>
+                    <td data-label="Country" style="padding:12px 14px;vertical-align:middle;">
+                      <span class="wz-chip wz-chip-grey" style="font-weight:700;font-size:0.75rem;">${flagIcon} ${esc(countryName)}</span>
                     </td>
-                    <td data-label="Contact">
-                      <div class="wz-contact">
-                        <div><i class="fa-solid fa-phone" style="opacity:0.55;"></i> ${esc(v.contact)}</div>
+                    <td data-label="Contact" style="padding:12px 14px;vertical-align:middle;">
+                      <div class="wz-contact" style="font-size:0.78rem;">
+                        <div style="font-weight:600;"><i class="fa-solid fa-phone" style="opacity:0.55;margin-right:3px;"></i> ${esc(v.contact)}</div>
                         ${v.email && v.email !== '—'
-                          ? `<div class="muted"><i class="fa-regular fa-envelope"></i> ${esc(v.email)}</div>` : ''}
+                          ? `<div class="muted" style="font-size:0.72rem;color:var(--text-muted);"><i class="fa-regular fa-envelope" style="margin-right:3px;"></i> ${esc(v.email)}</div>` : ''}
                       </div>
                     </td>
-                    <td data-label="Added"><span style="font-size:0.78rem;">${fmtDate(v.createdAt)}</span></td>
-                    <td data-label="Verification">
+                    <td data-label="Added" style="padding:12px 14px;vertical-align:middle;"><span style="font-size:0.78rem;font-weight:600;color:var(--text-sub);">${fmtDate(v.createdAt)}</span></td>
+                    <td data-label="Verification" style="padding:12px 14px;vertical-align:middle;">
                       ${blacklisted
                         ? `<span class="wz-chip wz-chip-red"><i class="fa-solid fa-ban"></i> Blacklisted</span>`
                         : verified
                           ? `<span class="wz-chip wz-chip-green"><i class="fa-solid fa-check-double"></i> Verified</span>`
                           : `<span class="wz-chip wz-chip-amber"><i class="fa-solid fa-clock"></i> Pending</span>`}
                     </td>
-                    <td data-label="Plan">
-                      ${paid
-                        ? `<span class="wz-chip wz-chip-gold"><i class="fa-solid fa-crown"></i> ${esc(v.subscriptionPlan)}</span>`
-                        : `<span class="wz-chip wz-chip-grey">Free</span>`}
-                    </td>
-                    <td data-label="Actions" style="text-align:right;">
-                      <div class="wz-actions">
-                        ${!verified ? `
-                          <button class="wz-icon-btn green" title="Grant ownership claim"
-                                  onclick="window.handleClaimListing('vendor','${esc(v.id)}')">
-                            <i class="fa-solid fa-signature"></i>
-                          </button>` : ''}
+                    <td data-label="Actions" style="text-align:right;padding:12px 14px;vertical-align:middle;">
+                      <div class="wz-actions" style="display:inline-flex;gap:5px;align-items:center;justify-content:flex-end;flex-wrap:nowrap;white-space:nowrap;">
                         <button class="wz-icon-btn brand" title="Send claim invitation"
                                 onclick="window.WedEazzyCRM.openInviteModal('${esc(v.id)}')">
                           <i class="fa-solid fa-paper-plane"></i>
@@ -737,11 +852,6 @@
                                   onclick="window.handleVendorStatus('${esc(v.id)}','cancelled')">
                             <i class="fa-solid fa-ban"></i>
                           </button>`}
-                        <button class="wz-icon-btn ${v.kycDocumentUrl ? 'green' : ''}"
-                                title="${v.kycDocumentUrl ? 'View / replace proof document' : 'Upload proof document'}"
-                                onclick="window.triggerVendorDocumentModal('${esc(v.id)}', ${v.kycDocumentUrl ? `'${ctx.escJsAttr(v.kycDocumentUrl)}'` : 'null'})">
-                          <i class="fa-solid ${v.kycDocumentUrl ? 'fa-file-circle-check' : 'fa-file-arrow-up'}"></i>
-                        </button>
                         <button class="wz-icon-btn blue" title="Send login credentials"
                                 onclick="window.triggerVendorCredentialsModal('${esc(v.id)}','${ctx.escJsAttr(v.email && v.email !== '—' ? v.email : '')}','${ctx.escJsAttr(v.name || '')}')">
                           <i class="fa-solid fa-key"></i>
@@ -757,7 +867,7 @@
               </tbody>
             </table>
           </div>
-          ${pager(current, total, 'goVendorsPage')}
+          ${pager(current, total, 'goVendorsPage', size, 'setVendorPageSize')}
         </div>
 
         <div id="vBulkBarSlot"></div>
@@ -795,7 +905,6 @@
     bind('vFilterCategory', 'category');
     bind('vFilterCity', 'city');
     bind('vFilterApproval', 'approval');
-    bind('vFilterPlan', 'plan');
     bind('vFilterDate', 'dateFrom');
 
     document.querySelectorAll('.wz-row-check').forEach(cb => {
@@ -847,10 +956,9 @@
   function renderInvitations(store) {
     const s = view.invitations;
     const allVendors = store.vendors || [];
+    const currentScope = window.WedEazzyCountryScope || 'all';
 
-    // The core fix: this page previously listed every unclaimed listing,
-    // invited or not. It now lists exactly what was actually sent.
-    let invitedList = allVendors.filter(v => v.invitedAt);
+    let invitedList = allVendors.filter(v => v.invitedAt && matchesCountryScope(v, currentScope));
 
     const term = s.search.trim().toLowerCase();
     let list = invitedList;
@@ -865,7 +973,8 @@
 
     list = list.slice().sort((a, b) => new Date(b.invitedAt) - new Date(a.invitedAt));
 
-    const { items, total, current, count } = paginate(list, s.page, PAGE_SIZE);
+    const size = s.pageSize || 15;
+    const { items, total, current, count } = paginate(list, s.page, size);
     s.page = current;
 
     const totalInvited = invitedList.length;
@@ -874,7 +983,7 @@
     const viaEmail = invitedList.filter(v => (v.invitedChannel || '').includes('email')).length;
     const awaiting = totalInvited - converted;
     const convRate = totalInvited > 0 ? (converted / totalInvited) * 100 : 0;
-    const pendingInvite = allVendors.filter(v => !v.hasOwner && !v.invitedAt).length;
+    const pendingInvite = allVendors.filter(v => !v.hasOwner && !v.invitedAt && matchesCountryScope(v, currentScope)).length;
 
     ctx.portalBody.innerHTML = `
       <div class="spa-tab-wrapper">
@@ -882,6 +991,8 @@
           <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i>
           <span>Approve Businesses</span> <i class="fa-solid fa-angle-right"></i> <span>Invitations</span>
         </div>
+
+        ${renderCrmCountryScopeHeader()}
 
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
           <div>
@@ -997,7 +1108,7 @@
               </tbody>
             </table>
           </div>
-          ${pager(current, total, 'goInvitationsPage')}
+          ${pager(current, total, 'goInvitationsPage', size, 'setInvitationsPageSize')}
         </div>
       </div>`;
 
@@ -1032,11 +1143,9 @@
   function renderClaimedListings(store) {
     const s = view.claimed;
     const allVendors = store.vendors || [];
+    const currentScope = window.WedEazzyCountryScope || 'all';
 
-    // "Claimed" now means a real signup is attached (hasOwner), not the old
-    // `claims` field which labelled every unverified seeded listing as
-    // "Claim Requested" even when nobody had ever touched it.
-    const claimedAll = allVendors.filter(v => v.hasOwner);
+    const claimedAll = allVendors.filter(v => v.hasOwner && matchesCountryScope(v, currentScope));
 
     const verified = claimedAll.filter(v => v.claims === 'Verified Owner');
     const pending = claimedAll.filter(v => v.claims !== 'Verified Owner');
@@ -1054,7 +1163,8 @@
       );
     }
 
-    const { items, total, current, count } = paginate(list, s.page, PAGE_SIZE);
+    const size = s.pageSize || 15;
+    const { items, total, current, count } = paginate(list, s.page, size);
     s.page = current;
 
     const withDocs = claimedAll.filter(v => v.kycDocumentUrl).length;
@@ -1066,6 +1176,8 @@
           <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i>
           <span>Approve Businesses</span> <i class="fa-solid fa-angle-right"></i> <span>Claimed Businesses</span>
         </div>
+
+        ${renderCrmCountryScopeHeader()}
 
         <div style="margin-bottom:16px;">
           <h2 style="font-size:1.3rem;margin-bottom:4px;">Claim Verification Console</h2>
@@ -1175,7 +1287,7 @@
               </tbody>
             </table>
           </div>
-          ${pager(current, total, 'goClaimedPage')}
+          ${pager(current, total, 'goClaimedPage', size, 'setClaimedPageSize')}
         </div>
       </div>`;
 
@@ -1203,34 +1315,37 @@
   }
 
   /* ============================================================
-     VIEW 5 — CSV IMPORT WIZARD
-     PDF item 5 + duplicate filtering
+     VIEW 5 — UNIVERSAL BUSINESS DATA INTELLIGENCE & IMPORT REVIEW
      ============================================================ */
   function renderImportListings() {
     const s = view.importer;
-
     const stepClass = (n) => s.step === n ? 'active' : (s.step > n ? 'done' : '');
 
     ctx.portalBody.innerHTML = `
       <div class="spa-tab-wrapper">
         <div class="locator-breadcrumb">
           <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i>
-          <span>Approve Businesses</span> <i class="fa-solid fa-angle-right"></i> <span>Import Listings</span>
+          <span>Approve Businesses</span> <i class="fa-solid fa-angle-right"></i> <span>Business Data Intelligence Importer</span>
         </div>
 
-        <div style="margin-bottom:18px;">
-          <h2 style="font-size:1.3rem;margin-bottom:4px;">Import Businesses from CSV</h2>
-          <p style="font-size:0.82rem;color:var(--text-muted);">
-            Upload a spreadsheet of listings. Nothing is saved until you review the duplicate report and confirm.
-          </p>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+          <div>
+            <h2 style="font-size:1.3rem;margin-bottom:4px;">Business Data Intelligence & Universal Importer</h2>
+            <p style="font-size:0.82rem;color:var(--text-muted);">
+              Upload business data from any scraper output (.csv, .tsv, .xlsx, .xls). Auto-normalizes, analyzes quality, detects duplicates & provides interactive review before import.
+            </p>
+          </div>
+          <button class="wz-btn-sm ghost" onclick="window.WedEazzyCRM.openImportHistoryModal()">
+            <i class="fa-solid fa-history"></i> Import History
+          </button>
         </div>
 
         <div class="wz-steps">
-          <span class="wz-step ${stepClass(1)}"><span class="wz-step-num">1</span><span>Upload</span></span>
+          <span class="wz-step ${stepClass(1)}"><span class="wz-step-num">1</span><span>Upload & Detect</span></span>
           <span class="wz-step-line"></span>
-          <span class="wz-step ${stepClass(2)}"><span class="wz-step-num">2</span><span>Review duplicates</span></span>
+          <span class="wz-step ${stepClass(2)}"><span class="wz-step-num">2</span><span>Intelligence & Review</span></span>
           <span class="wz-step-line"></span>
-          <span class="wz-step ${stepClass(3)}"><span class="wz-step-num">3</span><span>Done</span></span>
+          <span class="wz-step ${stepClass(3)}"><span class="wz-step-num">3</span><span>Commit & Report</span></span>
         </div>
 
         <div id="importStage"></div>
@@ -1239,106 +1354,172 @@
     renderImportStage();
   }
 
+  function renderImportCharts(dist) {
+    if (typeof Chart === 'undefined') return;
+
+    const cityCanvas = document.getElementById('wzCityBarChart');
+    if (cityCanvas) {
+      destroyChart('wzCityBarChart');
+      const topCities = (dist.cities || []).slice(0, 8);
+      const ctx = cityCanvas.getContext('2d');
+      chartRegistry['wzCityBarChart'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: topCities.map(c => c.name),
+          datasets: [{
+            label: 'Listings',
+            data: topCities.map(c => c.count),
+            backgroundColor: 'rgba(229, 43, 58, 0.75)',
+            borderColor: '#E52B3A',
+            borderWidth: 1,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    const catCanvas = document.getElementById('wzCategoryDonutChart');
+    if (catCanvas) {
+      destroyChart('wzCategoryDonutChart');
+      const topCats = (dist.categories || []).slice(0, 6);
+      const ctx = catCanvas.getContext('2d');
+      chartRegistry['wzCategoryDonutChart'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: topCats.map(c => c.name),
+          datasets: [{
+            data: topCats.map(c => c.count),
+            backgroundColor: ['#E52B3A', '#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+          }
+        }
+      });
+    }
+  }
+
   function renderImportStage() {
     const stage = document.getElementById('importStage');
     if (!stage) return;
     const s = view.importer;
 
+    if (!s.targetCountry) {
+      const rawActive = (window.WedEazzyCountryScope || 'IN').toUpperCase();
+      s.targetCountry = (rawActive === 'ALL' || !rawActive) ? 'IN' : rawActive;
+    }
+    const activeScope = s.targetCountry;
+
+    const KNOWN_IMPORT_COUNTRIES = [
+      { code: 'IN', label: '🇮🇳 India' },
+      { code: 'US', label: '🇺🇸 USA' },
+      { code: 'GB', label: '🇬🇧 UK' },
+      { code: 'AU', label: '🇦🇺 Australia' },
+      { code: 'AE', label: '🇦🇪 UAE' },
+      { code: 'CA', label: '🇨🇦 Canada' }
+    ];
+
     if (s.step === 1) {
       stage.innerHTML = `
         <div class="panel-card">
-          <div class="wz-dropzone" id="csvDropzone" tabindex="0" role="button"
-               aria-label="Choose or drop a CSV file">
+          <div class="wz-dropzone" id="csvDropzone" tabindex="0" role="button" aria-label="Choose or drop a data file">
             <div class="wz-dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-            <h4>Drop your CSV here, or click to browse</h4>
-            <p>Columns are auto-detected — <code>name</code>, <code>category</code> and <code>city</code> are required.</p>
-            ${s.file ? `<div class="wz-dropzone-file"><i class="fa-solid fa-file-csv"></i> ${esc(s.file.name)} · ${(s.file.size / 1024).toFixed(0)} KB</div>` : ''}
+            <h4>Drop your CSV, TSV, or XLSX file here, or click to browse</h4>
+            <p>Supports Google Maps scrapers, Bing lists, Justdial exports & custom CSV/Excel spreadsheets.</p>
+            ${s.file ? `<div class="wz-dropzone-file"><i class="fa-solid fa-file-excel"></i> ${esc(s.file.name)} · ${(s.file.size / 1024).toFixed(0)} KB</div>` : ''}
           </div>
-          <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display:none;" />
+          <input type="file" id="csvFileInput" accept=".csv,.tsv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;" />
 
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;">
-            <a href="#" onclick="window.WedEazzyCRM.downloadTemplate();return false;"
-               style="font-size:0.78rem;font-weight:700;color:var(--brand-rose);text-decoration:none;">
-              <i class="fa-solid fa-download"></i> Download a template CSV
+            <a href="#" onclick="window.WedEazzyCRM.downloadTemplate();return false;" style="font-size:0.78rem;font-weight:700;color:var(--brand-rose);text-decoration:none;">
+              <i class="fa-solid fa-download"></i> Download sample listings template
             </a>
           </div>
 
-          <h4 style="font-size:0.9rem;margin-top:22px;">Data source settings</h4>
+          <h4 style="font-size:0.9rem;margin-top:22px;">Data Source Settings</h4>
           <div class="wz-rules" style="margin-top:10px;">
             <div class="wz-rule" style="flex-direction:column;align-items:flex-start;gap:12px;">
               <div>
-                <span class="wz-rule-title">Country</span>
-                <span class="wz-rule-desc">Select which country this data is from. This ensures correct phone number formatting and proper categorisation.</span>
+                <span class="wz-rule-title">Target Country</span>
+                <span class="wz-rule-desc">Select target country for phone formatting (+91 for IN, +1 for US/CA) and city/category canonical resolution.</span>
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <label class="wz-country-pick wz-country-pick-checked" data-country-pick="IN">
-                  <input type="radio" name="importCountry" value="IN" checked />
-                  🇮🇳 India
-                </label>
-                <label class="wz-country-pick" data-country-pick="US">
-                  <input type="radio" name="importCountry" value="US" />
-                  🇺🇸 USA
-                </label>
-                <label class="wz-country-pick" data-country-pick="GB">
-                  <input type="radio" name="importCountry" value="GB" />
-                  🇬🇧 UK
-                </label>
-                <label class="wz-country-pick" data-country-pick="AU">
-                  <input type="radio" name="importCountry" value="AU" />
-                  🇦🇺 Australia
-                </label>
-                <label class="wz-country-pick" data-country-pick="AE">
-                  <input type="radio" name="importCountry" value="AE" />
-                  🇦🇪 UAE
-                </label>
-                <label class="wz-country-pick" data-country-pick="CA">
-                  <input type="radio" name="importCountry" value="CA" />
-                  🇨🇦 Canada
-                </label>
+                ${KNOWN_IMPORT_COUNTRIES.map(c => `
+                  <label class="wz-country-pick ${c.code === activeScope ? 'wz-country-pick-checked' : ''}" data-country-pick="${c.code}">
+                    <input type="radio" name="importCountry" value="${c.code}" ${c.code === activeScope ? 'checked' : ''} /> ${c.label}
+                  </label>
+                `).join('')}
               </div>
             </div>
-            <label class="wz-rule">
-              <input type="text" id="importCityHint" class="premium-input" style="flex:1;font-size:0.8rem;padding:8px 12px;" placeholder="City hint (optional, e.g. New York)" />
-              <span>
-                <span class="wz-rule-title">City hint</span>
-                <span class="wz-rule-desc">If all rows in this file belong to one city, type it here. Overrides the city column in the CSV.</span>
-              </span>
-            </label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;">
+              <label class="wz-rule">
+                <input type="text" id="importCityHint" class="premium-input" style="flex:1;font-size:0.8rem;padding:8px 12px;" placeholder="City hint (optional, e.g. Mumbai)" />
+                <span>
+                  <span class="wz-rule-title">City Hint</span>
+                  <span class="wz-rule-desc">Overrides or fills missing city values.</span>
+                </span>
+              </label>
+              <label class="wz-rule">
+                <input type="text" id="importCategoryHint" class="premium-input" style="flex:1;font-size:0.8rem;padding:8px 12px;" placeholder="Category hint (optional, e.g. Wedding Photography)" />
+                <span>
+                  <span class="wz-rule-title">Category Hint</span>
+                  <span class="wz-rule-desc">Fills missing categories for single-niche scrapers.</span>
+                </span>
+              </label>
+            </div>
           </div>
 
-          <h4 style="font-size:0.9rem;margin-top:22px;">Duplicate filtering</h4>
-          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">
-            Choose what counts as the same business. Rows flagged as duplicates are excluded by default —
-            you decide row by row in the next step.
-          </p>
+          <h4 style="font-size:0.9rem;margin-top:22px;">Duplicate Detection Rules</h4>
           <div class="wz-rules">
             <label class="wz-rule">
               <input type="checkbox" id="ruleDedupePhone" checked />
               <span>
-                <span class="wz-rule-title">Same phone number</span>
-                <span class="wz-rule-desc">Strongest signal for scraped data. Numbers are normalised first, so 9876543210, +91 98765-43210 and 919876543210 all match.</span>
+                <span class="wz-rule-title">Same phone number (Recommended)</span>
+                <span class="wz-rule-desc">Matches canonical phone format (+91 9082610087 vs 9082610087).</span>
               </span>
             </label>
             <label class="wz-rule">
               <input type="checkbox" id="ruleDedupeNameCity" checked />
               <span>
-                <span class="wz-rule-title">Same business name in the same city</span>
-                <span class="wz-rule-desc">Catches the same shop listed twice under two different numbers. Case and punctuation are ignored.</span>
+                <span class="wz-rule-title">Same business name in same city</span>
+                <span class="wz-rule-desc">Catches duplicate listings with minor punctuation differences.</span>
               </span>
             </label>
             <label class="wz-rule">
               <input type="checkbox" id="ruleDedupeEmail" />
               <span>
                 <span class="wz-rule-title">Same email address</span>
-                <span class="wz-rule-desc">Off by default — agencies and franchise groups legitimately share one inbox across many real listings.</span>
+                <span class="wz-rule-desc">Matches exact email address.</span>
+              </span>
+            </label>
+            <label class="wz-rule">
+              <input type="checkbox" id="ruleDedupeWebsite" />
+              <span>
+                <span class="wz-rule-title">Same website URL</span>
+                <span class="wz-rule-desc">Matches domain/website URL.</span>
               </span>
             </label>
           </div>
 
           <div style="margin-top:20px;display:flex;justify-content:flex-end;">
             <button class="wz-btn-sm brand" id="csvAnalyseBtn" ${s.file ? '' : 'disabled'}
-                    onclick="window.WedEazzyCRM.analyseCsv()" style="padding:11px 20px;font-size:0.82rem;">
-              <i class="fa-solid fa-magnifying-glass-chart"></i> Analyse file
+                    onclick="window.WedEazzyCRM.analyseCsv()" style="padding:11px 22px;font-size:0.85rem;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Data & Intelligence
             </button>
           </div>
         </div>`;
@@ -1350,108 +1531,350 @@
     if (s.step === 2 && s.preview) {
       const p = s.preview;
       const sum = p.summary;
-      const mapped = Object.keys(p.columnMap || {});
-      const importable = sum.newCount;
+      const dq = p.dataQuality || {};
+      const dist = p.distribution || {};
+      const dupIntel = p.duplicateIntelligence || {};
+      const stats = p.columnStats || {};
+
+      const excludedCities = s.excludedCities;
+      const excludedCategories = s.excludedCategories;
+      const dupAction = s.duplicateAction;
+
+      let willImportCount = 0;
+      let skippedCityCount = 0;
+      let skippedCatCount = 0;
+      let skippedDupCount = 0;
+
+      (p.sample || []).forEach(c => {
+        const cityEx = excludedCities.has((c.city || '').toLowerCase().trim());
+        const catEx = excludedCategories.has((c.category || '').toLowerCase().trim());
+
+        if (cityEx) { skippedCityCount++; return; }
+        if (catEx) { skippedCatCount++; return; }
+
+        if (c.status === 'duplicate_in_db' || c.status === 'duplicate_in_file') {
+          if (dupAction === 'skip') { skippedDupCount++; return; }
+        }
+        if (c.valid) willImportCount++;
+      });
+
+      const sampleRatio = sum.total > 0 ? (sum.total / Math.max(1, (p.sample || []).length)) : 1;
+      const totalWillImport = Math.round(willImportCount * sampleRatio);
+      const totalWillSkip = Math.max(0, sum.total - totalWillImport);
+
+      const topCitiesStr = (dist.cities || []).slice(0, 3).map(c => c.name).join(', ');
+      const topCatStr = (dist.categories || [])[0] ? (dist.categories[0].name) : 'All Categories';
 
       stage.innerHTML = `
-        <div class="wz-summary-grid">
-          <div class="wz-summary-tile info"><div class="num">${fmtNum(sum.total)}</div><div class="lbl">Rows read</div></div>
-          <div class="wz-summary-tile ok"><div class="num">${fmtNum(sum.newCount)}</div><div class="lbl">New listings</div></div>
-          <div class="wz-summary-tile warn"><div class="num">${fmtNum(sum.duplicateInFile)}</div><div class="lbl">Dupes in file</div></div>
-          <div class="wz-summary-tile warn"><div class="num">${fmtNum(sum.duplicateInDb)}</div><div class="lbl">Already in DB</div></div>
-          <div class="wz-summary-tile bad"><div class="num">${fmtNum(sum.invalid)}</div><div class="lbl">Invalid rows</div></div>
+        <!-- Intelligence Header -->
+        <div class="wz-intel-header">
+          <div>
+            <div class="wz-intel-title">Business Data Intelligence & Universal Review</div>
+            <div class="wz-intel-subtitle">Analyze, clean, filter and review your scraped business data before adding it to WedEazzy.</div>
+            <div class="wz-meta-pill">
+              <span class="wz-meta-pill-tag">${esc((s.file ? s.file.name.split('.').pop() : 'CSV')).toUpperCase()}</span>
+              <span>${esc(s.file ? s.file.name : 'Dataset')}</span>
+              <span>• ${fmtNum(sum.total)} records</span>
+              <span>• ${esc(topCatStr)}</span>
+              <span>• ${esc(topCitiesStr || 'Multiple Cities')}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="wz-btn-sm ghost" onclick="window.WedEazzyCRM.openImportHistoryModal()">
+              <i class="fa-solid fa-history"></i> Import History
+            </button>
+            <button class="wz-btn-sm ghost" onclick="window.WedEazzyCRM.resetImport()">
+              <i class="fa-solid fa-folder-open"></i> Choose Another File
+            </button>
+          </div>
         </div>
 
-        <div class="panel-card">
-          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+        <!-- 3-Step Progress Stepper -->
+        <div class="wz-stepper-container">
+          <div class="wz-stepper-step done"><span class="wz-stepper-num">✓</span><span>Upload & Detect</span></div>
+          <div style="height:2px;flex:1;background:#10b981;margin:0 12px;"></div>
+          <div class="wz-stepper-step active"><span class="wz-stepper-num">2</span><span>Intelligence & Review</span></div>
+          <div style="height:2px;flex:1;background:var(--border-color);margin:0 12px;"></div>
+          <div class="wz-stepper-step"><span class="wz-stepper-num">3</span><span>Commit & Report</span></div>
+        </div>
+
+        <!-- Executive Health Overview Card -->
+        <div class="wz-quality-box" style="margin-bottom:20px;">
+          <div class="wz-quality-score">
+            <div class="val">${dq.overallScore || 0}</div>
+            <div class="lbl">${esc((dq.grade || 'SCORE')).toUpperCase()} DATASET</div>
+          </div>
+          <div style="flex:1;">
+            <h4 style="font-size:1.05rem;font-weight:800;color:var(--text-main);margin-bottom:6px;">
+              ${dq.overallScore >= 80 ? '✓ Ready for Import' : (dq.overallScore >= 50 ? '⚠ Needs Minor Review' : '❗ Action Required')}
+            </h4>
+            <p style="font-size:0.84rem;color:var(--text-sub);line-height:1.5;">
+              ${esc(dq.explanation || 'Dataset analysis completed successfully.')}
+            </p>
+            ${(dist.insights && dist.insights.length) ? `
+              <div class="wz-insights-list">
+                ${dist.insights.map(ins => `<div class="wz-insight-item">${esc(ins.text)}</div>`).join('')}
+              </div>` : ''}
+          </div>
+        </div>
+
+        <!-- Dataset Snapshot KPI Grid -->
+        <div class="wz-summary-grid" style="margin-bottom:20px;">
+          <div class="wz-summary-tile info"><div class="num">${fmtNum(sum.total)}</div><div class="lbl">Total Records</div></div>
+          <div class="wz-summary-tile ok"><div class="num">${fmtNum(sum.newCount)}</div><div class="lbl">Ready to Import</div></div>
+          <div class="wz-summary-tile warn"><div class="num">${fmtNum(sum.duplicateInDb + sum.duplicateInFile)}</div><div class="lbl">Duplicates</div></div>
+          <div class="wz-summary-tile bad"><div class="num">${fmtNum(sum.invalid)}</div><div class="lbl">Invalid Records</div></div>
+          <div class="wz-summary-tile info"><div class="num">${fmtNum(dist.uniqueCitiesCount)}</div><div class="lbl">Cities</div></div>
+          <div class="wz-summary-tile info"><div class="num">${fmtNum(dist.uniqueCategoriesCount)}</div><div class="lbl">Categories</div></div>
+          <div class="wz-summary-tile ok"><div class="num">${dq.metrics ? dq.metrics.phoneCoverage : 0}%</div><div class="lbl">Phone Coverage</div></div>
+        </div>
+
+        <!-- Visual Analytics Grid (Chart.js Bar & Donut) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+          <div class="panel-card">
+            <h4 style="font-size:0.92rem;margin-bottom:10px;"><i class="fa-solid fa-chart-column" style="color:var(--brand-rose);"></i> Listings by City</h4>
+            <div style="height:200px;position:relative;">
+              <canvas id="wzCityBarChart"></canvas>
+            </div>
+            ${dist.cityInsight ? `<div style="font-size:0.76rem;color:var(--text-muted);margin-top:10px;font-style:italic;">${esc(dist.cityInsight)}</div>` : ''}
+          </div>
+
+          <div class="panel-card">
+            <h4 style="font-size:0.92rem;margin-bottom:10px;"><i class="fa-solid fa-chart-pie" style="color:var(--brand-rose);"></i> Category Distribution</h4>
+            <div style="height:200px;position:relative;">
+              <canvas id="wzCategoryDonutChart"></canvas>
+            </div>
+            ${dist.categoryInsight ? `<div style="font-size:0.76rem;color:var(--text-muted);margin-top:10px;font-style:italic;">${esc(dist.categoryInsight)}</div>` : ''}
+          </div>
+        </div>
+
+        <!-- Intelligent Column Mapping Review -->
+        <div class="panel-card" style="margin-bottom:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
             <div>
-              <h4 style="font-size:0.92rem;">
-                <i class="fa-solid fa-file-csv" style="color:var(--brand-rose);"></i> ${esc(p.fileName || 'upload.csv')}
-                ${p.country ? `<span style="margin-left:8px;font-size:0.82rem;">${p.country.code === 'US' ? '🇺🇸 USA' : '🇮🇳 India'}</span>` : ''}
-              </h4>
-              <p style="font-size:0.76rem;color:var(--text-muted);margin-top:5px;">
-                Mapped columns: ${mapped.map(m => `<code>${esc(m)}</code>`).join(', ') || 'none'}
+              <h4 style="font-size:0.95rem;margin-bottom:2px;"><i class="fa-solid fa-sliders" style="color:var(--brand-rose);"></i> Intelligent Column Mapping</h4>
+              <p style="font-size:0.76rem;color:var(--text-muted);">
+                Analyzed <strong>${stats.totalColumns || 0}</strong> columns (${stats.autoMappedCount || 0} auto-mapped, ${stats.reviewNeededCount || 0} need review).
               </p>
             </div>
-            <button class="wz-btn-sm ghost" onclick="window.WedEazzyCRM.resetImport()">
-              <i class="fa-solid fa-arrow-left"></i> Choose a different file
+            <button class="wz-btn-sm brand" onclick="window.WedEazzyCRM.reanalyseWithCustomMapping()">
+              <i class="fa-solid fa-rotate"></i> Re-Analyze with Custom Mapping
             </button>
           </div>
 
-          <div style="margin-top:18px;padding:14px;border-radius:12px;background:var(--canvas-bg);border:1px solid var(--border-color);">
-            <label class="wz-rule" style="border:none;background:none;padding:0;margin-bottom:10px;">
-              <input type="checkbox" id="optImportDupes" />
-              <span>
-                <span class="wz-rule-title">Also import the ${fmtNum(sum.duplicateInFile)} in-file duplicates</span>
-                <span class="wz-rule-desc">Off by default. The first occurrence of each business is always imported — this adds the repeats back too.</span>
-              </span>
-            </label>
-            <label class="wz-rule" style="border:none;background:none;padding:0;">
-              <input type="checkbox" id="optUpdateExisting" />
-              <span>
-                <span class="wz-rule-title">Fill in blanks on the ${fmtNum(sum.duplicateInDb)} listings that already exist</span>
-                <span class="wz-rule-desc">Only writes to fields that are currently empty (address, website, pincode…). Never overwrites data you or the vendor has already set.</span>
-              </span>
-            </label>
-          </div>
-
-          <h4 style="font-size:0.88rem;margin-top:20px;margin-bottom:10px;">
-            Row preview <span style="font-weight:500;color:var(--text-muted);font-size:0.76rem;">(first ${Math.min(200, (p.sample || []).length)} rows)</span>
-          </h4>
-          <div class="table-viewport" style="max-height:420px;">
+          <div class="table-viewport" style="max-height:260px;">
             <table class="grid-table">
               <thead>
                 <tr>
-                  <th style="width:56px;">Row</th>
-                  <th>Business</th>
-                  <th>Category</th>
-                  <th>City</th>
-                  <th>Phone</th>
-                  <th>Status</th>
-                  <th>Note</th>
+                  <th>Uploaded Column</th>
+                  <th>WedEazzy Field Target</th>
+                  <th>Confidence</th>
+                  <th>Detection Method</th>
                 </tr>
               </thead>
               <tbody>
-                ${(p.sample || []).map(r => {
-                  const cls = r.status === 'new' ? 'new'
-                            : r.status === 'duplicate_in_file' ? 'dupf'
-                            : r.status === 'duplicate_in_db' ? 'dupd' : 'bad';
-                  const label = r.status === 'new' ? 'New'
-                              : r.status === 'duplicate_in_file' ? 'Dupe in file'
-                              : r.status === 'duplicate_in_db' ? 'In database' : 'Invalid';
-                  const note = r.status === 'invalid'
-                    ? (r.errors || []).join('; ')
-                    : r.status === 'duplicate_in_file'
-                      ? `${r.duplicateReason || 'Duplicate'} as row ${r.duplicateOfRow}`
-                      : r.status === 'duplicate_in_db'
-                        ? `${r.duplicateReason || 'Already listed'}${r.existingVendorName ? ` — "${r.existingVendorName}"` : ''}`
-                        : '';
-                  return `
-                    <tr>
-                      <td style="color:var(--text-muted);font-size:0.75rem;">${r.rowNumber}</td>
-                      <td style="font-weight:600;font-size:0.8rem;">${esc(r.name) || '<span style="color:var(--text-muted);">(blank)</span>'}</td>
-                      <td style="font-size:0.78rem;">${esc(r.category) || '—'}</td>
-                      <td style="font-size:0.78rem;">${esc(r.city) || '—'}</td>
-                      <td style="font-size:0.78rem;">${esc(r.phone) || '—'}</td>
-                      <td><span class="wz-rowstatus ${cls}">${label}</span></td>
-                      <td style="font-size:0.74rem;color:var(--text-muted);max-width:280px;">${esc(note)}</td>
-                    </tr>`;
-                }).join('')}
+                ${(p.columnReviewList || []).map(c => `
+                  <tr>
+                    <td style="font-weight:700;font-size:0.8rem;">${esc(c.uploadedHeader)}</td>
+                    <td>
+                      <select class="premium-input wz-col-map-select" data-header="${esc(c.uploadedHeader)}" style="font-size:0.78rem;padding:4px 8px;">
+                        <option value="DONT_IMPORT" ${c.targetField === 'DONT_IMPORT' ? 'selected' : ''}>— Don't Import —</option>
+                        ${(p.targetFields || []).map(tf => `
+                          <option value="${tf.key}" ${c.targetField === tf.key ? 'selected' : ''}>${esc(tf.label)}${tf.required ? ' *' : ''}</option>
+                        `).join('')}
+                      </select>
+                    </td>
+                    <td>
+                      <span class="wz-confidence-badge ${c.confidenceBadge.toLowerCase().replace(' ', '')}">
+                        ${c.confidence}% (${c.confidenceBadge})
+                      </span>
+                    </td>
+                    <td style="font-size:0.74rem;color:var(--text-muted);">${esc(c.matchMethod)}</td>
+                  </tr>
+                `).join('')}
               </tbody>
             </table>
           </div>
+        </div>
 
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;">
-            <p style="font-size:0.8rem;color:var(--text-muted);">
-              <i class="fa-solid fa-circle-info"></i>
-              <strong style="color:var(--text-main);">${fmtNum(importable)}</strong> listing${importable === 1 ? '' : 's'} will be created as unclaimed.
-            </p>
-            <button class="wz-btn-sm brand" id="csvCommitBtn" onclick="window.WedEazzyCRM.commitImport()"
-                    style="padding:11px 20px;font-size:0.82rem;" ${importable === 0 ? 'disabled' : ''}>
-              <i class="fa-solid fa-database"></i> Import ${fmtNum(importable)} listing${importable === 1 ? '' : 's'}
+        <!-- Field Coverage Breakdown -->
+        <div class="panel-card" style="margin-bottom:20px;">
+          <h4 style="font-size:0.92rem;margin-bottom:14px;"><i class="fa-solid fa-square-poll-vertical" style="color:var(--brand-rose);"></i> Field Coverage Breakdown</h4>
+          <div class="wz-quality-grid">
+            <div class="wz-quality-item">
+              <div class="wz-quality-item-head"><span>Business Names</span><span>${dq.metrics ? dq.metrics.businessNameCoverage : 0}%</span></div>
+              <div class="wz-quality-bar-track"><div class="wz-quality-bar-fill" style="width:${dq.metrics ? dq.metrics.businessNameCoverage : 0}%;"></div></div>
+            </div>
+            <div class="wz-quality-item">
+              <div class="wz-quality-item-head"><span>Phone Numbers</span><span>${dq.metrics ? dq.metrics.phoneCoverage : 0}%</span></div>
+              <div class="wz-quality-bar-track"><div class="wz-quality-bar-fill" style="width:${dq.metrics ? dq.metrics.phoneCoverage : 0}%;"></div></div>
+            </div>
+            <div class="wz-quality-item">
+              <div class="wz-quality-item-head"><span>Cities</span><span>${dq.metrics ? dq.metrics.cityCoverage : 0}%</span></div>
+              <div class="wz-quality-bar-track"><div class="wz-quality-bar-fill" style="width:${dq.metrics ? dq.metrics.cityCoverage : 0}%;"></div></div>
+            </div>
+            <div class="wz-quality-item">
+              <div class="wz-quality-item-head"><span>Categories</span><span>${dq.metrics ? dq.metrics.categoryCoverage : 0}%</span></div>
+              <div class="wz-quality-bar-track"><div class="wz-quality-bar-fill" style="width:${dq.metrics ? dq.metrics.categoryCoverage : 0}%;"></div></div>
+            </div>
+            <div class="wz-quality-item">
+              <div class="wz-quality-item-head"><span>Emails</span><span>${dq.metrics ? dq.metrics.emailCoverage : 0}%</span></div>
+              <div class="wz-quality-bar-track"><div class="wz-quality-bar-fill" style="width:${dq.metrics ? dq.metrics.emailCoverage : 0}%;"></div></div>
+            </div>
+            <div class="wz-quality-item">
+              <div class="wz-quality-item-head"><span>Websites</span><span>${dq.metrics ? dq.metrics.websiteCoverage : 0}%</span></div>
+              <div class="wz-quality-bar-track"><div class="wz-quality-bar-fill" style="width:${dq.metrics ? dq.metrics.websiteCoverage : 0}%;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- City x Category Vendor Matrix Grid -->
+        ${(dist.matrix && dist.matrix.rows && dist.matrix.rows.length) ? `
+          <div class="panel-card" style="margin-bottom:20px;">
+            <h4 style="font-size:0.9rem;margin-bottom:12px;"><i class="fa-solid fa-table-cells" style="color:var(--brand-rose);"></i> City × Category Vendor Distribution Matrix</h4>
+            <div class="table-viewport">
+              <table class="wz-matrix-table">
+                <thead>
+                  <tr>
+                    ${(dist.matrix.headers || []).map(h => `<th>${esc(h)}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${dist.matrix.rows.map(r => `
+                    <tr>
+                      <td class="city-name">${esc(r.city)}</td>
+                      ${(dist.matrix.headers || []).slice(1).map(h => `<td>${fmtNum(r[h] || 0)}</td>`).join('')}
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>` : ''}
+
+        <!-- Duplicate Risk & Inspection Drawer -->
+        <div class="panel-card" style="margin-bottom:20px;">
+          <h4 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-copy" style="color:var(--brand-rose);"></i> Duplicate Intelligence & Risk Breakdown</h4>
+          
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+            <div class="wz-summary-tile warn" style="flex:1;min-width:140px;"><div class="num">${fmtNum(dupIntel.reasons ? dupIntel.reasons.exactPhone : 0)}</div><div class="lbl">Exact Phone Match</div></div>
+            <div class="wz-summary-tile warn" style="flex:1;min-width:140px;"><div class="num">${fmtNum(dupIntel.reasons ? dupIntel.reasons.exactEmail : 0)}</div><div class="lbl">Exact Email Match</div></div>
+            <div class="wz-summary-tile warn" style="flex:1;min-width:140px;"><div class="num">${fmtNum(dupIntel.reasons ? dupIntel.reasons.nameCityMatch : 0)}</div><div class="lbl">Name + City Match</div></div>
+            <div class="wz-summary-tile warn" style="flex:1;min-width:140px;"><div class="num">${fmtNum(dupIntel.reasons ? dupIntel.reasons.websiteMatch : 0)}</div><div class="lbl">Website Match</div></div>
+          </div>
+
+          ${(dupIntel.duplicateRows && dupIntel.duplicateRows.length) ? `
+            <h5 style="font-size:0.84rem;margin-bottom:10px;">Duplicate Review Table (${dupIntel.duplicateRows.length} flagged for inspection)</h5>
+            <div class="table-viewport" style="max-height:260px;">
+              <table class="grid-table">
+                <thead>
+                  <tr>
+                    <th>Row</th>
+                    <th>Incoming Business</th>
+                    <th>Existing Listing</th>
+                    <th>Match Reason</th>
+                    <th>Confidence</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${dupIntel.duplicateRows.map((dr, idx) => `
+                    <tr>
+                      <td style="font-size:0.75rem;color:var(--text-muted);">${dr.rowNumber}</td>
+                      <td style="font-weight:700;font-size:0.8rem;">${esc(dr.incoming.name)}<div style="font-size:0.72rem;color:var(--text-muted);">${esc(dr.incoming.city)} · ${esc(dr.incoming.phone || 'No Phone')}</div></td>
+                      <td style="font-size:0.8rem;">${dr.existing ? `${esc(dr.existing.name)}<div style="font-size:0.72rem;color:var(--text-muted);">${esc(dr.existing.city)}</div>` : '<span style="color:var(--text-muted);">In-File Duplicate</span>'}</td>
+                      <td><span class="wz-chip active" style="font-size:0.7rem;">${esc(dr.matchType)}</span></td>
+                      <td style="font-size:0.76rem;font-weight:700;">${dr.confidence}</td>
+                      <td>
+                        <button class="wz-btn-sm ghost" onclick="window.WedEazzyCRM.openDuplicateComparisonModal(${idx})">
+                          <i class="fa-solid fa-code-compare"></i> Compare
+                        </button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>` : '<p style="font-size:0.82rem;color:var(--text-muted);"><i class="fa-solid fa-circle-check" style="color:#10b981;"></i> No duplicate records detected in this dataset!</p>'}
+        </div>
+
+        <!-- Import Rules & Interactive Exclusion Chips -->
+        <div class="panel-card" style="margin-bottom:20px;">
+          <h4 style="font-size:0.95rem;margin-bottom:14px;"><i class="fa-solid fa-filter" style="color:var(--brand-rose);"></i> Import Rules & Dynamic Exclusions</h4>
+          
+          <div style="margin-bottom:18px;">
+            <label style="font-weight:700;font-size:0.84rem;">Duplicate Handling Mode</label>
+            <select id="importDupActionSelect" class="premium-input" style="font-size:0.82rem;margin-top:4px;" onchange="window.WedEazzyCRM.updateImportImpact()">
+              <option value="skip" selected>Don't Import Duplicates (Recommended)</option>
+              <option value="first_only">Import First Occurrence Only</option>
+              <option value="update_existing">Update Existing DB Listings (Fill Missing Fields)</option>
+              <option value="import_all">Import All (Force Add Everything)</option>
+            </select>
+          </div>
+
+          <!-- Selectable City Chips -->
+          <div style="margin-bottom:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label style="font-weight:700;font-size:0.84rem;">Include Cities (${dist.uniqueCitiesCount || 0} detected)</label>
+            </div>
+            <div class="wz-chip-group">
+              ${(dist.cities || []).map(ct => {
+                const excluded = excludedCities.has(ct.name.toLowerCase().trim());
+                return `
+                  <div class="wz-chip ${excluded ? '' : 'active'}" onclick="window.WedEazzyCRM.toggleCityExclusion('${ctx.escJsAttr(ct.name)}')">
+                    <span>${excluded ? '☐' : '☑'} ${esc(ct.name)}</span>
+                    <span class="wz-chip-count">${ct.count}</span>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Selectable Category Chips -->
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label style="font-weight:700;font-size:0.84rem;">Include Categories (${dist.uniqueCategoriesCount || 0} detected)</label>
+            </div>
+            <div class="wz-chip-group">
+              ${(dist.categories || []).map(cat => {
+                const excluded = excludedCategories.has(cat.name.toLowerCase().trim());
+                return `
+                  <div class="wz-chip ${excluded ? '' : 'active'}" onclick="window.WedEazzyCRM.toggleCategoryExclusion('${ctx.escJsAttr(cat.name)}')">
+                    <span>${excluded ? '☐' : '☑'} ${esc(cat.name)}</span>
+                    <span class="wz-chip-count">${cat.count}</span>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Prominent Smart Import Preview Math Box -->
+        <div class="wz-math-summary-box">
+          <h4 style="font-size:1rem;font-weight:800;color:var(--text-main);margin-bottom:16px;text-align:center;">
+            <i class="fa-solid fa-calculator" style="color:var(--brand-rose);"></i> Dynamic Import Impact Summary
+          </h4>
+          <div class="wz-math-grid">
+            <div class="wz-math-item"><div class="num">${fmtNum(sum.total)}</div><div class="lbl">Uploaded</div></div>
+            <div class="wz-math-op">−</div>
+            <div class="wz-math-item"><div class="num" style="color:#ea580c;">${fmtNum(skippedDupCount)}</div><div class="lbl">Duplicates</div></div>
+            <div class="wz-math-op">−</div>
+            <div class="wz-math-item"><div class="num" style="color:#dc2626;">${fmtNum(sum.invalid)}</div><div class="lbl">Invalid</div></div>
+            <div class="wz-math-op">−</div>
+            <div class="wz-math-item"><div class="num" style="color:#dc2626;">${fmtNum(skippedCityCount + skippedCatCount)}</div><div class="lbl">Excluded</div></div>
+            <div class="wz-math-op">=</div>
+            <div class="wz-math-item"><div class="num" style="color:#10b981;font-size:2.2rem;">${fmtNum(totalWillImport)}</div><div class="lbl" style="color:#10b981;">WILL BE IMPORTED</div></div>
+          </div>
+
+          <div style="display:flex;justify-content:center;gap:12px;margin-top:20px;flex-wrap:wrap;">
+            <button class="wz-btn-sm ghost" onclick="window.WedEazzyCRM.resetImport()">
+              <i class="fa-solid fa-arrow-left"></i> Choose Another File
+            </button>
+            <button class="wz-btn-sm brand" id="csvCommitBtn" onclick="window.WedEazzyCRM.commitImport()" style="padding:12px 28px;font-size:0.92rem;" ${totalWillImport === 0 ? 'disabled' : ''}>
+              <i class="fa-solid fa-cloud-arrow-up"></i> Import ${fmtNum(totalWillImport)} Listings Now
             </button>
           </div>
         </div>`;
+
+      // Render Charts after DOM mount
+      setTimeout(() => renderImportCharts(dist), 100);
+
       return;
     }
 
@@ -1459,15 +1882,15 @@
       const r = s.result;
       stage.innerHTML = `
         <div class="panel-card" style="text-align:center;padding:44px 24px;">
-          <div class="wz-empty-icon" style="color:#10b981;background:rgba(16,185,129,0.12);width:74px;height:74px;font-size:1.8rem;">
+          <div class="wz-empty-icon" style="color:#10b981;background:rgba(16,185,129,0.12);width:74px;height:74px;font-size:1.8rem;margin:0 auto 16px;">
             <i class="fa-solid fa-circle-check"></i>
           </div>
-          <h3 style="font-size:1.2rem;margin-bottom:8px;">Import complete</h3>
-          <p style="font-size:0.85rem;color:var(--text-muted);max-width:440px;margin:0 auto 24px;">
-            Your listings are now in the registry and will appear under All Businesses.
+          <h3 style="font-size:1.3rem;margin-bottom:8px;">Import Completed Successfully</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);max-width:480px;margin:0 auto 24px;">
+            Your listings have been created and updated in the WedEazzy registry database.
           </p>
 
-          <div class="wz-summary-grid" style="max-width:620px;margin:0 auto 24px;">
+          <div class="wz-summary-grid" style="max-width:640px;margin:0 auto 24px;">
             <div class="wz-summary-tile ok"><div class="num">${fmtNum(r.created)}</div><div class="lbl">Created</div></div>
             <div class="wz-summary-tile info"><div class="num">${fmtNum(r.updated)}</div><div class="lbl">Updated</div></div>
             <div class="wz-summary-tile warn"><div class="num">${fmtNum(r.skipped)}</div><div class="lbl">Skipped</div></div>
@@ -1475,28 +1898,24 @@
           </div>
 
           ${(r.errors && r.errors.length) ? `
-            <details style="text-align:left;max-width:620px;margin:0 auto 22px;">
-              <summary style="cursor:pointer;font-size:0.8rem;font-weight:700;color:#dc2626;">
-                ${r.errors.length} row${r.errors.length === 1 ? '' : 's'} could not be saved — show details
-              </summary>
-              <ul style="margin-top:10px;padding-left:18px;font-size:0.76rem;color:var(--text-muted);line-height:1.7;">
-                ${r.errors.map(e => `<li>Row ${e.row} (${esc(e.name || 'unnamed')}): ${esc(e.message)}</li>`).join('')}
-              </ul>
-            </details>` : ''}
+            <div style="margin-bottom:20px;">
+              <button class="wz-btn-sm red" onclick="window.WedEazzyCRM.downloadErrorReport('${ctx.escJsAttr(r.importBatchId)}')">
+                <i class="fa-solid fa-file-csv"></i> Download CSV Error Report (${r.errors.length} failed rows)
+              </button>
+            </div>` : ''}
 
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
             <button class="wz-btn-sm" onclick="window.WedEazzyCRM.resetImport()">
-              <i class="fa-solid fa-plus"></i> Import another file
+              <i class="fa-solid fa-plus"></i> Import Another File
             </button>
             <button class="wz-btn-sm brand" onclick="window.WedEazzyCRM.go('vendors')">
-              <i class="fa-solid fa-store"></i> View all businesses
+              <i class="fa-solid fa-store"></i> View All Businesses
             </button>
           </div>
         </div>`;
       return;
     }
 
-    // Fallback — state got out of sync; go back to a known-good step.
     s.step = 1;
     renderImportStage();
   }
@@ -1508,8 +1927,8 @@
 
     const accept = (file) => {
       if (!file) return;
-      if (!/\.csv$/i.test(file.name)) {
-        ctx.showToast('Please choose a .csv file.', 'danger');
+      if (!/\.(csv|tsv|xlsx|xls)$/i.test(file.name)) {
+        ctx.showToast('Please choose a .csv, .tsv, .xlsx, or .xls file.', 'danger');
         return;
       }
       view.importer.file = file;
@@ -1531,16 +1950,291 @@
       accept(file);
     });
 
-    // Country radio: toggle the visual "checked" class on the label when the
-    // user picks India or USA. Without this, the inline-styled "India" label
-    // always looked selected regardless of which radio was actually checked,
-    // and admins uploaded USA data thinking they'd selected USA.
     document.querySelectorAll('[data-country-pick]').forEach(label => {
       label.addEventListener('click', () => {
         document.querySelectorAll('[data-country-pick]').forEach(l => l.classList.remove('wz-country-pick-checked'));
         label.classList.add('wz-country-pick-checked');
+        const code = label.getAttribute('data-country-pick');
+        if (code) {
+          view.importer.targetCountry = code;
+          if (typeof window.handleGlobalCountryChange === 'function') {
+            window.handleGlobalCountryChange(code);
+          }
+        }
       });
     });
+
+    document.querySelectorAll('input[name="importCountry"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        if (e.target.value) {
+          view.importer.targetCountry = e.target.value;
+          if (typeof window.handleGlobalCountryChange === 'function') {
+            window.handleGlobalCountryChange(e.target.value);
+          }
+        }
+      });
+    });
+  }
+
+  /* ============================================================
+     INTERACTIVE IMPORT HELPERS & NETWORK CALLS
+     ============================================================ */
+  async function analyseCsv(customMapping = null) {
+    const s = view.importer;
+    if (!s.file || s.busy) return;
+
+    const btn = document.getElementById('csvAnalyseBtn');
+    s.busy = true;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch wz-spin"></i> Analyzing Intelligence…'; }
+
+    const fd = new FormData();
+    fd.append('file', s.file);
+    fd.append('dedupePhone', document.getElementById('ruleDedupePhone').checked ? 'true' : 'false');
+    fd.append('dedupeNameCity', document.getElementById('ruleDedupeNameCity').checked ? 'true' : 'false');
+    fd.append('dedupeEmail', document.getElementById('ruleDedupeEmail').checked ? 'true' : 'false');
+    fd.append('dedupeWebsite', document.getElementById('ruleDedupeWebsite').checked ? 'true' : 'false');
+
+    const countryEl = document.querySelector('input[name="importCountry"]:checked');
+    if (countryEl) {
+      s.targetCountry = countryEl.value;
+    }
+    fd.append('country', s.targetCountry || 'IN');
+    const cityHint = (document.getElementById('importCityHint') || {}).value || '';
+    if (cityHint) fd.append('city', cityHint);
+    const categoryHint = (document.getElementById('importCategoryHint') || {}).value || '';
+    if (categoryHint) fd.append('category', categoryHint);
+
+    if (customMapping) {
+      fd.append('customMapping', JSON.stringify(customMapping));
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/vendors/import/preview`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken()}`, 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd,
+      });
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        s.preview = data;
+        s.importId = data.importId;
+        s.step = 2;
+        renderImportListings();
+      } else {
+        ctx.showToast(data.error || data.message || 'Could not analyze that file.', 'danger');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Data & Intelligence'; }
+      }
+    } catch (err) {
+      ctx.showToast('Upload failed: ' + err.message, 'danger');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Data & Intelligence'; }
+    } finally {
+      s.busy = false;
+    }
+  }
+
+  function reanalyseWithCustomMapping() {
+    const customMapping = {};
+    document.querySelectorAll('.wz-col-map-select').forEach(select => {
+      const header = select.getAttribute('data-header');
+      if (header) customMapping[header] = select.value;
+    });
+    analyseCsv(customMapping);
+  }
+
+  function toggleCityExclusion(cityName) {
+    const s = view.importer;
+    const lower = cityName.toLowerCase().trim();
+    if (s.excludedCities.has(lower)) s.excludedCities.delete(lower);
+    else s.excludedCities.add(lower);
+    renderImportStage();
+  }
+
+  function toggleCategoryExclusion(catName) {
+    const s = view.importer;
+    const lower = catName.toLowerCase().trim();
+    if (s.excludedCategories.has(lower)) s.excludedCategories.delete(lower);
+    else s.excludedCategories.add(lower);
+    renderImportStage();
+  }
+
+  function updateImportImpact() {
+    const sel = document.getElementById('importDupActionSelect');
+    if (sel) view.importer.duplicateAction = sel.value;
+    renderImportStage();
+  }
+
+  function openDuplicateComparisonModal(index) {
+    const s = view.importer;
+    if (!s.preview || !s.preview.duplicateIntelligence) return;
+    const dupes = s.preview.duplicateIntelligence.duplicateRows || [];
+    const item = dupes[index];
+    if (!item) return;
+
+    const inc = item.incoming || {};
+    const ex = item.existing || {};
+
+    const body = `
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">
+        Matching reason: <strong style="color:var(--text-main);">${esc(item.reason)}</strong> (${esc(item.matchType)})
+      </div>
+      <div class="wz-diff-drawer">
+        <div class="wz-diff-col">
+          <h5 style="color:var(--brand-rose);"><i class="fa-solid fa-file-import"></i> Incoming Record</h5>
+          <div class="wz-diff-field"><div class="lbl">Business Name</div><div class="val ${ex.name && ex.name !== inc.name ? 'diff' : 'match'}">${esc(inc.name || '—')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">Phone Number</div><div class="val ${ex.phone && ex.phone !== inc.phone ? 'diff' : 'match'}">${esc(inc.phone || '—')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">City</div><div class="val ${ex.city && ex.city !== inc.city ? 'diff' : 'match'}">${esc(inc.city || '—')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">Category</div><div class="val">${esc(inc.category || '—')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">Website</div><div class="val">${esc(inc.website || '—')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">Address</div><div class="val">${esc(inc.address || '—')}</div></div>
+        </div>
+        <div class="wz-diff-col">
+          <h5 style="color:#10b981;"><i class="fa-solid fa-database"></i> Existing Database Listing</h5>
+          <div class="wz-diff-field"><div class="lbl">Business Name</div><div class="val">${esc(ex.name || '— (In-file Dupe)')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">Phone Number</div><div class="val">${esc(ex.phone || '—')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">City</div><div class="val">${esc(ex.city || '—')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">Category</div><div class="val">${esc(ex.category || '—')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">Website</div><div class="val">${esc(ex.website || '—')}</div></div>
+          <div class="wz-diff-field"><div class="lbl">Address</div><div class="val">${esc(ex.address || '—')}</div></div>
+        </div>
+      </div>`;
+
+    ctx.openModal('<i class="fa-solid fa-code-compare" style="color:var(--brand-rose);"></i> Record Comparison Inspector', body, '<button class="wz-btn-sm brand" onclick="window.closeModal()">Close Inspection</button>');
+  }
+
+  async function commitImport() {
+    const s = view.importer;
+    if (!s.importId || s.busy) return;
+
+    const btn = document.getElementById('csvCommitBtn');
+    s.busy = true;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch wz-spin"></i> Importing Businesses…'; }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/vendors/import/commit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken()}`,
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+          importId: s.importId,
+          duplicateAction: s.duplicateAction,
+          excludedCities: Array.from(s.excludedCities),
+          excludedCategories: Array.from(s.excludedCategories),
+          filters: s.filters,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        s.result = data;
+        s.step = 3;
+        renderImportListings();
+        ctx.showToast(`Imported ${data.created} listing${data.created === 1 ? '' : 's'}.`, 'success');
+        if (window.WedEazzyStore) await window.WedEazzyStore.sync();
+      } else {
+        ctx.showToast(data.error || data.message || 'Import failed.', 'danger');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Retry Import'; }
+      }
+    } catch (err) {
+      ctx.showToast('Import failed: ' + err.message, 'danger');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Retry Import'; }
+    } finally {
+      s.busy = false;
+    }
+  }
+
+  async function openImportHistoryModal() {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/vendors/import/history`, {
+        headers: { 'Authorization': `Bearer ${authToken()}` },
+      });
+      const data = await res.json();
+      const history = (data.history || []);
+
+      const body = `
+        <div class="table-viewport" style="max-height:360px;">
+          <table class="grid-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>File Name</th>
+                <th>Rows</th>
+                <th>Created</th>
+                <th>Updated</th>
+                <th>Skipped</th>
+                <th>Failed</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${history.length ? history.map(h => `
+                <tr>
+                  <td style="font-size:0.75rem;">${fmtDate(h.createdAt)}</td>
+                  <td style="font-weight:700;font-size:0.78rem;">${esc(h.fileName)}</td>
+                  <td style="font-size:0.76rem;">${fmtNum(h.totalRows)}</td>
+                  <td style="font-size:0.76rem;color:#10b981;font-weight:700;">${fmtNum(h.importedCount)}</td>
+                  <td style="font-size:0.76rem;color:#2563eb;">${fmtNum(h.updatedCount)}</td>
+                  <td style="font-size:0.76rem;color:#ea580c;">${fmtNum(h.skippedCount)}</td>
+                  <td style="font-size:0.76rem;color:#dc2626;">${fmtNum(h.failedCount)}</td>
+                  <td>
+                    ${h.failedCount > 0 ? `
+                      <button class="wz-btn-sm red" onclick="window.WedEazzyCRM.downloadErrorReport('${ctx.escJsAttr(h.importBatchId)}')">
+                        <i class="fa-solid fa-download"></i> Log
+                      </button>` : '<span style="color:var(--text-muted);font-size:0.72rem;">Clean</span>'}
+                  </td>
+                </tr>
+              `).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No previous import batches logged yet.</td></tr>'}
+            </tbody>
+          </table>
+        </div>`;
+
+      ctx.openModal('<i class="fa-solid fa-history" style="color:var(--brand-rose);"></i> Import History Log', body, '<button class="wz-btn-sm brand" onclick="window.closeModal()">Close</button>');
+    } catch (err) {
+      ctx.showToast('Could not fetch import history: ' + err.message, 'danger');
+    }
+  }
+
+  async function downloadErrorReport(batchId) {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/vendors/import/error-report/${encodeURIComponent(batchId)}`, {
+        headers: { 'Authorization': `Bearer ${authToken()}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `import-errors-${batchId.slice(0, 8)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      ctx.showToast('Could not download error report: ' + err.message, 'danger');
+    }
+  }
+
+  async function downloadTemplate() {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/vendors/import/template`, {
+        headers: { 'Authorization': `Bearer ${authToken()}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'wedeazzy-listings-template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      ctx.showToast('Could not download the template: ' + err.message, 'danger');
+    }
   }
 
   /* ============================================================
@@ -1807,66 +2501,18 @@
     }
   }
 
-  async function commitImport() {
-    const s = view.importer;
-    if (!s.importId || s.busy) return;
-
-    const btn = document.getElementById('csvCommitBtn');
-    s.busy = true;
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch wz-spin"></i> Importing…'; }
-
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/vendors/import/commit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken()}`,
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
-          importId: s.importId,
-          importDuplicates: !!(document.getElementById('optImportDupes') || {}).checked,
-          updateExisting: !!(document.getElementById('optUpdateExisting') || {}).checked,
-        }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.ok) {
-        s.result = data;
-        s.step = 3;
-        renderImportListings();
-        ctx.showToast(`Imported ${data.created} listing${data.created === 1 ? '' : 's'}.`, 'success');
-        if (window.WedEazzyStore) await window.WedEazzyStore.sync();
-      } else {
-        ctx.showToast(data.error || data.message || 'Import failed.', 'danger');
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-database"></i> Retry import'; }
-      }
-    } catch (err) {
-      ctx.showToast('Import failed: ' + err.message, 'danger');
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-database"></i> Retry import'; }
-    } finally {
-      s.busy = false;
-    }
-  }
-
-  async function downloadTemplate() {
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/vendors/import/template`, {
-        headers: { 'Authorization': `Bearer ${authToken()}` },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'wedeazzy-listings-template.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      ctx.showToast('Could not download the template: ' + err.message, 'danger');
-    }
+  function resetImport() {
+    view.importer.step = 1;
+    view.importer.file = null;
+    view.importer.importId = null;
+    view.importer.preview = null;
+    view.importer.result = null;
+    view.importer.busy = false;
+    view.importer.targetCountry = null;
+    view.importer.customMapping = {};
+    if (view.importer.excludedCities) view.importer.excludedCities.clear();
+    if (view.importer.excludedCategories) view.importer.excludedCategories.clear();
+    renderImportListings();
   }
 
   /* ============================================================
@@ -1882,21 +2528,59 @@
     renderImportListings,
     destroyAllCharts,
 
+    // CSV Importer Methods
+    analyseCsv,
+    analyzeCsv: analyseCsv,
+    reanalyseWithCustomMapping,
+    resetImport,
+    commitImport,
+    updateImportImpact,
+    toggleCityExclusion,
+    toggleCategoryExclusion,
+    downloadErrorReport,
+    downloadTemplate,
+    openDuplicateComparisonModal,
+    openImportHistoryModal,
+
     go(tab) { if (typeof window.wedeazzyMountTab === 'function') window.wedeazzyMountTab(tab); },
 
     goVendorsPage(p) { view.vendors.page = p; renderVendors(window.WedEazzyStore.get()); scrollTop(); },
     goInvitationsPage(p) { view.invitations.page = p; renderInvitations(window.WedEazzyStore.get()); scrollTop(); },
     goClaimedPage(p) { view.claimed.page = p; renderClaimedListings(window.WedEazzyStore.get()); scrollTop(); },
 
-    resetVendorFilters() {
-      Object.assign(view.vendors, { page: 1, search: '', category: '', city: '', country: '', approval: '', plan: '', dateFrom: '' });
-      renderVendors(window.WedEazzyStore.get());
-    },
-    setCountryFilter(country) {
-      view.vendors.country = country;
-      view.vendors.city = '';  // reset city when country changes
+    setVendorPageSize(sz) {
+      view.vendors.pageSize = Number(sz) || 15;
       view.vendors.page = 1;
       renderVendors(window.WedEazzyStore.get());
+    },
+    setInvitationsPageSize(sz) {
+      view.invitations.pageSize = Number(sz) || 15;
+      view.invitations.page = 1;
+      renderInvitations(window.WedEazzyStore.get());
+    },
+    setClaimedPageSize(sz) {
+      view.claimed.pageSize = Number(sz) || 15;
+      view.claimed.page = 1;
+      renderClaimedListings(window.WedEazzyStore.get());
+    },
+
+    resetVendorFilters() {
+      Object.assign(view.vendors, { page: 1, search: '', category: '', city: '', country: '', approval: '', plan: '', dateFrom: '' });
+      if (typeof window.handleGlobalCountryChange === 'function') {
+        window.handleGlobalCountryChange('all');
+      } else {
+        renderVendors(window.WedEazzyStore.get());
+      }
+    },
+    setCountryFilter(country) {
+      if (typeof window.handleGlobalCountryChange === 'function') {
+        window.handleGlobalCountryChange(country || 'all');
+      } else {
+        view.vendors.country = country;
+        view.vendors.city = '';  // reset city when country changes
+        view.vendors.page = 1;
+        renderVendors(window.WedEazzyStore.get());
+      }
     },
     resetInviteFilters() {
       Object.assign(view.invitations, { page: 1, search: '', channel: '' });
@@ -1914,21 +2598,822 @@
 
     openInviteModal,
     submitInvite,
-    bulkInvite,
-
-    openBulkInvitePicker() {
-      ctx.showToast('Pick listings on the All Businesses page, then use “Send invitations”.', 'info');
-      CRM.go('vendors');
-    },
-
-    analyseCsv,
-    commitImport,
-    downloadTemplate,
-    resetImport() {
-      Object.assign(view.importer, { step: 1, file: null, importId: null, preview: null, result: null, busy: false });
-      renderImportListings();
-    },
+    renderCountries,
+    renderLocations,
+    openAddCountryModal,
+    openEditCountryModal,
+    openCountryDetailDrawer,
+    switchDrawerTab,
+    exportCountryData,
+    submitCountryForm,
+    openAddCityModal,
+    openEditCityModal,
+    submitCityForm,
+    openAddRegionModal,
+    submitRegionForm,
+    toggleCountryStatus,
+    toggleCityStatus,
   };
+
+  /* ============================================================
+     COUNTRY & LOCATION MANAGEMENT MODULE
+     ============================================================ */
+  async function apiFetch(endpoint, options = {}) {
+    const token = localStorage.getItem("wedeazzy_admin_token") || sessionStorage.getItem("wedeazzy_admin_token");
+    const headers = { 'Authorization': `Bearer ${token}`, ...(options.headers || {}) };
+    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(options.body);
+    }
+    const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.message || data.error || 'API Request Failed');
+    return data;
+  }
+
+  async function renderCountries(store) {
+    destroyAllCharts();
+    const body = ctx.portalBody || document.getElementById('portalBody');
+    if (!body) return;
+
+    body.innerHTML = `
+      <div style="padding: 24px; max-width: 1400px; margin: 0 auto;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.6rem;">🌍</span>
+              <h2 style="font-family: var(--font-head); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin: 0;">COUNTRY OPERATIONS</h2>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-sub); margin: 4px 0 0;">Manage the countries, currencies, regions, cities and marketplace operations available on WedEazzy.</p>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn-premium btn-premium-rose" onclick="window.WedEazzyCRM.openAddCountryModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; font-weight: 600; border-radius: 10px;">
+              <i class="fa-solid fa-plus"></i> Add Country
+            </button>
+            <button class="btn-premium" onclick="window.location.hash = '#import'" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; font-weight: 600; border-radius: 10px;">
+              <i class="fa-solid fa-file-import"></i> Import Locations
+            </button>
+            <button class="btn-premium" onclick="window.WedEazzyCRM.exportCountryData()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; font-weight: 600; border-radius: 10px;">
+              <i class="fa-solid fa-download"></i> Export Country Data
+            </button>
+          </div>
+        </div>
+
+        <div id="countriesKpiContainer" style="margin-bottom: 24px;"></div>
+
+        <div id="countriesTableContainer" style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+          <div style="text-align: center; padding: 50px; color: var(--text-muted);">
+            <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 1.6rem; color: var(--brand-rose); margin-bottom: 12px;"></i>
+            <div>Loading live country network data...</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      const data = await apiFetch('/api/admin/countries');
+      const countries = data.countries || [];
+      renderCountriesSummaryKpis(countries);
+      renderCountriesTable(countries);
+    } catch (err) {
+      document.getElementById('countriesTableContainer').innerHTML = `
+        <div style="color: var(--brand-rose); padding: 24px; text-align: center; font-weight: 600;">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.5rem; margin-bottom: 8px; display: block;"></i>
+          Failed to load country records: ${esc(err.message)}
+        </div>
+      `;
+    }
+  }
+
+  function renderCountriesSummaryKpis(countries) {
+    const kpiContainer = document.getElementById('countriesKpiContainer');
+    if (!kpiContainer) return;
+
+    const totalConfigured = countries.length;
+    const activeCountries = countries.filter(c => c.status === 'active').length;
+    const countriesWithListings = countries.filter(c => (c.vendorsCount || c.vendors || 0) > 0).length;
+    const countriesWithVendors = countries.filter(c => (c.claimedVendorsCount || c.claimed || 0) > 0).length;
+    const totalCities = countries.reduce((sum, c) => sum + (c.citiesCount || c.cities || 0), 0);
+    const totalListings = countries.reduce((sum, c) => sum + (c.vendorsCount || c.vendors || 0), 0);
+    const totalVendors = countries.reduce((sum, c) => sum + (c.claimedVendorsCount || c.claimed || 0), 0);
+    const totalRev = countries.reduce((sum, c) => sum + (c.revenue || 0), 0);
+
+    kpiContainer.innerHTML = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px;">
+        <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #182033;">
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Configured Countries</div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${totalConfigured}</div>
+        </div>
+        <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #10B981;">
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Active Countries</div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${activeCountries}</div>
+        </div>
+        <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #3B82F6;">
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">With Listings</div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${countriesWithListings}</div>
+        </div>
+        <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #8B5CF6;">
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">With Vendors</div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${countriesWithVendors}</div>
+        </div>
+        <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #F59E0B;">
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Total Cities</div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${totalCities.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #E52B3A;">
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Total Listings</div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${totalListings.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #06B6D4;">
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Total Vendors</div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${totalVendors.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #84CC16;">
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Total Revenue</div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">₹${totalRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCountriesTable(countries) {
+    const container = document.getElementById('countriesTableContainer');
+    if (!container) return;
+
+    if (!countries.length) {
+      container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);">No countries configured.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+        <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Country Operations Network (${countries.length})</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 0.78rem; color: var(--text-sub);">Active Admin Scope:</span>
+          <span class="badge-premium" style="background: rgba(220,31,48,0.1); color: var(--brand-rose); font-weight: 700; padding: 4px 10px; border-radius: 99px;">
+            ${(window.WedEazzyCountryScope || 'all').toUpperCase()}
+          </span>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="crm-table" style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.82rem;">
+          <thead>
+            <tr style="background: var(--surface-subtle); color: var(--text-sub); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.5px;">
+              <th style="padding: 12px 14px; text-align: left; border-radius: 8px 0 0 8px;">Country</th>
+              <th style="padding: 12px 14px; text-align: left;">Code</th>
+              <th style="padding: 12px 14px; text-align: left;">Currency</th>
+              <th style="padding: 12px 14px; text-align: center;">Regions</th>
+              <th style="padding: 12px 14px; text-align: center;">Cities</th>
+              <th style="padding: 12px 14px; text-align: center;">Listings</th>
+              <th style="padding: 12px 14px; text-align: center;">Claimed</th>
+              <th style="padding: 12px 14px; text-align: center;">Paid Vendors</th>
+              <th style="padding: 12px 14px; text-align: center;">Enquiries</th>
+              <th style="padding: 12px 14px; text-align: center;">Bookings</th>
+              <th style="padding: 12px 14px; text-align: center;">Revenue</th>
+              <th style="padding: 12px 14px; text-align: center;">Status</th>
+              <th style="padding: 12px 14px; text-align: right; border-radius: 0 8px 8px 0;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${countries.map(c => {
+              const vCount = c.vendorsCount || c.vendors || 0;
+              const cCount = c.claimedVendorsCount || c.claimed || 0;
+              const pCount = c.paidVendorsCount || 0;
+              const cityCount = c.citiesCount || c.cities || 0;
+              const regCount = c.regionsCount || 0;
+              const inqCount = c.inquiriesCount || c.inquiries || 0;
+              const bookCount = c.bookingsCount || 0;
+              const rev = c.revenue || 0;
+              const health = c.healthState || (vCount > 0 ? 'LIVE' : 'READY');
+
+              return `
+                <tr style="border-bottom: 1px solid var(--border-subtle); cursor: pointer; transition: background 0.15s ease;" 
+                    onclick="window.WedEazzyCRM.openCountryDetailDrawer('${c.id}')"
+                    onmouseover="this.style.background='var(--surface-subtle)'" 
+                    onmouseout="this.style.background='transparent'">
+                  <td style="padding: 14px 14px; font-weight: 700; color: var(--text-main);">
+                    <span style="font-size: 1.2rem; margin-right: 8px; vertical-align: middle;">${esc(c.flag)}</span>
+                    <span>${esc(c.name)}</span>
+                  </td>
+                  <td style="padding: 14px 14px;">
+                    <span style="font-family: 'Courier New', monospace; font-weight: 700; background: var(--surface-subtle); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+                      ${esc(c.code)}
+                    </span>
+                  </td>
+                  <td style="padding: 14px 14px; color: var(--text-sub);">
+                    ${esc(c.currencySymbol)} ${esc(c.currency)}
+                  </td>
+                  <td style="padding: 14px 14px; text-align: center;">
+                    ${regCount} Regions
+                  </td>
+                  <td style="padding: 14px 14px; text-align: center; font-weight: 600;">
+                    <span style="background: rgba(0,0,0,0.04); padding: 3px 10px; border-radius: 99px;">${cityCount} Cities</span>
+                  </td>
+                  <td style="padding: 14px 14px; text-align: center; font-weight: 700; color: var(--brand-rose);">
+                    ${fmtNum(vCount)}
+                  </td>
+                  <td style="padding: 14px 14px; text-align: center; font-weight: 600;">
+                    ${fmtNum(cCount)}
+                  </td>
+                  <td style="padding: 14px 14px; text-align: center;">
+                    <span class="interactive-pill-badge" style="font-size: 0.68rem;">${pCount} paid</span>
+                  </td>
+                  <td style="padding: 14px 14px; text-align: center;">
+                    ${fmtNum(inqCount)}
+                  </td>
+                  <td style="padding: 14px 14px; text-align: center;">
+                    ${fmtNum(bookCount)}
+                  </td>
+                  <td style="padding: 14px 14px; text-align: center; font-weight: 700;">
+                    ₹${rev.toLocaleString('en-IN')}
+                  </td>
+                  <td style="padding: 14px 14px; text-align: center;">
+                    <span class="status-badge" style="padding: 4px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; ${health === 'LIVE' ? 'background: rgba(16,185,129,0.12); color: #10b981;' : health === 'READY' ? 'background: rgba(59,130,246,0.12); color: #3b82f6;' : 'background: rgba(148,163,184,0.15); color: #64748b;'}">
+                      ${health === 'LIVE' ? '● LIVE' : health === 'READY' ? '○ READY' : health}
+                    </span>
+                  </td>
+                  <td style="padding: 14px 14px; text-align: right; white-space: nowrap;" onclick="event.stopPropagation();">
+                    <button class="btn-premium" onclick="window.WedEazzyCRM.openCountryDetailDrawer('${c.id}')" style="padding: 5px 10px; font-size: 0.74rem; margin-right: 4px;" title="View Operational Details">
+                      <i class="fa-solid fa-folder-open"></i> Manage
+                    </button>
+                    <button class="btn-premium" onclick="window.WedEazzyCRM.openEditCountryModal('${c.id}', '${escJsAttr(c.name)}', '${escJsAttr(c.code)}', '${escJsAttr(c.currency)}', '${escJsAttr(c.currencySymbol)}', '${escJsAttr(c.phoneCode)}', '${escJsAttr(c.flag)}', '${c.status}')" style="padding: 5px 10px; font-size: 0.74rem; margin-right: 4px;" title="Edit Country Settings">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function openAddCountryModal() {
+    const modalHtml = `
+      <div style="padding: 20px;">
+        <h3 style="font-family: var(--font-head); font-size: 1.25rem; font-weight: 700; margin-bottom: 6px;">Add New Marketplace Country</h3>
+        <p style="font-size: 0.82rem; color: var(--text-sub); margin-bottom: 20px;">Configure a new country for business listings, cities, categories and lead generation.</p>
+
+        <form id="addCountryForm" onsubmit="event.preventDefault(); window.WedEazzyCRM.submitCountryForm(this, null);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Country Name *</label>
+              <input type="text" name="name" placeholder="e.g. Singapore" required class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">ISO Country Code (Alpha-2) *</label>
+              <input type="text" name="code" placeholder="e.g. SG" maxlength="2" required class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); text-transform: uppercase;" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Currency Code</label>
+              <input type="text" name="currency" placeholder="e.g. SGD" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); text-transform: uppercase;" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Currency Symbol</label>
+              <input type="text" name="currencySymbol" placeholder="e.g. S$" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Phone Country Code</label>
+              <input type="text" name="phoneCode" placeholder="e.g. +65" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Country Flag Emoji</label>
+              <input type="text" name="flag" placeholder="e.g. 🇸🇬" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn-premium" onclick="ctx.closeModal()">Cancel</button>
+            <button type="submit" class="btn-premium btn-premium-rose" style="font-weight: 700;">Save Country</button>
+          </div>
+        </form>
+      </div>
+    `;
+    ctx.openModal(modalHtml);
+  }
+
+  function openEditCountryModal(id, name, code, currency, currencySymbol, phoneCode, flag, status) {
+    const modalHtml = `
+      <div style="padding: 20px;">
+        <h3 style="font-family: var(--font-head); font-size: 1.25rem; font-weight: 700; margin-bottom: 6px;">Edit Country: ${esc(name)}</h3>
+
+        <form id="editCountryForm" onsubmit="event.preventDefault(); window.WedEazzyCRM.submitCountryForm(this, '${id}');">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Country Name</label>
+              <input type="text" name="name" value="${esc(name)}" required class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">ISO Code</label>
+              <input type="text" name="code" value="${esc(code)}" required class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); text-transform: uppercase;" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Currency</label>
+              <input type="text" name="currency" value="${esc(currency)}" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Currency Symbol</label>
+              <input type="text" name="currencySymbol" value="${esc(currencySymbol)}" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Phone Code</label>
+              <input type="text" name="phoneCode" value="${esc(phoneCode)}" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Flag</label>
+              <input type="text" name="flag" value="${esc(flag)}" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn-premium" onclick="ctx.closeModal()">Cancel</button>
+            <button type="submit" class="btn-premium btn-premium-rose" style="font-weight: 700;">Update Country</button>
+          </div>
+        </form>
+      </div>
+    `;
+    ctx.openModal(modalHtml);
+  }
+
+  async function openCountryDetailDrawer(countryId) {
+    try {
+      ctx.showToast('Fetching country operations data...', 'info');
+      const data = await apiFetch(`/api/admin/countries/${countryId}`);
+      const country = data.country || {};
+      const kpis = data.kpis || {};
+      const cities = data.cities || [];
+
+      const modalHtml = `
+        <div style="padding: 24px; max-width: 1000px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border-subtle); padding-bottom: 16px; margin-bottom: 20px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 2rem;">${esc(country.flag || '🌐')}</span>
+                <div>
+                  <h2 style="font-family: var(--font-head); font-size: 1.5rem; font-weight: 800; margin: 0; color: var(--text-main);">${esc(country.name)} (${esc(country.code)})</h2>
+                  <div style="font-size: 0.78rem; color: var(--text-sub); margin-top: 2px;">Marketplace Operations & Strategic Readiness Console</div>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="status-badge" style="padding: 6px 14px; border-radius: 99px; font-size: 0.8rem; font-weight: 800; ${country.healthState === 'LIVE' ? 'background: rgba(16,185,129,0.15); color: #10b981;' : 'background: rgba(59,130,246,0.15); color: #3b82f6;'}">
+                ${country.healthState === 'LIVE' ? '● LIVE MARKETPLACE' : '○ READY FOR ONBOARDING'}
+              </span>
+              <button class="btn-premium" onclick="ctx.closeModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+
+          <!-- TAB HEADERS -->
+          <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); overflow-x: auto; margin-bottom: 20px; padding-bottom: 4px;">
+            <button class="country-drawer-tab active" onclick="window.WedEazzyCRM.switchDrawerTab('overview')" id="tabBtn_overview" style="padding: 8px 14px; border-radius: 8px; border: none; background: #E52B3A; color: #fff; font-weight: 700; font-size: 0.8rem; cursor: pointer;">Overview</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('locations')" id="tabBtn_locations" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Locations (${cities.length})</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('listings')" id="tabBtn_listings" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Listings (${kpis.totalListings || 0})</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('vendors')" id="tabBtn_vendors" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Vendors (${kpis.claimedListings || 0})</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('categories')" id="tabBtn_categories" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Categories</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('enquiries')" id="tabBtn_enquiries" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Enquiries (${kpis.totalEnquiries || 0})</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('bookings')" id="tabBtn_bookings" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Bookings (${kpis.totalBookings || 0})</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('subscriptions')" id="tabBtn_subscriptions" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Subscriptions</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('revenue')" id="tabBtn_revenue" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Revenue</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('reports')" id="tabBtn_reports" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Reports</button>
+            <button class="country-drawer-tab" onclick="window.WedEazzyCRM.switchDrawerTab('settings')" id="tabBtn_settings" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); font-size: 0.8rem; cursor: pointer;">Settings</button>
+          </div>
+
+          <!-- TAB PANELS CONTAINER -->
+          <div id="countryDrawerTabBody">
+            <!-- Overview Tab -->
+            <div id="drawerTab_overview">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px;">
+                <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #E52B3A;">
+                  <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Total Listings</div>
+                  <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${(kpis.totalListings || 0).toLocaleString('en-IN')}</div>
+                </div>
+                <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #10B981;">
+                  <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Claimed Listings</div>
+                  <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${(kpis.claimedListings || 0).toLocaleString('en-IN')}</div>
+                </div>
+                <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #3B82F6;">
+                  <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Paid Vendors</div>
+                  <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${(kpis.paidVendors || 0).toLocaleString('en-IN')}</div>
+                </div>
+                <div class="panel-card" style="padding: 14px; background: #FFFFFF; border-left: 3px solid #F59E0B;">
+                  <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #667085;">Active Cities</div>
+                  <div style="font-size: 1.3rem; font-weight: 800; color: #182033; margin-top: 4px;">${(kpis.totalCities || cities.length).toLocaleString('en-IN')}</div>
+                </div>
+              </div>
+
+              ${(kpis.totalListings || 0) === 0 ? `
+                <div style="padding: 24px; background: #0f172a; border-radius: 12px; color: #ffffff; margin-top: 16px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                      <h4 style="font-size: 1.1rem; font-weight: 800; color: #E52B3A; margin: 0 0 6px 0;">${esc(country.flag)} ${esc(country.name)} Marketplace Readiness</h4>
+                      <p style="font-size: 0.85rem; color: #94a3b8; margin: 0;">No listings have been imported yet into ${esc(country.name)}. ${cities.length} cities configured, 0 listings, 0 vendors, 0 enquiries.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                      <button class="btn-premium btn-premium-rose" onclick="window.location.hash = '#import'; ctx.closeModal();">
+                        <i class="fa-solid fa-file-import"></i> Import Listings
+                      </button>
+                      <button class="btn-premium" style="background: #1e293b; color: #ffffff; border-color: rgba(255,255,255,0.2);" onclick="window.location.hash = '#cities'; ctx.closeModal();">
+                        <i class="fa-solid fa-city"></i> Manage Cities
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ` : `
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Active Marketplace Cities in ${esc(country.name)}</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                  ${cities.map(ct => `
+                    <div style="background: var(--surface-subtle); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                      <strong>${esc(ct.name)}</strong>
+                      <div style="font-size: 0.72rem; color: var(--text-sub);">${ct.vendorsCount} listings</div>
+                    </div>
+                  `).join('')}
+                </div>
+              `}
+            </div>
+
+            <!-- Locations Tab -->
+            <div id="drawerTab_locations" style="display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h4 style="margin: 0; font-size: 0.95rem;">Configured Cities in ${esc(country.name)}</h4>
+                <button class="btn-premium btn-premium-rose" onclick="window.WedEazzyCRM.openAddCityModal('${country.id}')" style="font-size: 0.78rem;">
+                  <i class="fa-solid fa-plus"></i> Add City to ${esc(country.name)}
+                </button>
+              </div>
+              <div style="overflow-x: auto;">
+                <table class="crm-table" style="width: 100%; font-size: 0.82rem;">
+                  <thead>
+                    <tr>
+                      <th>City Name</th>
+                      <th>Slug</th>
+                      <th>State / Province</th>
+                      <th>Listings Count</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${cities.map(ct => `
+                      <tr>
+                        <td><strong>${esc(ct.name)}</strong></td>
+                        <td><code>${esc(ct.slug)}</code></td>
+                        <td>${esc(ct.state || '—')}</td>
+                        <td>${ct.vendorsCount || 0}</td>
+                        <td><span class="status-badge badge-success">${ct.status}</span></td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="drawerTab_settings" style="display: none;">
+              <form id="drawerCountrySettingsForm" onsubmit="event.preventDefault(); window.WedEazzyCRM.submitCountryForm(this, '${country.id}');">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Country Name</label>
+                    <input type="text" name="name" value="${esc(country.name)}" required class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+                  </div>
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">ISO Code</label>
+                    <input type="text" name="code" value="${esc(country.code)}" required class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); text-transform: uppercase;" />
+                  </div>
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Currency</label>
+                    <input type="text" name="currency" value="${esc(country.currency)}" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+                  </div>
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Currency Symbol</label>
+                    <input type="text" name="currencySymbol" value="${esc(country.currencySymbol)}" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+                  </div>
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Phone Country Code</label>
+                    <input type="text" name="phoneCode" value="${esc(country.phoneCode)}" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+                  </div>
+                  <div>
+                    <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Flag Emoji</label>
+                    <input type="text" name="flag" value="${esc(country.flag)}" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+                  </div>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                  <button type="submit" class="btn-premium btn-premium-rose" style="font-weight: 700;">Save Country Settings</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      `;
+
+      ctx.openModal(modalHtml);
+    } catch (err) {
+      ctx.showToast('Error loading country details: ' + err.message, 'danger');
+    }
+  }
+
+  function switchDrawerTab(tabId) {
+    document.querySelectorAll('.country-drawer-tab').forEach(b => {
+      b.style.background = 'transparent';
+      b.style.color = 'var(--text-sub)';
+      b.style.border = '1px solid var(--border-color)';
+    });
+    const activeBtn = document.getElementById('tabBtn_' + tabId);
+    if (activeBtn) {
+      activeBtn.style.background = '#E52B3A';
+      activeBtn.style.color = '#ffffff';
+      activeBtn.style.border = 'none';
+    }
+
+    const tabBody = document.getElementById('countryDrawerTabBody');
+    if (tabBody) {
+      Array.from(tabBody.children).forEach(c => c.style.display = 'none');
+      const target = document.getElementById('drawerTab_' + tabId);
+      if (target) {
+        target.style.display = 'block';
+      } else {
+        // Fallback default message for dynamic tabs
+        let fallback = document.getElementById('drawerTab_fallback');
+        if (!fallback) {
+          fallback = document.createElement('div');
+          fallback.id = 'drawerTab_fallback';
+          tabBody.appendChild(fallback);
+        }
+        fallback.style.display = 'block';
+        fallback.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.9rem;"><i class="fa-solid fa-chart-line" style="font-size: 2rem; margin-bottom: 12px; display: block; color: var(--brand-rose);"></i> Showing country-scoped ${tabId} analytics registry.</div>`;
+      }
+    }
+  }
+
+  async function exportCountryData() {
+    try {
+      const data = await apiFetch('/api/admin/countries');
+      const countries = data.countries || [];
+      const headers = ['Country Name', 'Code', 'Currency', 'Cities', 'Listings', 'Claimed', 'Paid Vendors', 'Inquiries', 'Bookings', 'Status'];
+      const rows = countries.map(c => [
+        `"${c.name}"`,
+        `"${c.code}"`,
+        `"${c.currencySymbol} ${c.currency}"`,
+        c.citiesCount || 0,
+        c.vendorsCount || 0,
+        c.claimedVendorsCount || 0,
+        c.paidVendorsCount || 0,
+        c.inquiriesCount || 0,
+        c.bookingsCount || 0,
+        `"${c.status}"`
+      ]);
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `wedeazzy_country_operations_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      ctx.showToast('Country operations data exported to CSV successfully!', 'success');
+    } catch (err) {
+      ctx.showToast('Export failed: ' + err.message, 'danger');
+    }
+  }
+
+  async function submitCountryForm(form, id) {
+    const formData = new FormData(form);
+    const body = Object.fromEntries(formData.entries());
+
+    try {
+      if (id) {
+        await apiFetch(`/api/admin/countries/${id}`, { method: 'PATCH', body });
+        ctx.showToast('Country updated successfully!', 'success');
+      } else {
+        await apiFetch('/api/admin/countries', { method: 'POST', body });
+        ctx.showToast('New country added successfully!', 'success');
+      }
+      ctx.closeModal();
+      renderCountries(window.WedEazzyStore.get());
+    } catch (err) {
+      ctx.showToast(err.message || 'Failed to save country', 'danger');
+    }
+  }
+
+  async function toggleCountryStatus(id, newStatus) {
+    try {
+      await apiFetch(`/api/admin/countries/${id}`, { method: 'PATCH', body: { status: newStatus } });
+      ctx.showToast(`Country status set to ${newStatus}`, 'info');
+      renderCountries(window.WedEazzyStore.get());
+    } catch (err) {
+      ctx.showToast('Error updating country status: ' + err.message, 'danger');
+    }
+  }
+
+  async function renderLocations(store) {
+    destroyAllCharts();
+    const body = ctx.portalBody || document.getElementById('portalBody');
+    if (!body) return;
+
+    body.innerHTML = `
+      <div style="padding: 24px; max-width: 1400px; margin: 0 auto;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.6rem;">🏙️</span>
+              <h2 style="font-family: var(--font-head); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin: 0;">City & Region Operations</h2>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-sub); margin: 4px 0 0;">Hierarchical location manager: Country → City → Region</p>
+          </div>
+          <button class="btn-premium btn-premium-rose" onclick="window.WedEazzyCRM.openAddCityModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; font-weight: 600; border-radius: 12px;">
+            <i class="fa-solid fa-plus"></i> Add New City
+          </button>
+        </div>
+
+        <div id="citiesTableContainer" style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+          <div style="text-align: center; padding: 50px; color: var(--text-muted);">
+            <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 1.6rem; color: var(--brand-rose); margin-bottom: 12px;"></i>
+            <div>Loading cities network data...</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      const data = await apiFetch(`/api/admin/locations/cities?countryCode=${window.WedEazzyCountryScope || 'all'}`);
+      renderCitiesTable(data.cities || []);
+    } catch (err) {
+      document.getElementById('citiesTableContainer').innerHTML = `
+        <div style="color: var(--brand-rose); padding: 24px; text-align: center; font-weight: 600;">
+          Failed to load cities: ${esc(err.message)}
+        </div>
+      `;
+    }
+  }
+
+  function renderCitiesTable(cities) {
+    const container = document.getElementById('citiesTableContainer');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+        <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Configured Marketplace Cities (${cities.length})</div>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="crm-table" style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.84rem;">
+          <thead>
+            <tr style="background: var(--surface-subtle); color: var(--text-sub); font-size: 0.78rem; text-transform: uppercase;">
+              <th style="padding: 12px 16px; text-align: left;">City</th>
+              <th style="padding: 12px 16px; text-align: left;">Country</th>
+              <th style="padding: 12px 16px; text-align: left;">State / Region</th>
+              <th style="padding: 12px 16px; text-align: center;">Vendors</th>
+              <th style="padding: 12px 16px; text-align: center;">Inquiries</th>
+              <th style="padding: 12px 16px; text-align: center;">Bookings</th>
+              <th style="padding: 12px 16px; text-align: center;">Status</th>
+              <th style="padding: 12px 16px; text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cities.map(c => `
+              <tr style="border-bottom: 1px solid var(--border-subtle);">
+                <td style="padding: 14px 16px; font-weight: 700; color: var(--text-main);">
+                  ${esc(c.name)}
+                </td>
+                <td style="padding: 14px 16px;">
+                  <span>${esc(c.country ? c.country.flag : '🇮🇳')} ${esc(c.country ? c.country.name : 'India')}</span>
+                </td>
+                <td style="padding: 14px 16px; color: var(--text-sub);">
+                  ${esc(c.state || '—')}
+                </td>
+                <td style="padding: 14px 16px; text-align: center; font-weight: 700; color: var(--brand-rose);">
+                  ${fmtNum(c.vendorsCount)}
+                </td>
+                <td style="padding: 14px 16px; text-align: center;">
+                  ${fmtNum(c.inquiriesCount)}
+                </td>
+                <td style="padding: 14px 16px; text-align: center;">
+                  ${fmtNum(c.bookingsCount)}
+                </td>
+                <td style="padding: 14px 16px; text-align: center;">
+                  <span class="status-badge ${c.status === 'active' ? 'badge-success' : 'badge-muted'}" style="padding: 4px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 700;">
+                    ${c.status === 'active' ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td style="padding: 14px 16px; text-align: right;">
+                  <button class="btn-premium" onclick="window.WedEazzyCRM.openEditCityModal('${c.id}', '${escJsAttr(c.name)}', '${escJsAttr(c.state || '')}', '${c.countryId}', '${c.status}')" style="padding: 5px 12px; font-size: 0.78rem;">
+                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                  </button>
+                  <button class="btn-premium" onclick="window.WedEazzyCRM.toggleCityStatus('${c.id}', '${c.status === 'active' ? 'inactive' : 'active'}')" style="padding: 5px 12px; font-size: 0.78rem; margin-left: 4px; color: ${c.status === 'active' ? '#d32f2f' : '#2e7d32'};">
+                    ${c.status === 'active' ? 'Deactivate' : 'Activate'}
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  async function openAddCityModal() {
+    let countries = [];
+    try {
+      const data = await apiFetch('/api/admin/countries');
+      countries = data.countries || [];
+    } catch (_) {}
+
+    const modalHtml = `
+      <div style="padding: 20px;">
+        <h3 style="font-family: var(--font-head); font-size: 1.25rem; font-weight: 700; margin-bottom: 6px;">Add New City</h3>
+        <p style="font-size: 0.82rem; color: var(--text-sub); margin-bottom: 20px;">Add a new city dynamically under an existing country.</p>
+
+        <form id="addCityForm" onsubmit="event.preventDefault(); window.WedEazzyCRM.submitCityForm(this, null);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div style="grid-column: span 2;">
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">Country *</label>
+              <select name="countryId" required class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                ${countries.map(c => `<option value="${c.id}">${c.flag} ${c.name} (${c.code})</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">City Name *</label>
+              <input type="text" name="name" placeholder="e.g. Pune" required class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">State / Province</label>
+              <input type="text" name="state" placeholder="e.g. Maharashtra" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn-premium" onclick="ctx.closeModal()">Cancel</button>
+            <button type="submit" class="btn-premium btn-premium-rose" style="font-weight: 700;">Save City</button>
+          </div>
+        </form>
+      </div>
+    `;
+    ctx.openModal(modalHtml);
+  }
+
+  function openEditCityModal(id, name, state, countryId, status) {
+    const modalHtml = `
+      <div style="padding: 20px;">
+        <h3 style="font-family: var(--font-head); font-size: 1.25rem; font-weight: 700; margin-bottom: 6px;">Edit City: ${esc(name)}</h3>
+
+        <form id="editCityForm" onsubmit="event.preventDefault(); window.WedEazzyCRM.submitCityForm(this, '${id}');">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">City Name</label>
+              <input type="text" name="name" value="${esc(name)}" required class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 4px;">State / Province</label>
+              <input type="text" name="state" value="${esc(state)}" class="wz-input-styled" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);" />
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn-premium" onclick="ctx.closeModal()">Cancel</button>
+            <button type="submit" class="btn-premium btn-premium-rose" style="font-weight: 700;">Update City</button>
+          </div>
+        </form>
+      </div>
+    `;
+    ctx.openModal(modalHtml);
+  }
+
+  async function submitCityForm(form, id) {
+    const formData = new FormData(form);
+    const body = Object.fromEntries(formData.entries());
+
+    try {
+      if (id) {
+        await apiFetch(`/api/admin/locations/cities/${id}`, { method: 'PATCH', body });
+        ctx.showToast('City updated successfully!', 'success');
+      } else {
+        await apiFetch('/api/admin/locations/cities', { method: 'POST', body });
+        ctx.showToast('New city added successfully!', 'success');
+      }
+      ctx.closeModal();
+      renderLocations(window.WedEazzyStore.get());
+    } catch (err) {
+      ctx.showToast(err.message || 'Failed to save city', 'danger');
+    }
+  }
+
+  async function toggleCityStatus(id, newStatus) {
+    try {
+      await apiFetch(`/api/admin/locations/cities/${id}`, { method: 'PATCH', body: { status: newStatus } });
+      ctx.showToast(`City status set to ${newStatus}`, 'info');
+      renderLocations(window.WedEazzyStore.get());
+    } catch (err) {
+      ctx.showToast('Error updating city status: ' + err.message, 'danger');
+    }
+  }
+
+  function openAddRegionModal() {
+    ctx.showToast('Use City Manager to manage regions.', 'info');
+  }
+
+  function openEditRegionModal() {}
+  function submitRegionForm() {}
 
   function scrollTop() {
     const body = ctx.portalBody || document.getElementById('portalBody');

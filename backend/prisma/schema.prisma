@@ -164,6 +164,7 @@ model Vendor {
   categorySlug      String
   city              String
   citySlug          String
+  state             String?
   country           String     @default("India")            // ISO country name, e.g. "India", "USA"
   countryCode       String     @default("IN")               // ISO 3166-1 alpha-2
   area              String?
@@ -207,10 +208,16 @@ model Vendor {
   // and over which channel. Nullable = never invited.
   invitedAt         DateTime?
   invitedChannel    String?
+  countryId         String?    @map("country_id")
+  cityId            String?    @map("city_id")
+  regionId          String?    @map("region_id")
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
   user       User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  countryRel Country?          @relation(fields: [countryId], references: [id], onDelete: SetNull)
+  cityRel    City?             @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  regionRel  Region?           @relation(fields: [regionId], references: [id], onDelete: SetNull)
   photos     VendorPhoto[]
   inquiries  Inquiry[]
   bookings   Booking[]
@@ -223,6 +230,9 @@ model Vendor {
   @@index([tier])
   @@index([userId])
   @@index([country, categorySlug])
+  @@index([countryId])
+  @@index([cityId])
+  @@index([regionId])
 }
 
 model VendorPhoto {
@@ -515,20 +525,39 @@ model Review {
 
 // ---------- ADMIN BULK EMAIL BROADCASTS ----------
 model EmailCampaign {
-  id              String   @id @default(cuid())
-  name            String
-  segment         String                                       // "all" | "vendors" | "couples"
-  subject         String
-  body            String   @db.Text
-  totalRecipients Int      @default(0) @map("total_recipients")
-  sentCount       Int      @default(0) @map("sent_count")
-  failedCount     Int      @default(0) @map("failed_count")
-  status          String   @default("sending")                 // "sending" | "completed" | "failed"
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(cuid())
+  name             String
+  segment          String                                       // "all" | "vendors" | "couples" | JSON rules
+  subject          String
+  previewText      String?  @map("preview_text")
+  body             String   @db.Text
+  audienceRules    String?  @db.Text                             @map("audience_rules")
+  customEmails     String?  @db.Text                             @map("custom_emails")
+  failedRecipients  String?  @db.Text                             @map("failed_recipients")
+  totalRecipients  Int      @default(0) @map("total_recipients")
+  sentCount        Int      @default(0) @map("sent_count")
+  failedCount      Int      @default(0) @map("failed_count")
+  deliveredCount   Int      @default(0) @map("delivered_count")
+  status           String   @default("draft")                   // "draft" | "scheduled" | "queued" | "sending" | "completed" | "failed" | "partially_failed"
+  scheduledAt      DateTime? @map("scheduled_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("email_campaigns")
   @@index([createdAt])
+}
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  subject     String
+  previewText String?  @map("preview_text")
+  body        String   @db.Text
+  category    String?  @default("general")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("email_templates")
 }
 
 // ---------- SEO BLOG ARTICLES ----------
@@ -548,4 +577,109 @@ model Blog {
   @@map("blogs")
   @@index([status, publishedAt])
 }
+
+// ---------- DATA INTELLIGENCE & IMPORT HISTORY ----------
+model ImportHistory {
+  id             String   @id @default(cuid())
+  importBatchId  String   @unique @map("import_batch_id")
+  fileName       String   @map("file_name")
+  source         String?  @default("CSV/XLSX Importer")
+  totalRows      Int      @map("total_rows")
+  importedCount  Int      @map("imported_count")
+  updatedCount   Int      @default(0) @map("updated_count")
+  skippedCount   Int      @default(0) @map("skipped_count")
+  failedCount    Int      @default(0) @map("failed_count")
+  columnMap      Json?    @map("column_map")
+  errorLog       Json?    @map("error_log")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("import_histories")
+  @@index([createdAt])
+}
+
+model ImportMappingPreference {
+  id           String   @id @default(cuid())
+  fingerprint  String   @unique
+  headers      Json
+  columnMap    Json     @map("column_map")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("import_mapping_preferences")
+}
+
+// ---------- COUNTRY, CITY, REGION HIERARCHY ----------
+model Country {
+  id                         String   @id @default(cuid())
+  name                       String   @unique
+  slug                       String   @unique
+  code                       String   @unique                            // ISO 3166-1 alpha-2 e.g. "IN", "AE", "GB", "US", "CA", "AU"
+  isoAlpha3                  String?                                     // e.g. "IND", "ARE", "GBR", "USA", "CAN", "AUS"
+  currency                   String   @default("INR")                    // e.g. "INR", "AED", "GBP", "USD", "CAD", "AUD"
+  currencySymbol             String   @default("₹")                      // e.g. "₹", "AED", "£", "$", "CA$", "A$"
+  phoneCode                  String   @default("+91")                    // e.g. "+91", "+971", "+44", "+1", "+1", "+61"
+  flag                       String   @default("🇮🇳")
+  timezone                   String   @default("Asia/Kolkata")
+  defaultLanguage            String   @default("en")                     @map("default_language")
+  status                     String   @default("active")                 // "active" | "inactive" | "draft"
+  readinessScore             Int      @default(100)                      @map("readiness_score")
+  isMarketplaceEnabled       Boolean  @default(true)                     @map("is_marketplace_enabled")
+  isVendorOnboardingEnabled  Boolean  @default(true)                     @map("is_vendor_onboarding_enabled")
+  isCoupleEnquiriesEnabled   Boolean  @default(true)                     @map("is_couple_enquiries_enabled")
+  displayOrder               Int      @default(0)
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
+
+  cities         City[]
+  regions        Region[]
+  vendors        Vendor[]
+
+  @@map("countries")
+  @@index([status, displayOrder])
+}
+
+model City {
+  id           String   @id @default(cuid())
+  countryId    String   @map("country_id")
+  name         String
+  slug         String   @unique
+  state        String?
+  timezone     String?
+  lat          Float?
+  lng          Float?
+  image        String?  @db.VarChar(500)
+  description  String?  @db.Text
+  status       String   @default("active")                   // "active" | "inactive"
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  country      Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  regions      Region[]
+  vendors      Vendor[]
+
+  @@map("cities")
+  @@index([countryId, status])
+}
+
+model Region {
+  id        String   @id @default(cuid())
+  countryId String?  @map("country_id")
+  cityId    String?  @map("city_id")
+  name      String
+  slug      String
+  status    String   @default("active")                     // "active" | "inactive"
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  country   Country? @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  city      City?    @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  vendors   Vendor[]
+
+  @@map("regions")
+  @@index([countryId, status])
+  @@index([cityId, status])
+}
+
+
 

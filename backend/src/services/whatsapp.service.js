@@ -86,14 +86,11 @@ async function sendWa({ to, body, template, campaignName = null, userId = null, 
   // ── Rate limit check ─────────────────────────────────────────────────────
   if (!_consumeToken()) {
     logger.warn({ to: phone, id: log.id }, 'WA rate limit hit — re-queuing message');
-    const retryCount = (log.retryCount || 0) + 1;
     await prisma.waMessage.update({
       where: { id: log.id },
       data:  {
         status:      'queued',
-        retryCount,
         nextRetryAt: new Date(Date.now() + 65_000), // just over 1 minute
-        error:       `Rate limited (attempt ${retryCount})`,
       },
     });
     return { ok: false, error: 'Rate limited — message queued for retry', id: log.id };
@@ -212,9 +209,12 @@ async function retryFailedMessages() {
   // Find messages due for retry (queued + nextRetryAt is in the past or null)
   const due = await prisma.waMessage.findMany({
     where: {
-      status:      'queued',
-      retryCount:  { lt: env.WA_RETRY_MAX_ATTEMPTS },
-      nextRetryAt: { lte: now }, // Only pick up messages explicitly scheduled for retry — excludes brand-new messages (nextRetryAt null) whose initial send is handled inline in sendWa()
+      status:     'queued',
+      retryCount: { lt: env.WA_RETRY_MAX_ATTEMPTS },
+      OR: [
+        { nextRetryAt: { lte: now } },
+        { nextRetryAt: null },
+      ],
     },
     orderBy: { createdAt: 'asc' },
     take: 50, // process at most 50 at a time to stay within rate limits

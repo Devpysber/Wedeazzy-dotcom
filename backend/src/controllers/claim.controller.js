@@ -1,24 +1,21 @@
 /**
- * Claim Business Flow
- * ===================
- * Lets a real vendor prove they own a scraped/seeded listing and take control.
+ * Claim Business Flow & Vendor Acquisition
+ * ========================================
+ * Self-service vendor acquisition and listing claim experience.
  *
- * Flow:
- *   1. search()        — vendor types business name + phone, we return matching listings
- *   2. sendOtp()       — vendor picks a listing, we email a 6-digit OTP to the listing's phone owner
- *                        (Since we can't send SMS/WhatsApp reliably in dev, we send email to
- *                        the listing's email OR prompt for their email.)
- *   3. verify()        — vendor submits OTP + password + email → creates User + links Vendor
- *   4. requestManual() — vendor can't access phone/email → files a manual review ticket
- *
- * Security:
- *   - Rate limit: max 5 OTP sends per vendor per hour, 10 per IP per hour
- *   - OTP expires in 10 minutes, bcrypt-hashed at rest
- *   - Attempts locked at 5 wrong guesses per OTP
- *   - Vendor is 'claimed' by first successful verification; second claimant gets "already claimed"
- *   - Every attempt (success or fail) logged to ClaimAttempt for audit + rate limiting
+ * Simplified NO-OTP Architecture:
+ *   1. search()           — Vendor searches listings by name/city/phone. Returns masked phone (+91 98•••••123).
+ *   2. startSession()     — Creates a 15-min claim session (claimSessionId) for chosen unclaimed vendor.
+ *   3. verifyPhone()      — Claimant enters full registered phone. Backend normalizes & checks exact match.
+ *   4. completeClaim()    — Claimant enters email. Backend creates User, links Vendor atomically in prisma.$transaction,
+ *                           sets mustChangePassword = true, generates & hashes random temp password, dispatches
+ *                           sendVendorCredentialsEmail. Plaintext password is NEVER returned in JSON response.
+ *   5. registerBusiness() — Path B registration for new listings. Performs duplicate check against existing DB listings
+ *                           (by phone or businessName + city). If unique, creates Vendor + User and sends credentials email.
+ *   6. requestManual()    — Submits manual proof review ticket (ClaimRequest) when phone is inaccessible.
  */
 
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
@@ -26,25 +23,40 @@ const env = require('../config/env');
 const logger = require('../config/logger');
 const { HttpError } = require('../middleware/error');
 const { generateOtp, hashOtp, compareOtp } = require('../utils/otp');
-const { sendMail } = require('../services/email.service');
+const { sendMail, sendVendorCredentialsEmail } = require('../services/email.service');
 
-const OTP_TTL_MS = 10 * 60 * 1000;               // 10 minutes
-const MAX_OTP_PER_VENDOR_PER_HOUR = 5;
-const MAX_OTP_PER_IP_PER_HOUR = 10;
+const OTP_TTL_MS = 15 * 60 * 1000;               // 15 minutes
+const MAX_OTP_PER_VENDOR_PER_HOUR = 10;
+const MAX_OTP_PER_IP_PER_HOUR = 20;
 const MAX_OTP_ATTEMPTS = 5;
+
+/* ============================================================
+   CLAIM SESSION IN-MEMORY STORE (15-min TTL)
+   ============================================================ */
+const claimSessions = new Map();
+
+// Periodic sweep to clean up expired sessions
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, sess] of claimSessions.entries()) {
+    if (sess.expiresAt < now) {
+      claimSessions.delete(id);
+    }
+  }
+}, 5 * 60 * 1000);
 
 /* ============================================================
    HELPERS
    ============================================================ */
 
-/** Mask a phone number for display: 919876543210 → 91987*****210 */
+/** Mask a phone number for display: 919876543210 → +91 98•••••210 */
 function maskPhone(phone) {
   if (!phone) return '';
-  const s = String(phone);
+  const s = String(phone).replace(/[^0-9]/g, '');
   if (s.length <= 6) return s;
-  const head = s.slice(0, 5);
+  const head = s.slice(0, 4);
   const tail = s.slice(-3);
-  return `${head}${'*'.repeat(Math.max(3, s.length - 8))}${tail}`;
+  return `+${head} ${'•'.repeat(Math.max(3, s.length - 7))}${tail}`;
 }
 
 /** Mask an email: john.doe@example.com → j*******e@example.com */
@@ -64,6 +76,33 @@ function digitsOnly(s) {
 function last10(s) {
   const d = digitsOnly(s);
   return d.slice(-10);
+}
+
+/** Generate a secure random 10-character strong temporary password (Uppercase, Lowercase, Number, Special char). */
+function generateTempPassword() {
+  const uppers = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lowers = 'abcdefghijkmnpqrstuvwxyz';
+  const nums = '23456789';
+  const specials = '!@#$%';
+  const all = uppers + lowers + nums + specials;
+
+  let pwd = [
+    uppers[crypto.randomInt(uppers.length)],
+    lowers[crypto.randomInt(lowers.length)],
+    nums[crypto.randomInt(nums.length)],
+    specials[crypto.randomInt(specials.length)]
+  ];
+
+  for (let i = 0; i < 6; i++) {
+    pwd.push(all[crypto.randomInt(all.length)]);
+  }
+
+  for (let i = pwd.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [pwd[i], pwd[j]] = [pwd[j], pwd[i]];
+  }
+
+  return pwd.join('');
 }
 
 /** Record an attempt for audit and rate limiting. Best-effort — never throws. */
@@ -88,18 +127,18 @@ async function checkRateLimit(vendorId, ip) {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
   const [byVendor, byIp] = await Promise.all([
     prisma.claimAttempt.count({
-      where: { vendorId, createdAt: { gte: oneHourAgo }, reason: 'sent' },
+      where: { vendorId, createdAt: { gte: oneHourAgo }, reason: 'phone_mismatch' },
     }),
     ip ? prisma.claimAttempt.count({
-      where: { ip, createdAt: { gte: oneHourAgo }, reason: 'sent' },
+      where: { ip, createdAt: { gte: oneHourAgo }, reason: 'phone_mismatch' },
     }) : Promise.resolve(0),
   ]);
 
   if (byVendor >= MAX_OTP_PER_VENDOR_PER_HOUR) {
-    return { limited: true, reason: 'Too many OTP requests for this business. Try again in an hour or use manual verification.' };
+    return { limited: true, reason: 'Too many failed attempts for this business. Please try again in an hour or request manual verification.' };
   }
   if (byIp >= MAX_OTP_PER_IP_PER_HOUR) {
-    return { limited: true, reason: 'Too many OTP requests from your network. Try again in an hour.' };
+    return { limited: true, reason: 'Too many attempts from your network. Please try again in an hour.' };
   }
   return { limited: false };
 }
@@ -109,23 +148,22 @@ async function checkRateLimit(vendorId, ip) {
    ============================================================ */
 async function search(req, res, next) {
   try {
-    const { businessName, phone } = req.body || {};
+    const { businessName, city, phone } = req.body || {};
 
-    if (!businessName || String(businessName).trim().length < 2) {
-      throw new HttpError(400, 'Enter your business name (at least 2 characters).', 'ERR_INPUT');
-    }
-
-    const term = String(businessName).trim().toLowerCase();
+    const term = String(businessName || '').trim().toLowerCase();
+    const cityTerm = String(city || '').trim().toLowerCase();
     const phoneDigits = phone ? last10(phone) : null;
 
-    // Search: name contains the term (Prisma MySQL is case-insensitive by
-    // default on utf8mb4_unicode_ci collation, so this catches "royal palace"
-    // when the DB has "Royal Palace Banquet").
+    if (!term && !phoneDigits && !cityTerm) {
+      throw new HttpError(400, 'Enter a business name, city, or phone number to search.', 'ERR_INPUT');
+    }
+
+    const whereClause = { isActive: true };
+    if (term) whereClause.businessName = { contains: term };
+    if (cityTerm) whereClause.city = { contains: cityTerm };
+
     const results = await prisma.vendor.findMany({
-      where: {
-        isActive: true,
-        businessName: { contains: term },
-      },
+      where: whereClause,
       select: {
         id: true,
         businessName: true,
@@ -137,15 +175,16 @@ async function search(req, res, next) {
         whatsappNumber: true,
         rating: true,
         userId: true,
+        user: { select: { mustChangePassword: true } }
       },
-      take: 20,
+      take: 30,
       orderBy: { businessName: 'asc' },
     });
 
-    // If a phone was provided, boost matches whose stored phone shares the last 10 digits
     let matches = results.map(v => {
       const shareDigits = phoneDigits && v.whatsappNumber &&
                           last10(v.whatsappNumber) === phoneDigits;
+      const isClaimedAndSet = Boolean(v.userId && (!v.user || v.user.mustChangePassword === false));
       return {
         id: v.id,
         businessName: v.businessName,
@@ -156,15 +195,12 @@ async function search(req, res, next) {
         address: v.address,
         rating: v.rating,
         phoneMasked: maskPhone(v.whatsappNumber),
-        // Never send the raw phone/email to the client — they'd bypass OTP by
-        // reading them out of the network response.
         hasContact: Boolean(v.whatsappNumber),
-        alreadyClaimed: Boolean(v.userId),
+        alreadyClaimed: isClaimedAndSet,
         phoneMatch: shareDigits,
       };
     });
 
-    // Phone-matching listings first, then everything else
     matches.sort((a, b) => (b.phoneMatch ? 1 : 0) - (a.phoneMatch ? 1 : 0));
 
     res.json({ ok: true, matches, total: matches.length });
@@ -172,275 +208,424 @@ async function search(req, res, next) {
 }
 
 /* ============================================================
-   2. SEND OTP
+   2. START CLAIM SESSION
    ============================================================ */
-async function sendOtp(req, res, next) {
+async function startSession(req, res, next) {
   try {
-    const { vendorId, email: providedEmail } = req.body || {};
+    const { vendorId } = req.body || {};
     const ip = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim();
 
-    if (!vendorId) throw new HttpError(400, 'Please pick a listing to claim.', 'ERR_INPUT');
+    if (!vendorId) throw new HttpError(400, 'Please select a listing to claim.', 'ERR_INPUT');
 
     const vendor = await prisma.vendor.findUnique({
       where: { id: vendorId },
-      include: { user: { select: { id: true, email: true } } },
+      include: { user: true },
     });
-    if (!vendor) throw new HttpError(404, 'That listing was not found.', 'ERR_NOT_FOUND');
+
+    if (!vendor) throw new HttpError(404, 'That business listing was not found.', 'ERR_NOT_FOUND');
     if (!vendor.isActive) throw new HttpError(400, 'That listing is not currently active.', 'ERR_INACTIVE');
-
-    if (vendor.userId) {
-      // Already claimed. Don't burn an OTP.
-      await recordAttempt(vendorId, providedEmail || '', ip, false, 'already_claimed');
-      throw new HttpError(409, 'This business has already been claimed. If this was you, log in. Otherwise, submit a manual verification request.', 'ERR_ALREADY_CLAIMED');
+    if (vendor.userId && (!vendor.user || !vendor.user.mustChangePassword)) {
+      await recordAttempt(vendorId, '', ip, false, 'already_claimed');
+      throw new HttpError(409, 'This business has already been claimed. If this is your business, please log in.', 'ERR_ALREADY_CLAIMED');
     }
 
-    // Rate limit
-    const rl = await checkRateLimit(vendorId, ip);
-    if (rl.limited) {
-      await recordAttempt(vendorId, providedEmail || '', ip, false, 'rate_limited');
-      throw new HttpError(429, rl.reason, 'ERR_RATE_LIMITED');
-    }
+    const sessionId = 'cs_' + crypto.randomBytes(16).toString('hex');
+    const expiresAt = Date.now() + OTP_TTL_MS;
 
-    // Pick the destination email. Precedence:
-    //   1. Existing linked user's email (if any — shouldn't happen since userId is null, but safe)
-    //   2. Vendor's own email column (if set — not in schema currently)
-    //   3. What the claimant provided (this is the common path for scraped listings)
-    const targetEmail = (vendor.user && vendor.user.email) || providedEmail;
-    if (!targetEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(targetEmail).trim())) {
-      throw new HttpError(400, 'Please provide the email address associated with this business.', 'ERR_EMAIL_REQUIRED');
-    }
-    const normalizedEmail = String(targetEmail).trim().toLowerCase();
-
-    // Invalidate any previous unconsumed OTPs for this vendor+email
-    await prisma.otpCode.updateMany({
-      where: {
-        phone: `claim:${vendorId}:${normalizedEmail}`,
-        consumedAt: null,
-      },
-      data: { consumedAt: new Date() },
+    claimSessions.set(sessionId, {
+      vendorId: vendor.id,
+      phoneVerified: false,
+      createdAt: Date.now(),
+      expiresAt,
     });
-
-    const code = generateOtp();
-    const codeHash = await hashOtp(code);
-    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
-
-    await prisma.otpCode.create({
-      data: {
-        // Reuse OtpCode by namespacing the "phone" field. Not pretty but
-        // avoids a schema migration for a small feature. The namespace also
-        // means these OTPs can never collide with login OTPs.
-        phone: `claim:${vendorId}:${normalizedEmail}`,
-        codeHash,
-        purpose: 'business_claim',
-        expiresAt,
-      },
-    });
-
-    // Send email (fire-and-forget-with-logging pattern)
-    const html = `
-      <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
-        <div style="text-align:center;margin-bottom:20px;">
-          <h1 style="color:#DC1F30;margin:0;font-size:24px;">WedEazzy</h1>
-        </div>
-        <h2 style="color:#111;font-size:18px;margin-bottom:12px;">Claim your business listing</h2>
-        <p style="color:#444;line-height:1.5;">
-          Someone (hopefully you) is trying to claim ownership of
-          <strong>${(vendor.businessName || '').replace(/[<>&"]/g, '')}</strong> on WedEazzy.
-        </p>
-        <p style="color:#444;line-height:1.5;">
-          Enter this 6-digit code on the claim page to prove ownership:
-        </p>
-        <div style="background:#FCE7EB;color:#DC1F30;font-size:32px;font-weight:800;letter-spacing:6px;text-align:center;padding:16px;border-radius:12px;margin:16px 0;">
-          ${code}
-        </div>
-        <p style="color:#666;font-size:13px;line-height:1.5;">
-          This code expires in 10 minutes. If you didn't request this, you can ignore this email
-          — no changes will be made to the listing.
-        </p>
-      </div>`;
-    const text = `Your WedEazzy business claim code is ${code}. It expires in 10 minutes. If you didn't request this, ignore this email.`;
-
-    try {
-      const emailResult = await sendMail({
-        to: normalizedEmail,
-        subject: 'Your business claim code - WedEazzy',
-        html,
-        text,
-      });
-      if (!emailResult || !emailResult.ok || emailResult.fallback) {
-        logger.error({ vendorId, email: normalizedEmail, emailResult },
-          'Claim OTP email fell back to console — SMTP not configured');
-      }
-    } catch (err) {
-      logger.error({ err, vendorId, email: normalizedEmail }, 'Claim OTP email send threw');
-    }
-
-    if (env.OTP_DEBUG_LOG) {
-      logger.warn({ vendorId, email: normalizedEmail, code }, '[DEV] Business claim OTP');
-    }
-
-    await recordAttempt(vendorId, normalizedEmail, ip, true, 'sent');
 
     res.json({
       ok: true,
-      emailMasked: maskEmail(normalizedEmail),
-      expiresInMinutes: Math.round(OTP_TTL_MS / 60000),
+      claimSessionId: sessionId,
+      vendor: {
+        id: vendor.id,
+        businessName: vendor.businessName,
+        category: vendor.category,
+        city: vendor.city,
+        area: vendor.area,
+        phoneMasked: maskPhone(vendor.whatsappNumber),
+      },
     });
   } catch (e) { next(e); }
 }
 
 /* ============================================================
-   3. VERIFY OTP + CREATE ACCOUNT
+   3. VERIFY PHONE NUMBER (Server-Side Exact Phone Match)
    ============================================================ */
-async function verify(req, res, next) {
+async function verifyPhone(req, res, next) {
   try {
-    const { vendorId, email, code, name, password } = req.body || {};
+    const { claimSessionId, phone } = req.body || {};
     const ip = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim();
 
-    if (!vendorId || !email || !code) {
-      throw new HttpError(400, 'Missing required fields.', 'ERR_INPUT');
+    if (!claimSessionId || !phone) {
+      throw new HttpError(400, 'Claim session and registered phone number are required.', 'ERR_INPUT');
     }
-    if (!/^\d{4,8}$/.test(String(code))) {
-      throw new HttpError(400, 'Enter the 6-digit code exactly as it appears in your email.', 'ERR_INPUT');
+
+    const session = claimSessions.get(claimSessionId);
+    if (!session || session.expiresAt < Date.now()) {
+      throw new HttpError(400, 'Your claim session has expired. Please search and select your business again.', 'ERR_SESSION_EXPIRED');
     }
-    if (!name || String(name).trim().length < 2) {
-      throw new HttpError(400, 'Enter your full name.', 'ERR_INPUT');
+
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: session.vendorId },
+      include: { user: true },
+    });
+
+    if (!vendor) throw new HttpError(404, 'Listing not found.', 'ERR_NOT_FOUND');
+    if (vendor.userId && (!vendor.user || !vendor.user.mustChangePassword)) {
+      claimSessions.delete(claimSessionId);
+      throw new HttpError(409, 'This business has already been claimed.', 'ERR_ALREADY_CLAIMED');
     }
-    if (!password || String(password).length < 8) {
-      throw new HttpError(400, 'Choose a password of at least 8 characters.', 'ERR_INPUT');
+
+    // Check rate limit
+    const rl = await checkRateLimit(vendor.id, ip);
+    if (rl.limited) {
+      await recordAttempt(vendor.id, phone, ip, false, 'rate_limited');
+      throw new HttpError(429, rl.reason, 'ERR_RATE_LIMITED');
+    }
+
+    const storedDigits = last10(vendor.whatsappNumber);
+    const submittedDigits = last10(phone);
+
+    if (!storedDigits || !submittedDigits || storedDigits !== submittedDigits) {
+      await recordAttempt(vendor.id, phone, ip, false, 'phone_mismatch');
+      throw new HttpError(400, 'The phone number you entered does not match the registered contact number for this business listing. Please check the number and try again.', 'ERR_PHONE_MISMATCH');
+    }
+
+    // Phone verified successfully! Update session state.
+    session.phoneVerified = true;
+    session.verifiedPhone = digitsOnly(phone);
+    claimSessions.set(claimSessionId, session);
+
+    await recordAttempt(vendor.id, phone, ip, true, 'phone_matched');
+
+    res.json({
+      ok: true,
+      message: 'Phone number verified successfully! Please provide your email address to receive your vendor login details.',
+    });
+  } catch (e) { next(e); }
+}
+
+/* ============================================================
+   4. COMPLETE CLAIM — Attach Account & Send Email Credentials
+   ============================================================ */
+async function complete(req, res, next) {
+  try {
+    const { claimSessionId, email, name } = req.body || {};
+    const ip = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim();
+
+    if (!claimSessionId || !email) {
+      throw new HttpError(400, 'Claim session ID and business email are required.', 'ERR_INPUT');
+    }
+
+    const session = claimSessions.get(claimSessionId);
+    if (!session || session.expiresAt < Date.now()) {
+      throw new HttpError(400, 'Your claim session has expired. Please start again.', 'ERR_SESSION_EXPIRED');
+    }
+
+    if (!session.phoneVerified) {
+      throw new HttpError(400, 'You must verify your registered phone number before completing your claim.', 'ERR_PHONE_NOT_VERIFIED');
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalizedEmail)) {
-      throw new HttpError(400, 'Enter a valid email address.', 'ERR_INPUT');
+      throw new HttpError(400, 'Please enter a valid business email address.', 'ERR_INPUT');
     }
 
-    const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
-    if (!vendor) throw new HttpError(404, 'That listing was not found.', 'ERR_NOT_FOUND');
+    const vendor = await prisma.vendor.findUnique({ where: { id: session.vendorId } });
+    if (!vendor) throw new HttpError(404, 'Vendor listing not found.', 'ERR_NOT_FOUND');
     if (vendor.userId) {
-      await recordAttempt(vendorId, normalizedEmail, ip, false, 'already_claimed_at_verify');
-      throw new HttpError(409, 'This business has already been claimed since you started this flow.', 'ERR_ALREADY_CLAIMED');
+      claimSessions.delete(claimSessionId);
+      throw new HttpError(409, 'This business has already been claimed.', 'ERR_ALREADY_CLAIMED');
     }
 
-    // Find the most recent unconsumed OTP for this vendor+email
-    const otp = await prisma.otpCode.findFirst({
-      where: {
-        phone: `claim:${vendorId}:${normalizedEmail}`,
-        consumedAt: null,
-        purpose: 'business_claim',
-      },
-      orderBy: { createdAt: 'desc' },
+    // Check existing User with this email
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: { vendor: true },
     });
-
-    if (!otp) {
-      await recordAttempt(vendorId, normalizedEmail, ip, false, 'no_otp');
-      throw new HttpError(400, 'No active code found. Request a new one.', 'ERR_NO_OTP');
-    }
-    if (otp.expiresAt < new Date()) {
-      await recordAttempt(vendorId, normalizedEmail, ip, false, 'expired');
-      throw new HttpError(400, 'That code has expired. Request a new one.', 'ERR_EXPIRED');
-    }
-    if (otp.attempts >= MAX_OTP_ATTEMPTS) {
-      await recordAttempt(vendorId, normalizedEmail, ip, false, 'locked');
-      throw new HttpError(400, 'Too many wrong attempts. Request a new code.', 'ERR_LOCKED');
-    }
-
-    const ok = await compareOtp(String(code), otp.codeHash);
-    if (!ok) {
-      await prisma.otpCode.update({
-        where: { id: otp.id },
-        data: { attempts: { increment: 1 } },
-      });
-      await recordAttempt(vendorId, normalizedEmail, ip, false, 'wrong_otp');
-      throw new HttpError(400, 'Wrong code. Please try again.', 'ERR_OTP_WRONG');
+    if (existingUser) {
+      if (existingUser.role === 'admin') {
+        await recordAttempt(vendor.id, normalizedEmail, ip, false, 'admin_email_conflict');
+        throw new HttpError(409, 'This email belongs to an administrator account. Please use a business email.', 'ERR_EMAIL_CONFLICT');
+      }
+      if (existingUser.vendor && existingUser.vendor.length > 0) {
+        const otherVendor = existingUser.vendor.find(v => v.id !== vendor.id && v.isActive);
+        if (otherVendor) {
+          await recordAttempt(vendor.id, normalizedEmail, ip, false, 'active_vendor_email_conflict');
+          throw new HttpError(409, 'This email is already associated with another active vendor listing. Log in with your vendor account or use a different email.', 'ERR_EMAIL_CONFLICT');
+        }
+      }
     }
 
-    // OTP is correct — consume it
-    await prisma.otpCode.update({
-      where: { id: otp.id },
-      data: { consumedAt: new Date() },
-    });
-
-    // Create or link user
-    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    const passwordHash = await bcrypt.hash(String(password), 10);
+    // Generate random 10-char temporary password & hash it
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    const ownerName = String(name || vendor.businessName).trim();
 
     let userId;
-    if (existingUser) {
-      // Email already in use — could be from a previous claim or the site itself.
-      // If it's a couple/admin account we refuse; if it's an unlinked vendor account
-      // we link this listing to it.
-      if (existingUser.role !== 'VENDOR') {
-        await recordAttempt(vendorId, normalizedEmail, ip, false, 'email_conflict');
-        throw new HttpError(409,
-          'This email is already used for another type of WedEazzy account. Sign up with a different email.',
-          'ERR_EMAIL_CONFLICT');
-      }
-      userId = existingUser.id;
-      // Update password + verified in one shot so returning claimants can log in
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          passwordHash,
-          verifiedAt: new Date(),
-          name: String(name).trim(),
-        },
-      });
-    } else {
-      const created = await prisma.user.create({
-        data: {
-          email: normalizedEmail,
-          name: String(name).trim(),
-          role: 'VENDOR',
-          passwordHash,
-          verifiedAt: new Date(),
-          authProvider: 'local',
-        },
-      });
-      userId = created.id;
-    }
 
-    // Link the vendor listing to the user — use a conditional update to guard
-    // against a race where another claimant beat us here.
-    const linkResult = await prisma.vendor.updateMany({
-      where: { id: vendorId, userId: null },
-      data: { userId, isVerified: true },
+    // Atomic DB Transaction: Create/Link User & Attach Vendor
+    await prisma.$transaction(async (tx) => {
+      if (existingUser) {
+        userId = existingUser.id;
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            role: 'vendor',
+            passwordHash,
+            mustChangePassword: true,
+            verifiedAt: existingUser.verifiedAt || new Date(),
+            name: ownerName,
+          },
+        });
+      } else {
+        const created = await tx.user.create({
+          data: {
+            email: normalizedEmail,
+            name: ownerName,
+            role: 'vendor',
+            passwordHash,
+            mustChangePassword: true,
+            verifiedAt: new Date(),
+            authProvider: 'local',
+          },
+        });
+        userId = created.id;
+      }
+
+      const submittedCountryCode = String(req.body.countryCode || req.body.country || '').trim().toUpperCase();
+      const COUNTRY_NAMES = { IN: 'India', US: 'USA', GB: 'UK', AE: 'UAE', CA: 'Canada', AU: 'Australia' };
+      const vendorData = { userId, isVerified: true };
+      if (submittedCountryCode && COUNTRY_NAMES[submittedCountryCode]) {
+        vendorData.countryCode = submittedCountryCode;
+        vendorData.country = COUNTRY_NAMES[submittedCountryCode];
+      }
+
+      // Atomic update on vendor listing: update if unclaimed (userId === null) OR if already linked to this same user
+      const linkResult = await tx.vendor.updateMany({
+        where: {
+          id: vendor.id,
+          OR: [
+            { userId: null },
+            { userId: userId }
+          ]
+        },
+        data: vendorData,
+      });
+
+      if (linkResult.count === 0) {
+        throw new HttpError(409, 'This business was claimed by another user.', 'ERR_ALREADY_CLAIMED');
+      }
     });
 
-    if (linkResult.count === 0) {
-      // Someone else linked in the milliseconds since our earlier check
-      await recordAttempt(vendorId, normalizedEmail, ip, false, 'race_lost');
-      throw new HttpError(409, 'This business was just claimed by another user.', 'ERR_ALREADY_CLAIMED');
+    // Invalidate claim session after successful completion
+    claimSessions.delete(claimSessionId);
+
+    // Record audit success
+    await recordAttempt(vendor.id, normalizedEmail, ip, true, 'claimed_successfully');
+
+    // Send Temporary Credentials Email (Plaintext password is NEVER returned in JSON)
+    try {
+      await sendVendorCredentialsEmail(normalizedEmail, vendor.businessName, tempPassword, normalizedEmail);
+    } catch (err) {
+      logger.error({ err, vendorId: vendor.id, email: normalizedEmail }, 'Failed to send vendor credentials email');
     }
 
-    await recordAttempt(vendorId, normalizedEmail, ip, true, 'verified');
-
-    // Issue a JWT so the freshly-claimed vendor is logged in immediately
-    const token = jwt.sign(
-      { sub: userId, role: 'VENDOR', email: normalizedEmail },
-      env.JWT_SECRET,
-      { expiresIn: env.JWT_EXPIRES_IN || '30d' }
-    );
-
-    logger.info({ vendorId, userId, email: normalizedEmail },
-      'Business successfully claimed');
+    logger.info({ vendorId: vendor.id, userId, email: normalizedEmail }, 'Business successfully claimed via simplified phone match');
 
     res.json({
       ok: true,
-      token,
-      user: { id: userId, email: normalizedEmail, name: String(name).trim(), role: 'VENDOR' },
+      emailMasked: maskEmail(normalizedEmail),
       vendor: {
         id: vendor.id,
         businessName: vendor.businessName,
         category: vendor.category,
         city: vendor.city,
       },
+      message: 'Business successfully claimed! We have sent your temporary login credentials to your email.',
     });
   } catch (e) { next(e); }
 }
 
 /* ============================================================
-   4. MANUAL REVIEW REQUEST
+   5. REGISTER NEW BUSINESS (Path B — Check Duplicates & Register)
+   ============================================================ */
+async function registerBusiness(req, res, next) {
+  try {
+    const {
+      businessName, category, city, area, address, pincode,
+      phone, email, name, website, instagram, description
+    } = req.body || {};
+    const ip = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim();
+
+    if (!businessName || String(businessName).trim().length < 2) {
+      throw new HttpError(400, 'Enter your business name.', 'ERR_INPUT');
+    }
+    if (!category) throw new HttpError(400, 'Select a business category.', 'ERR_INPUT');
+    if (!city) throw new HttpError(400, 'Select or enter your city.', 'ERR_INPUT');
+    if (!phone || String(phone).trim().length < 8) {
+      throw new HttpError(400, 'Enter a valid phone number.', 'ERR_INPUT');
+    }
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(email).trim())) {
+      throw new HttpError(400, 'Enter a valid business email address.', 'ERR_INPUT');
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const phoneDigits = last10(phone);
+    const term = String(businessName).trim().toLowerCase();
+    const cityTerm = String(city).trim().toLowerCase();
+
+    // 1. Duplicate Detection Check against DB
+    const existingMatches = await prisma.vendor.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { whatsappNumber: { contains: phoneDigits } },
+          { AND: [{ businessName: { contains: term } }, { city: { contains: cityTerm } }] }
+        ]
+      },
+      select: {
+        id: true,
+        businessName: true,
+        category: true,
+        city: true,
+        area: true,
+        whatsappNumber: true,
+        userId: true,
+      },
+      take: 5
+    });
+
+    if (existingMatches.length > 0) {
+      const match = existingMatches[0];
+      return res.json({
+        ok: false,
+        isDuplicate: true,
+        message: 'We found a business that may already be listed on WedEazzy.',
+        existingVendor: {
+          id: match.id,
+          businessName: match.businessName,
+          category: match.category,
+          city: match.city,
+          area: match.area,
+          phoneMasked: maskPhone(match.whatsappNumber),
+          alreadyClaimed: Boolean(match.userId)
+        }
+      });
+    }
+
+    // 2. No duplicate found — create User + Vendor in atomic transaction
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: { vendor: true },
+    });
+    if (existingUser) {
+      if (existingUser.role === 'admin') {
+        throw new HttpError(409, 'This email belongs to an administrator account. Please use a business email.', 'ERR_EMAIL_CONFLICT');
+      }
+      if (existingUser.vendor && existingUser.vendor.length > 0) {
+        const activeVendor = existingUser.vendor.find(v => v.isActive);
+        if (activeVendor) {
+          throw new HttpError(409, 'This email is already associated with an active vendor listing on WedEazzy.', 'ERR_EMAIL_CONFLICT');
+        }
+      }
+    }
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    const ownerName = String(name || businessName).trim();
+
+    let createdVendor;
+
+    await prisma.$transaction(async (tx) => {
+      let userId;
+      if (existingUser) {
+        userId = existingUser.id;
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            role: 'vendor',
+            passwordHash,
+            mustChangePassword: true,
+            name: ownerName,
+          }
+        });
+      } else {
+        const created = await tx.user.create({
+          data: {
+            email: normalizedEmail,
+            name: ownerName,
+            role: 'vendor',
+            passwordHash,
+            mustChangePassword: true,
+            verifiedAt: new Date(),
+            authProvider: 'local',
+          }
+        });
+        userId = created.id;
+      }
+
+      const slugBase = String(businessName).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const slug = `${slugBase}-${Date.now().toString(36)}`;
+      const categorySlug = String(category).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const citySlug = String(city).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+      const submittedCountryCode = String(req.body.countryCode || req.body.country || 'IN').trim().toUpperCase();
+      const COUNTRY_NAMES = { IN: 'India', US: 'USA', GB: 'UK', AE: 'UAE', CA: 'Canada', AU: 'Australia' };
+      const countryCode = COUNTRY_NAMES[submittedCountryCode] ? submittedCountryCode : 'IN';
+      const country = COUNTRY_NAMES[countryCode] || 'India';
+
+      createdVendor = await tx.vendor.create({
+        data: {
+          businessName: String(businessName).trim(),
+          slug,
+          category: String(category).trim(),
+          categorySlug,
+          city: String(city).trim(),
+          citySlug,
+          country,
+          countryCode,
+          area: area ? String(area).trim() : null,
+          address: address ? String(address).trim() : null,
+          pincode: pincode ? String(pincode).trim() : null,
+          whatsappNumber: String(phone).trim(),
+          userId,
+          isVerified: true,
+          isActive: true,
+          tier: 'basic'
+        }
+      });
+    });
+
+    // Send credentials email
+    try {
+      await sendVendorCredentialsEmail(normalizedEmail, createdVendor.businessName, tempPassword, normalizedEmail);
+    } catch (err) {
+      logger.error({ err, email: normalizedEmail }, 'Failed to send new vendor credentials email');
+    }
+
+    res.json({
+      ok: true,
+      emailMasked: maskEmail(normalizedEmail),
+      vendor: {
+        id: createdVendor.id,
+        businessName: createdVendor.businessName,
+        category: createdVendor.category,
+        city: createdVendor.city,
+      },
+      message: 'Business registered successfully! Your temporary login details have been emailed to you.'
+    });
+  } catch (e) { next(e); }
+}
+
+/* ============================================================
+   6. MANUAL REVIEW REQUEST
    ============================================================ */
 async function requestManual(req, res, next) {
   try {
@@ -479,7 +664,7 @@ async function requestManual(req, res, next) {
       },
     });
 
-    // Notify admin (fire-and-forget)
+    // Notify admin
     const adminEmail = env.ADMIN_EMAIL || 'admin@wedeazzy.local';
     sendMail({
       to: adminEmail,
@@ -491,37 +676,32 @@ async function requestManual(req, res, next) {
                <li><strong>Phone:</strong> ${claimantPhone || '—'}</li>
                <li><strong>Proof link:</strong> ${proofUrl ? `<a href="${proofUrl}">${proofUrl}</a>` : '—'}</li>
                <li><strong>Notes:</strong> ${(proofNotes || '').replace(/[<>&"]/g, '') || '—'}</li>
-             </ul>
-             <p>Review in the admin panel.</p>`,
-      text: `Manual claim request for "${vendor.businessName}" by ${claimantName} (${claimantEmail}). Proof: ${proofUrl || 'none'}`,
+             </ul>`,
+      text: `Manual claim request for "${vendor.businessName}" by ${claimantName} (${claimantEmail}).`,
     }).catch(err => logger.error({ err }, 'Failed to send admin notification for manual claim'));
-
-    // Confirmation email to the claimant
-    sendMail({
-      to: claimantEmail,
-      subject: 'We received your business claim request - WedEazzy',
-      html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;">
-              <h2 style="color:#DC1F30;">Thanks — we've got your request</h2>
-              <p>Hi ${(claimantName || 'there').replace(/[<>&"]/g, '')},</p>
-              <p>Your claim for <strong>${(vendor.businessName || '').replace(/[<>&"]/g, '')}</strong> is in our review queue.
-              A member of our team will get back to you within 2 business days.</p>
-              <p>Request ID: <code>${request.id.slice(-8)}</code></p>
-             </div>`,
-      text: `Your claim request for "${vendor.businessName}" has been received (ID: ${request.id.slice(-8)}). We'll respond within 2 business days.`,
-    }).catch(err => logger.error({ err }, 'Failed to send claim confirmation email'));
-
-    logger.info({ vendorId, requestId: request.id, claimantEmail }, 'Manual claim request filed');
 
     res.json({ ok: true, requestId: request.id.slice(-8) });
   } catch (e) { next(e); }
 }
 
+/* Backward-compatibility fallback stubs for legacy OTP endpoints */
+async function sendOtp(req, res, next) {
+  return res.status(400).json({ ok: false, error: 'OTP is deprecated. Please use phone number verification.', code: 'ERR_OTP_DEPRECATED' });
+}
+
+async function verify(req, res, next) {
+  return res.status(400).json({ ok: false, error: 'OTP verification is deprecated. Please complete phone verification.', code: 'ERR_OTP_DEPRECATED' });
+}
+
 module.exports = {
   search,
+  startSession,
+  verifyPhone,
+  complete,
+  registerBusiness,
+  requestManual,
   sendOtp,
   verify,
-  requestManual,
-  // exported for tests
   _maskPhone: maskPhone,
   _maskEmail: maskEmail,
   _last10: last10,

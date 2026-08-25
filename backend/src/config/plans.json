@@ -9,7 +9,7 @@
   },
   "Premium": {
     "price": 2999,
-    "maxPhotos": 5,
+    "maxPhotos": 10,
     "maxBusinesses": 3,
     "reportsAccess": true,
     "insightsAccess": false,
@@ -17,10 +17,60 @@
   },
   "Featured": {
     "price": 5999,
-    "maxPhotos": 10,
+    "maxPhotos": 15,
     "maxBusinesses": 7,
     "reportsAccess": true,
     "insightsAccess": true,
     "description": "Highest search ranking. Max 15 photos. Exclusive category/pincode locks. Advanced insights."
+  },
+  "countries": {
+    "IN": {
+      "countryName": "India",
+      "currency": "INR",
+      "currencySymbol": "₹",
+      "Free": { "price": 0, "maxPhotos": 4, "maxBusinesses": 1, "description": "Basic listing visibility. Max 4 gallery photos. Standard search placement." },
+      "Premium": { "price": 2999, "maxPhotos": 10, "maxBusinesses": 3, "description": "Higher search ranking. Max 10 gallery photos. Reports access." },
+      "Featured": { "price": 5999, "maxPhotos": 15, "maxBusinesses": 7, "description": "Highest search ranking. Max 15 photos. Exclusive category/pincode locks. Advanced insights." }
+    },
+    "AE": {
+      "countryName": "UAE",
+      "currency": "AED",
+      "currencySymbol": "AED",
+      "Free": { "price": 0, "maxPhotos": 4, "maxBusinesses": 1, "description": "Basic UAE listing visibility. Max 4 gallery photos." },
+      "Premium": { "price": 149, "maxPhotos": 10, "maxBusinesses": 3, "description": "Higher search ranking in UAE. Max 10 gallery photos. Reports access." },
+      "Featured": { "price": 299, "maxPhotos": 15, "maxBusinesses": 7, "description": "Highest search ranking in UAE. Exclusive category/pincode locks." }
+    },
+    "GB": {
+      "countryName": "UK",
+      "currency": "GBP",
+      "currencySymbol": "£",
+      "Free": { "price": 0, "maxPhotos": 4, "maxBusinesses": 1, "description": "Basic UK listing visibility. Max 4 gallery photos." },
+      "Premium": { "price": 29, "maxPhotos": 10, "maxBusinesses": 3, "description": "Higher search ranking in UK. Max 10 gallery photos. Reports access." },
+      "Featured": { "price": 59, "maxPhotos": 15, "maxBusinesses": 7, "description": "Highest search ranking in UK. Exclusive category/pincode locks." }
+    },
+    "US": {
+      "countryName": "USA",
+      "currency": "USD",
+      "currencySymbol": "$",
+      "Free": { "price": 0, "maxPhotos": 4, "maxBusinesses": 1, "description": "Basic US listing visibility. Max 4 gallery photos." },
+      "Premium": { "price": 39, "maxPhotos": 10, "maxBusinesses": 3, "description": "Higher search ranking in US. Max 10 gallery photos. Reports access." },
+      "Featured": { "price": 79, "maxPhotos": 15, "maxBusinesses": 7, "description": "Highest search ranking in US. Exclusive category/pincode locks." }
+    },
+    "CA": {
+      "countryName": "Canada",
+      "currency": "CAD",
+      "currencySymbol": "CA$",
+      "Free": { "price": 0, "maxPhotos": 4, "maxBusinesses": 1, "description": "Basic Canada listing visibility. Max 4 gallery photos." },
+      "Premium": { "price": 49, "maxPhotos": 10, "maxBusinesses": 3, "description": "Higher search ranking in Canada. Max 10 gallery photos." },
+      "Featured": { "price": 99, "maxPhotos": 15, "maxBusinesses": 7, "description": "Highest search ranking in Canada. Exclusive category locks." }
+    },
+    "AU": {
+      "countryName": "Australia",
+      "currency": "AUD",
+      "currencySymbol": "A$",
+      "Free": { "price": 0, "maxPhotos": 4, "maxBusinesses": 1, "description": "Basic Australia listing visibility. Max 4 gallery photos." },
+      "Premium": { "price": 59, "maxPhotos": 10, "maxBusinesses": 3, "description": "Higher search ranking in Australia. Max 10 gallery photos." },
+      "Featured": { "price": 119, "maxPhotos": 15, "maxBusinesses": 7, "description": "Highest search ranking in Australia. Exclusive category locks." }
+    }
   }
 }

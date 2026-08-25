@@ -35,6 +35,116 @@ const INDIAN_LOCATIONS = [
   'Bhilai, Chhattisgarh', 'Cuttack, Odisha', 'Kochi, Kerala', 'Udaipur, Rajasthan', 'Pan India'
 ];
 
+const LOCATION_DATA = {
+  IN: {
+    countryName: 'India',
+    states: {
+      'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Thane', 'Aurangabad', 'Solapur', 'Amravati', 'Navi Mumbai', 'Kolhapur'],
+      'Delhi NCR': ['Delhi', 'New Delhi', 'Noida', 'Gurgaon', 'Ghaziabad', 'Faridabad'],
+      'Karnataka': ['Bengaluru', 'Mysore', 'Hubli-Dharwad', 'Mangalore', 'Belgaum'],
+      'Rajasthan': ['Jaipur', 'Udaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer'],
+      'Goa': ['North Goa', 'South Goa', 'Panaji', 'Margao', 'Vasco da Gama'],
+      'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar'],
+      'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem'],
+      'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar'],
+      'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Varanasi', 'Agra', 'Meerut', 'Allahabad', 'Bareilly'],
+      'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Siliguri', 'Asansol'],
+      'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala'],
+      'Kerala': ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur'],
+      'Madhya Pradesh': ['Indore', 'Bhopal', 'Gwalior', 'Jabalpur']
+    }
+  },
+  US: {
+    countryName: 'USA',
+    states: {
+      'California': ['Los Angeles', 'San Francisco', 'San Diego', 'San Jose', 'Sacramento', 'Fresno'],
+      'New York': ['New York City', 'Buffalo', 'Rochester', 'Albany', 'Syracuse'],
+      'Texas': ['Houston', 'Dallas', 'Austin', 'San Antonio', 'Fort Worth', 'El Paso'],
+      'Florida': ['Miami', 'Orlando', 'Tampa', 'Jacksonville', 'Fort Lauderdale'],
+      'Illinois': ['Chicago', 'Aurora', 'Naperville', 'Rockford'],
+      'Nevada': ['Las Vegas', 'Reno', 'Henderson'],
+      'Washington': ['Seattle', 'Spokane', 'Tacoma'],
+      'Georgia': ['Atlanta', 'Savannah', 'Augusta'],
+      'Massachusetts': ['Boston', 'Worcester', 'Cambridge']
+    }
+  },
+  GB: {
+    countryName: 'United Kingdom',
+    states: {
+      'Greater London': ['London', 'City of London', 'Westminster', 'Camden', 'Greenwich'],
+      'West Midlands': ['Birmingham', 'Coventry', 'Wolverhampton'],
+      'Greater Manchester': ['Manchester', 'Salford', 'Bolton', 'Stockport'],
+      'West Yorkshire': ['Leeds', 'Bradford', 'Wakefield'],
+      'Scotland': ['Edinburgh', 'Glasgow', 'Aberdeen', 'Dundee'],
+      'Wales': ['Cardiff', 'Swansea', 'Newport'],
+      'Northern Ireland': ['Belfast', 'Derry']
+    }
+  },
+  AE: {
+    countryName: 'UAE',
+    states: {
+      'Dubai': ['Dubai City', 'Downtown Dubai', 'Dubai Marina', 'Jumeirah', 'Deira', 'Palm Jumeirah', 'Business Bay'],
+      'Abu Dhabi': ['Abu Dhabi City', 'Al Ain', 'Yas Island', 'Saadiyat Island'],
+      'Sharjah': ['Sharjah City', 'Khor Fakkan', 'Kalba'],
+      'Ras Al Khaimah': ['Ras Al Khaimah City', 'Al Hamra'],
+      'Ajman': ['Ajman City']
+    }
+  },
+  CA: {
+    countryName: 'Canada',
+    states: {
+      'Ontario': ['Toronto', 'Ottawa', 'Mississauga', 'Brampton', 'Hamilton'],
+      'British Columbia': ['Vancouver', 'Victoria', 'Surrey', 'Burnaby', 'Richmond'],
+      'Quebec': ['Montreal', 'Quebec City', 'Laval', 'Gatineau'],
+      'Alberta': ['Calgary', 'Edmonton', 'Red Deer', 'Lethbridge']
+    }
+  },
+  AU: {
+    countryName: 'Australia',
+    states: {
+      'New South Wales': ['Sydney', 'Newcastle', 'Wollongong', 'Central Coast'],
+      'Victoria': ['Melbourne', 'Geelong', 'Ballarat', 'Bendigo'],
+      'Queensland': ['Brisbane', 'Gold Coast', 'Sunshine Coast', 'Cairns'],
+      'Western Australia': ['Perth', 'Mandurah', 'Bunbury'],
+      'South Australia': ['Adelaide', 'Mount Gambier']
+    }
+  }
+};
+
+window.getLocationConfig = function(countryCode) {
+  const code = String(countryCode || 'IN').toUpperCase();
+  return LOCATION_DATA[code] || LOCATION_DATA.IN;
+};
+
+window.onProfileCountryOrStateChange = function() {
+  const cEl = document.getElementById('pCountry');
+  const sEl = document.getElementById('pState');
+  const cityEl = document.getElementById('pCity');
+  if (!cEl || !sEl || !cityEl) return;
+
+  const countryCode = cEl.value || 'IN';
+  const loc = window.getLocationConfig(countryCode);
+  const selectedState = sEl.value;
+
+  let cityOptions = [];
+  if (selectedState && loc.states[selectedState]) {
+    cityOptions = loc.states[selectedState];
+  } else {
+    Object.values(loc.states).forEach(arr => {
+      cityOptions = cityOptions.concat(arr);
+    });
+  }
+
+  const currentCityVal = cityEl.value;
+  cityEl.innerHTML = `
+    <option value="">Select City</option>
+    ${cityOptions.map(c => `<option value="${esc(c)}" ${c === currentCityVal ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+    <option value="Other" ${!cityOptions.includes(currentCityVal) && currentCityVal ? 'selected' : ''}>+ Other / Custom City</option>
+  `;
+
+  if (window.onProfileFieldChange) window.onProfileFieldChange();
+};
+
 // Application State Store
 const state = {
   user: null,
@@ -1514,7 +1624,7 @@ function renderProfileTab(el) {
   const userEmail = state.user?.email || '';
 
   // Checklist states
-  const checkPersonal = !!v.whatsappNumber && !!v.city && !!v.pincode;
+  const checkPersonal = !!v.whatsappNumber && !!v.city;
   const checkBusiness = !!v.businessName && !!v.address && !!v.description;
   const checkCategory = !!v.category;
   const checkGallery = !!v.photos && v.photos.length >= 3;
@@ -1889,30 +1999,59 @@ function renderProfileTab(el) {
             </div>
 
             <div class="form-field-premium">
-              <label>City *</label>
+              <label>Country / Location * ${v.countryCode ? '<span style="font-size:10px; background:#F3F4F6; color:#4B5563; padding:2px 8px; border-radius:4px; margin-left:6px; font-weight:700; border:1px solid #E5E7EB;">🔒 Locked</span>' : ''}</label>
+              <div class="input-with-icon-wrapper">
+                <span class="input-icon-span">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                </span>
+                <select id="pCountry" style="padding-left: 42px !important; ${v.countryCode ? 'background:#F8FAFC; cursor:not-allowed; opacity:0.85;' : ''}" ${v.countryCode ? 'disabled="disabled"' : ''} onchange="window.onProfileFieldChange();">
+                  <option value="IN" ${v.countryCode === 'IN' || v.country === 'India' ? 'selected' : ''}>🇮🇳 India</option>
+                  <option value="US" ${v.countryCode === 'US' || v.country === 'USA' ? 'selected' : ''}>🇺🇸 USA</option>
+                  <option value="GB" ${v.countryCode === 'GB' || v.country === 'UK' || v.country === 'United Kingdom' ? 'selected' : ''}>🇬🇧 United Kingdom</option>
+                  <option value="AE" ${v.countryCode === 'AE' || v.country === 'UAE' ? 'selected' : ''}>🇦🇪 UAE</option>
+                  <option value="CA" ${v.countryCode === 'CA' || v.country === 'Canada' ? 'selected' : ''}>🇨🇦 Canada</option>
+                  <option value="AU" ${v.countryCode === 'AU' || v.country === 'Australia' ? 'selected' : ''}>🇦🇺 Australia</option>
+                </select>
+              </div>
+              ${v.countryCode ? '<span style="font-size:11px; color:var(--text-muted); margin-top:3px; display:block;">🔒 Country is locked to protect your pricing plan & campaign currency.</span>' : ''}
+            </div>
+
+            <div class="form-field-premium">
+              <label>State / Region</label>
               <div class="input-with-icon-wrapper">
                 <span class="input-icon-span">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                 </span>
-                <select id="pCity" style="padding-left: 42px !important;" onchange="window.onProfileFieldChange();">
-                  <option value="">Select City</option>
-                  <option ${v.city === 'Mumbai' ? 'selected' : ''}>Mumbai</option>
-                  <option ${v.city === 'Delhi NCR' ? 'selected' : ''}>Delhi NCR</option>
-                  <option ${v.city === 'Goa' ? 'selected' : ''}>Goa</option>
-                  <option ${v.city === 'Jaipur' ? 'selected' : ''}>Jaipur</option>
-                  <option ${v.city === 'Pune' ? 'selected' : ''}>Pune</option>
-                  <option ${v.city === 'Bengaluru' ? 'selected' : ''}>Bengaluru</option>
+                <select id="pState" style="padding-left: 42px !important;" onchange="window.onProfileCountryOrStateChange();">
+                  <option value="">Select State / Region</option>
+                  ${(function(){
+                    const loc = window.getLocationConfig(v.countryCode || 'IN');
+                    const states = Object.keys(loc.states || {});
+                    return states.map(st => `<option value="${esc(st)}" ${v.state === st ? 'selected' : ''}>${esc(st)}</option>`).join('');
+                  })()}
                 </select>
               </div>
             </div>
 
             <div class="form-field-premium">
-              <label>Pincode *</label>
+              <label>City *</label>
               <div class="input-with-icon-wrapper">
                 <span class="input-icon-span">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-3"></path></svg>
                 </span>
-                <input type="text" id="pPin" value="${esc(v.pincode || '')}" style="padding-left: 42px !important;" placeholder="e.g. 400001" oninput="window.onProfileFieldChange();" />
+                <select id="pCity" style="padding-left: 42px !important;" onchange="window.onProfileFieldChange();">
+                  <option value="">Select City</option>
+                  ${(function(){
+                    const loc = window.getLocationConfig(v.countryCode || 'IN');
+                    let cities = [];
+                    if (v.state && loc.states[v.state]) {
+                      cities = loc.states[v.state];
+                    } else {
+                      Object.values(loc.states || {}).forEach(arr => { cities = cities.concat(arr); });
+                    }
+                    return cities.map(c => `<option value="${esc(c)}" ${v.city === c ? 'selected' : ''}>${esc(c)}</option>`).join('');
+                  })()}
+                </select>
               </div>
             </div>
           </div>
@@ -2533,9 +2672,10 @@ async function saveBusinessProfile() {
     businessName: document.getElementById('pBn').value.trim(),
     whatsappNumber: document.getElementById('pWa').value.trim(),
     alternateMobile: document.getElementById('pAltMobile').value.trim(),
-    category: document.getElementById('pCat').value,
-    city: document.getElementById('pCity').value,
-    pincode: document.getElementById('pPin').value.trim(),
+    countryCode: document.getElementById('pCountry') ? document.getElementById('pCountry').value : 'IN',
+    country: document.getElementById('pCountry') ? document.getElementById('pCountry').options[document.getElementById('pCountry').selectedIndex].text.replace(/^[^\w\s]+\s*/, '') : 'India',
+    state: document.getElementById('pState') ? document.getElementById('pState').value.trim() : '',
+    city: document.getElementById('pCity') ? document.getElementById('pCity').value.trim() : '',
     capacity: parseInt(document.getElementById('pCap').value, 10) || 0,
     priceMin: parseInt(document.getElementById('pMin').value, 10) || 0,
     address: document.getElementById('pAddr').value.trim(),
@@ -3087,12 +3227,14 @@ function renderBookingsTab(el) {
 function renderSubscriptionsTab(el) {
   const vendor = state.vendor || {};
   const activePlan = vendor.subscriptionPlan || 'Free';
+  const countryCode = String(vendor.countryCode || vendor.country || 'IN').toUpperCase();
   
-  // Load plans configuration dynamically
-  if (!state.plans) {
-    api('/api/public/plans').then(res => {
+  // Load plans configuration dynamically for vendor's country
+  if (!state.plans || state.plansCountry !== countryCode) {
+    api(`/api/public/plans?countryCode=${countryCode}`).then(res => {
       if (res.ok) {
         state.plans = res.plans;
+        state.plansCountry = countryCode;
         renderSubscriptionsTab(el);
       }
     }).catch(err => console.error('Failed to load plans config:', err));
@@ -3100,13 +3242,14 @@ function renderSubscriptionsTab(el) {
   }
   
   const plans = state.plans;
+  const sym = plans.currencySymbol || (countryCode === 'US' ? '$' : countryCode === 'GB' ? '£' : countryCode === 'AE' ? 'AED ' : countryCode === 'CA' ? 'CA$' : countryCode === 'AU' ? 'A$' : '₹');
   let expiryDate = 'N/A';
   let isExpired = false;
   let remainingDays = 0;
   
   if (vendor.subscriptionExpiry) {
     const expDate = new Date(vendor.subscriptionExpiry);
-    expiryDate = expDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    expiryDate = expDate.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
     isExpired = expDate < new Date();
     if (!isExpired) {
       remainingDays = Math.ceil((expDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
@@ -3124,7 +3267,7 @@ function renderSubscriptionsTab(el) {
   el.innerHTML = `
     <div class="hero-section">
       <h1>Subscription Status &amp; Plans</h1>
-      <p>Manage your WedEazzy marketplace business plan, unlock premium leads and visibility.</p>
+      <p>Manage your WedEazzy marketplace business plan in ${esc(countryCode)} currency, unlock premium leads and visibility.</p>
     </div>
 
     <!-- Active Plan Status Bar -->
@@ -3132,7 +3275,7 @@ function renderSubscriptionsTab(el) {
       <div>
         <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); font-weight: 700; display:block; margin-bottom:4px;">Current Status</span>
         <h3 style="font-size: 20px; font-family: var(--serif); color: var(--navy);">Active Plan: <span style="color:var(--rose-primary); font-weight: 700;">${activePlan}</span></h3>
-        <span style="font-size: 13px; color: var(--text-secondary);">${activePlan === 'Free' ? 'No active premium subscription' : `Renews automatically via Razorpay on ${expiryDate}`}</span>
+        <span style="font-size: 13px; color: var(--text-secondary);">${activePlan === 'Free' ? 'No active premium subscription' : `Renews automatically on ${expiryDate}`}</span>
       </div>
       <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
         ${badgeHtml}
@@ -3154,7 +3297,7 @@ function renderSubscriptionsTab(el) {
           <h4 style="font-family: var(--serif); font-size: 20px; color: var(--navy); margin-bottom: 6px;">Free Plan</h4>
           <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 16px;">Best for basic listing</span>
           <div style="font-size: 32px; font-weight: 800; font-family: var(--serif); color: var(--navy); margin-bottom: 20px;">
-            ₹${plans.Free.price} <span style="font-size: 13px; font-family: var(--sans); color: var(--text-secondary); font-weight: 500;">/ forever</span>
+            ${sym}${plans.Free.price} <span style="font-size: 13px; font-family: var(--sans); color: var(--text-secondary); font-weight: 500;">/ forever</span>
           </div>
           <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 16px;">
             <li>✓ Business Listing Card</li>
@@ -3178,7 +3321,7 @@ function renderSubscriptionsTab(el) {
           <h4 style="font-family: var(--serif); font-size: 20px; color: var(--navy); margin-bottom: 6px;">Premium Plan</h4>
           <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 16px;">${plans.Premium.description}</span>
           <div style="font-size: 32px; font-weight: 800; font-family: var(--serif); color: var(--navy); margin-bottom: 20px;">
-            ₹${plans.Premium.price.toLocaleString('en-IN')} <span style="font-size: 13px; font-family: var(--sans); color: var(--text-secondary); font-weight: 500;">/ month</span>
+            ${sym}${plans.Premium.price.toLocaleString()} <span style="font-size: 13px; font-family: var(--sans); color: var(--text-secondary); font-weight: 500;">/ month</span>
           </div>
           <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 16px;">
             <li>✓ Max ${plans.Premium.maxPhotos} Gallery Photos</li>
@@ -3202,7 +3345,7 @@ function renderSubscriptionsTab(el) {
           <h4 style="font-family: var(--serif); font-size: 20px; color: var(--navy); margin-bottom: 6px;">Featured Plan</h4>
           <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 16px;">${plans.Featured.description}</span>
           <div style="font-size: 32px; font-weight: 800; font-family: var(--serif); color: var(--navy); margin-bottom: 20px;">
-            ₹${plans.Featured.price.toLocaleString('en-IN')} <span style="font-size: 13px; font-family: var(--sans); color: var(--text-secondary); font-weight: 500;">/ month</span>
+            ${sym}${plans.Featured.price.toLocaleString()} <span style="font-size: 13px; font-family: var(--sans); color: var(--text-secondary); font-weight: 500;">/ month</span>
           </div>
           <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 16px;">
             <li>✓ Max ${plans.Featured.maxPhotos} Gallery Photos</li>
@@ -3321,13 +3464,27 @@ window.upgradeFeatured = function() {
 };
 
 window.showCheckoutModal = function(planName) {
+  const vendor = state.vendor || {};
+  const countryCode = String(vendor.countryCode || vendor.country || 'IN').toUpperCase();
+  const COUNTRY_METADATA = {
+    IN: { currency: 'INR', symbol: '₹', taxRate: 0.18, taxLabel: 'GST (18%)' },
+    US: { currency: 'USD', symbol: '$', taxRate: 0.08, taxLabel: 'Sales & State Tax (8%)' },
+    GB: { currency: 'GBP', symbol: '£', taxRate: 0.20, taxLabel: 'VAT (20%)' },
+    AE: { currency: 'AED', symbol: 'AED ', taxRate: 0.05, taxLabel: 'VAT (5%)' },
+    CA: { currency: 'CAD', symbol: 'CA$', taxRate: 0.13, taxLabel: 'GST/HST (13%)' },
+    AU: { currency: 'AUD', symbol: 'A$', taxRate: 0.10, taxLabel: 'GST (10%)' }
+  };
+
+  const meta = COUNTRY_METADATA[countryCode] || COUNTRY_METADATA.IN;
+  const sym = meta.symbol;
+
   const plans = state.plans || {
     Premium: { price: 2999 },
     Featured: { price: 5999 }
   };
   const base = plans[planName]?.price || (planName === 'Featured' ? 5999 : 2999);
-  const gst = parseFloat((base * 0.18).toFixed(2));
-  const total = parseFloat((base * 1.18).toFixed(2));
+  const gst = parseFloat((base * meta.taxRate).toFixed(2));
+  const total = parseFloat((base + gst).toFixed(2));
   const details = { base, gst, total };
   if (!details) return;
 
@@ -3342,34 +3499,34 @@ window.showCheckoutModal = function(planName) {
   modal.innerHTML = `
     <div class="otp-card" style="max-width: 450px; text-align: left; padding: 32px; z-index: 100; position: relative;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
-        <h3 style="font-family: var(--serif); font-size: 22px; color: var(--navy); margin:0;">Secure Checkout</h3>
+        <h3 style="font-family: var(--serif); font-size: 22px; color: var(--navy); margin:0;">Secure Checkout (${esc(countryCode)})</h3>
         <button onclick="closeCheckoutModal()" style="font-size: 24px; color: var(--text-secondary); background: none; border: none; cursor: pointer; line-height: 1;">&times;</button>
       </div>
 
       <div style="margin-bottom: 24px;">
         <div style="font-size:11px; text-transform:uppercase; color:var(--gold); font-weight:700; letter-spacing: 0.05em; margin-bottom:4px;">Selected Plan</div>
-        <div style="font-size:19px; font-weight:700; color:var(--navy); font-family: var(--serif);">${planName} Plan</div>
+        <div style="font-size:19px; font-weight:700; color:var(--navy); font-family: var(--serif);">${esc(planName)} Plan</div>
         <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">30 Days validity post payment activation</div>
       </div>
 
       <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
         <div style="display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:8px;">
           <span style="color:var(--text-secondary);">Subscription Charge</span>
-          <span style="font-weight:600; color:var(--text);">₹${details.base.toLocaleString('en-IN')}.00</span>
+          <span style="font-weight:600; color:var(--text);">${sym}${details.base.toLocaleString()}.00</span>
         </div>
         <div style="display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:12px; padding-bottom:8px; border-bottom: 1px dashed var(--border-color);">
-          <span style="color:var(--text-secondary);">GST (18%)</span>
-          <span style="font-weight:600; color:var(--text);">₹${details.gst.toLocaleString('en-IN')}</span>
+          <span style="color:var(--text-secondary);">${esc(meta.taxLabel)}</span>
+          <span style="font-weight:600; color:var(--text);">${sym}${details.gst.toLocaleString()}</span>
         </div>
         <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:700;">
-          <span style="color:var(--navy);">Total Payable</span>
-          <span style="color:var(--rose-primary);">₹${details.total.toLocaleString('en-IN')}</span>
+          <span style="color:var(--navy);">Total Payable (${esc(meta.currency)})</span>
+          <span style="color:var(--rose-primary);">${sym}${details.total.toLocaleString()}</span>
         </div>
       </div>
 
       <div style="display:flex; flex-direction:column; gap:12px;">
-        <button id="checkoutSubmitBtn" class="btn-premium btn-pink" style="width:100%; font-weight:700; padding:12px;" onclick="processRazorpayPayment('${planName}')">
-          Proceed to Pay Securely
+        <button id="checkoutSubmitBtn" class="btn-premium btn-pink" style="width:100%; font-weight:700; padding:12px;" onclick="processRazorpayPayment('${esc(planName)}')">
+          Proceed to Pay ${sym}${details.total.toLocaleString()} (${esc(meta.currency)})
         </button>
         <button class="btn-premium btn-outline" style="width:100%; padding:10px;" onclick="closeCheckoutModal()">
           Cancel & Close
@@ -7312,11 +7469,13 @@ function renderWizardSteps(activeStep) {
 // hardcoded PACKAGES catalog above, matched by tier index. Falls back to the hardcoded
 // defaults silently if the fetch fails — pricing is never blocked on this call.
 let _growPricingApplied = false;
-async function applyGrowCampaignsPricing() {
-  if (_growPricingApplied) return;
+async function applyGrowCampaignsPricing(countryCode) {
   try {
-    const res = await api('/api/public/grow-campaigns-pricing');
+    const v = state.vendor || window.currentVendor || {};
+    const cCode = countryCode || v.countryCode || v.country || 'IN';
+    const res = await api(`/api/public/grow-campaigns-pricing?countryCode=${cCode}`);
     if (!res || !res.ok || !res.pricing) return;
+    const sym = res.currencySymbol || (cCode === 'US' ? '$' : cCode === 'GB' ? '£' : cCode === 'AE' ? 'AED ' : cCode === 'CA' ? 'CA$' : cCode === 'AU' ? 'A$' : '₹');
     Object.keys(res.pricing).forEach((key) => {
       const pkg = PACKAGES[key];
       const incomingPlans = res.pricing[key] && res.pricing[key].plans;
@@ -7327,13 +7486,13 @@ async function applyGrowCampaignsPricing() {
         if (Number.isFinite(Number(incoming.price))) tier.price = Number(incoming.price);
         if (incoming.original != null && Number.isFinite(Number(incoming.original))) {
           tier.original = Number(incoming.original);
-          tier.savings = `Save ₹${(tier.original - tier.price).toLocaleString('en-IN')}`;
+          tier.savings = `Save ${sym}${(tier.original - tier.price).toLocaleString()}`;
         } else {
           delete tier.original;
           delete tier.savings;
         }
       });
-      if (pkg.plans[0]) pkg.fromPrice = `₹${pkg.plans[0].price.toLocaleString('en-IN')}`;
+      if (pkg.plans[0]) pkg.fromPrice = `${sym}${pkg.plans[0].price.toLocaleString()}`;
     });
     _growPricingApplied = true;
   } catch (e) {
@@ -7342,6 +7501,16 @@ async function applyGrowCampaignsPricing() {
 }
 
 async function renderGrowBusinessTab(el) {
+  const vendor = state.vendor || window.currentVendor || {};
+  if (!vendor.id) {
+    try {
+      const vRes = await api('/api/vendor/me');
+      if (vRes && (vRes.ok || vRes.vendor)) {
+        window.currentVendor = vRes.vendor || vRes.data;
+        state.vendor = window.currentVendor;
+      }
+    } catch (e) {}
+  }
   // Load campaigns from API
   try {
     const res = await api('/api/campaigns');
@@ -7350,7 +7519,9 @@ async function renderGrowBusinessTab(el) {
     growState.campaigns = [];
   }
 
-  await applyGrowCampaignsPricing();
+  const v = state.vendor || window.currentVendor || {};
+  const vCountry = String(v.countryCode || v.country || 'IN').toUpperCase();
+  await applyGrowCampaignsPricing(vCountry);
   renderGrowStep(el);
 }
 
@@ -7549,33 +7720,39 @@ function renderGrowDetail(el) {
       <!-- Plan Selection -->
       <span class="grow-section-label">Select Campaign Duration</span>
       <div class="plan-options-grid" id="planOptionsGrid">
-        ${pkg.plans.map(plan => {
-          const isSelected = growState.selectedPlan && growState.selectedPlan.days === plan.days;
-          return `
-            <div class="plan-option-card ${plan.recommended ? 'recommended' : ''} ${plan.custom ? 'plan-full' : ''} ${isSelected ? 'selected' : ''}" 
-                 id="plan-${plan.days}"
-                 onclick="growSelectPlan(${plan.days}, ${plan.price}, '${esc(plan.label)}')">
-              ${plan.recommended ? `
-                <span class="plan-rec-badge">
-                  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                  Recommended
-                </span>
-              ` : ''}
-              <div class="plan-select-radio">
-                <input type="radio" name="growSelectedPlanRadio" class="plan-select-radio-input" value="${plan.days}" ${isSelected ? 'checked' : ''} style="display:none;" />
-              </div>
-              <span class="plan-days">${esc(plan.label)}</span>
-              <span class="plan-price">₹${plan.price.toLocaleString('en-IN')}</span>
-              ${plan.original ? `
-                <div style="margin-top:4px;">
-                  <span class="plan-original">₹${plan.original.toLocaleString('en-IN')}</span>
-                  <span class="plan-savings">${esc(plan.savings)}</span>
+        ${(function(){
+          const v = state.vendor || window.currentVendor || {};
+          const cCode = String(v.countryCode || v.country || 'IN').toUpperCase();
+          const COUNTRY_SYMBOLS = { IN: '₹', US: '$', GB: '£', AE: 'AED ', CA: 'CA$', AU: 'A$' };
+          const sym = COUNTRY_SYMBOLS[cCode] || '₹';
+          return pkg.plans.map(plan => {
+            const isSelected = growState.selectedPlan && growState.selectedPlan.days === plan.days;
+            return `
+              <div class="plan-option-card ${plan.recommended ? 'recommended' : ''} ${plan.custom ? 'plan-full' : ''} ${isSelected ? 'selected' : ''}" 
+                   id="plan-${plan.days}"
+                   onclick="growSelectPlan(${plan.days}, ${plan.price}, '${esc(plan.label)}')">
+                ${plan.recommended ? `
+                  <span class="plan-rec-badge">
+                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    Recommended
+                  </span>
+                ` : ''}
+                <div class="plan-select-radio">
+                  <input type="radio" name="growSelectedPlanRadio" class="plan-select-radio-input" value="${plan.days}" ${isSelected ? 'checked' : ''} style="display:none;" />
                 </div>
-              ` : ''}
-              ${plan.custom ? '<p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Starting price shown. Final price based on requirements.</p>' : ''}
-            </div>
-          `;
-        }).join('')}
+                <span class="plan-days">${esc(plan.label)}</span>
+                <span class="plan-price">${sym}${plan.price.toLocaleString()}</span>
+                ${plan.original ? `
+                  <div style="margin-top:4px;">
+                    <span class="plan-original">${sym}${plan.original.toLocaleString()}</span>
+                    <span class="plan-savings">${esc(plan.savings)}</span>
+                  </div>
+                ` : ''}
+                ${plan.custom ? '<p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Starting price shown. Final price based on requirements.</p>' : ''}
+              </div>
+            `;
+          }).join('');
+        })()}
       </div>
 
       <!-- Estimated Results -->
@@ -7984,12 +8161,79 @@ window.growContinueToPayment = function() {
 };
 
 // ── STEP 4: Payment ────────────────────────────────────────────────────────
+function getPaymentMethodsForCountry(countryCode) {
+  const code = String(countryCode || 'IN').toUpperCase();
+  switch (code) {
+    case 'US':
+      return [
+        { id: 'credit_card', name: 'Credit / Debit Card (USD)', icon: '<svg viewBox="0 0 76 22" width="76" height="22" fill="none"><g transform="translate(0, 1)"><circle cx="10" cy="10" r="8" fill="#EB001B"/><circle cx="18" cy="10" r="8" fill="#F79E1B" fill-opacity="0.85"/></g><text x="34" y="16" fill="#0F3595" font-family="sans-serif" font-weight="800" font-style="italic" font-size="16px">VISA/MC</text></svg>' },
+        { id: 'google_pay', name: 'Google Pay', icon: '<svg viewBox="0 0 72 24" width="72" height="24" fill="none"><text x="5" y="17" fill="#4285F4" font-weight="800" font-size="15px">GPay</text></svg>' },
+        { id: 'apple_pay', name: 'Apple Pay', icon: '<svg viewBox="0 0 72 24" width="72" height="24" fill="none"><text x="5" y="17" fill="#000000" font-weight="800" font-size="15px"> Pay</text></svg>' },
+        { id: 'wire_transfer', name: 'Wire / Bank Transfer', icon: '<svg viewBox="0 0 48 24" width="48" height="24" fill="none"><path d="M24 3L6 10v3h36v-3L24 3zm-13 10v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm5 8H7v2h34v-2z" fill="#334155"/></svg>' }
+      ];
+    case 'GB':
+      return [
+        { id: 'credit_card', name: 'UK Card Payment (GBP)', icon: '<svg viewBox="0 0 76 22" width="76" height="22" fill="none"><g transform="translate(0, 1)"><circle cx="10" cy="10" r="8" fill="#EB001B"/><circle cx="18" cy="10" r="8" fill="#F79E1B" fill-opacity="0.85"/></g><text x="34" y="16" fill="#0F3595" font-family="sans-serif" font-weight="800" font-style="italic" font-size="16px">Card</text></svg>' },
+        { id: 'bacs', name: 'BACS / Bank Transfer', icon: '<svg viewBox="0 0 48 24" width="48" height="24" fill="none"><path d="M24 3L6 10v3h36v-3L24 3zm-13 10v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm5 8H7v2h34v-2z" fill="#334155"/></svg>' },
+        { id: 'apple_pay', name: 'Apple Pay', icon: '<svg viewBox="0 0 72 24" width="72" height="24" fill="none"><text x="5" y="17" fill="#000000" font-weight="800" font-size="15px"> Pay</text></svg>' }
+      ];
+    case 'AE':
+      return [
+        { id: 'credit_card', name: 'UAE Debit / Credit Card (AED)', icon: '<svg viewBox="0 0 76 22" width="76" height="22" fill="none"><g transform="translate(0, 1)"><circle cx="10" cy="10" r="8" fill="#EB001B"/><circle cx="18" cy="10" r="8" fill="#F79E1B" fill-opacity="0.85"/></g><text x="34" y="16" fill="#0F3595" font-family="sans-serif" font-weight="800" font-style="italic" font-size="16px">Card</text></svg>' },
+        { id: 'telr_netbanking', name: 'UAE Net Banking', icon: '<svg viewBox="0 0 48 24" width="48" height="24" fill="none"><path d="M24 3L6 10v3h36v-3L24 3zm-13 10v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm5 8H7v2h34v-2z" fill="#334155"/></svg>' },
+        { id: 'apple_pay', name: 'Apple Pay', icon: '<svg viewBox="0 0 72 24" width="72" height="24" fill="none"><text x="5" y="17" fill="#000000" font-weight="800" font-size="15px"> Pay</text></svg>' }
+      ];
+    case 'CA':
+      return [
+        { id: 'credit_card', name: 'Canadian Card (CAD)', icon: '<svg viewBox="0 0 76 22" width="76" height="22" fill="none"><g transform="translate(0, 1)"><circle cx="10" cy="10" r="8" fill="#EB001B"/><circle cx="18" cy="10" r="8" fill="#F79E1B" fill-opacity="0.85"/></g><text x="34" y="16" fill="#0F3595" font-family="sans-serif" font-weight="800" font-style="italic" font-size="16px">Card</text></svg>' },
+        { id: 'interac', name: 'Interac e-Transfer', icon: '<svg viewBox="0 0 48 24" width="48" height="24" fill="none"><path d="M24 3L6 10v3h36v-3L24 3zm-13 10v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm5 8H7v2h34v-2z" fill="#E11D48"/></svg>' },
+        { id: 'apple_pay', name: 'Apple Pay', icon: '<svg viewBox="0 0 72 24" width="72" height="24" fill="none"><text x="5" y="17" fill="#000000" font-weight="800" font-size="15px"> Pay</text></svg>' }
+      ];
+    case 'AU':
+      return [
+        { id: 'credit_card', name: 'Australian Card (AUD)', icon: '<svg viewBox="0 0 76 22" width="76" height="22" fill="none"><g transform="translate(0, 1)"><circle cx="10" cy="10" r="8" fill="#EB001B"/><circle cx="18" cy="10" r="8" fill="#F79E1B" fill-opacity="0.85"/></g><text x="34" y="16" fill="#0F3595" font-family="sans-serif" font-weight="800" font-style="italic" font-size="16px">Card</text></svg>' },
+        { id: 'payid', name: 'PayID / Bank Transfer', icon: '<svg viewBox="0 0 48 24" width="48" height="24" fill="none"><path d="M24 3L6 10v3h36v-3L24 3zm-13 10v7h3v-7h-3zm6 0v7h3v-7h-3zm5 8H7v2h34v-2z" fill="#0D9488"/></svg>' },
+        { id: 'apple_pay', name: 'Apple Pay', icon: '<svg viewBox="0 0 72 24" width="72" height="24" fill="none"><text x="5" y="17" fill="#000000" font-weight="800" font-size="15px"> Pay</text></svg>' }
+      ];
+    case 'IN':
+    default:
+      return [
+        { id: 'google_pay', name: 'Google Pay', icon: '<svg viewBox="0 0 72 24" width="72" height="24" fill="none"><text x="5" y="17" fill="#3C4043" font-family="sans-serif" font-weight="500" font-size="15px">GPay</text></svg>' },
+        { id: 'razorpay', name: 'Razorpay', icon: '<svg viewBox="0 0 108 30" width="108" height="30" fill="none"><rect y="1" width="28" height="28" rx="7" fill="#072654"/><text x="5" y="21" fill="#FFFFFF" font-weight="900" font-size="16px">R</text><text x="36" y="21" fill="#072654" font-weight="800" font-size="16px">Razorpay</text></svg>' },
+        { id: 'paytm', name: 'PayTM', icon: '<svg viewBox="0 0 74 24" width="74" height="24" fill="none"><text x="0" y="18" fill="#002E7F" font-weight="900" font-size="19px">Pay<tspan fill="#00BAF2">tm</tspan></text></svg>' },
+        { id: 'upi', name: 'UPI', icon: '<svg viewBox="0 0 60 22" width="60" height="22" fill="none"><text x="0" y="17" fill="#097939" font-weight="800" font-size="16px">UPI</text></svg>' },
+        { id: 'credit_card', name: 'Cards', icon: '<svg viewBox="0 0 76 22" width="76" height="22" fill="none"><g transform="translate(0, 1)"><circle cx="10" cy="10" r="8" fill="#EB001B"/><circle cx="18" cy="10" r="8" fill="#F79E1B" fill-opacity="0.85"/></g><text x="34" y="16" fill="#0F3595" font-weight="800" font-size="16px">VISA</text></svg>' },
+        { id: 'net_banking', name: 'Net Banking', icon: '<svg viewBox="0 0 48 24" width="48" height="24" fill="none"><path d="M24 3L6 10v3h36v-3L24 3zm-13 10v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm5 8H7v2h34v-2z" fill="#334155"/></svg>' }
+      ];
+  }
+}
+
 function renderGrowPayment(el) {
+  const vendor = state.vendor || {};
+  const countryCode = String(vendor.countryCode || vendor.country || 'IN').toUpperCase();
+  const COUNTRY_METADATA = {
+    IN: { currency: 'INR', symbol: '₹', taxRate: 0.18, taxLabel: 'GST Breakdown (18%)' },
+    US: { currency: 'USD', symbol: '$', taxRate: 0.08, taxLabel: 'State & Sales Tax (8%)' },
+    GB: { currency: 'GBP', symbol: '£', taxRate: 0.20, taxLabel: 'VAT Breakdown (20%)' },
+    AE: { currency: 'AED', symbol: 'AED ', taxRate: 0.05, taxLabel: 'VAT Breakdown (5%)' },
+    CA: { currency: 'CAD', symbol: 'CA$', taxRate: 0.13, taxLabel: 'GST/HST Breakdown (13%)' },
+    AU: { currency: 'AUD', symbol: 'A$', taxRate: 0.10, taxLabel: 'GST Breakdown (10%)' }
+  };
+
+  const meta = COUNTRY_METADATA[countryCode] || COUNTRY_METADATA.IN;
+  const currencySymbol = meta.symbol;
+  const currencyCode = meta.currency;
+
   const plan = growState.selectedPlan;
   const base = plan ? plan.price : 0;
-  const gst = Math.round(base * 0.18);
+  const gst = Math.round(base * meta.taxRate);
   const total = base + gst;
   const pkg = PACKAGES[growState.selectedPackage];
+
+  const methods = getPaymentMethodsForCountry(countryCode);
+  if (!methods.some(m => m.id === growState.paymentMethod)) {
+    growState.paymentMethod = methods[0]?.id || 'credit_card';
+  }
 
   el.innerHTML = `
     <div class="card-premium" style="max-width: 960px; margin: 0 auto; box-shadow: var(--shadow-lg);">
@@ -7997,106 +8241,22 @@ function renderGrowPayment(el) {
 
       <div class="flex items-center gap-2 mb-6" style="border-bottom: 2px solid var(--border-color); padding-bottom: 16px;">
         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#DC1F30" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-        <h2 style="font-size:20px;font-weight:900;color:var(--text-primary);letter-spacing:-0.02em;margin:0;font-family:var(--sans);">Secure Payment Checkout</h2>
+        <h2 style="font-size:20px;font-weight:900;color:var(--text-primary);letter-spacing:-0.02em;margin:0;font-family:var(--sans);">Secure Payment Checkout (${esc(countryCode)})</h2>
       </div>
 
       <div class="payment-checkout-container">
         <!-- Left Column: Payment Methods Grid -->
         <div class="payment-methods-column">
-          <div class="payment-section-title">Select Payment Method</div>
+          <div class="payment-section-title">Select Payment Method (${esc(currencyCode)})</div>
           
           <div class="payment-methods-grid">
-            <!-- GPay -->
-            <div class="payment-card-option ${growState.paymentMethod === 'google_pay' ? 'selected' : ''}" 
-                 onclick="growSelectPayment('google_pay')" id="pm-google_pay">
-              <div class="payment-method-icon">
-                <svg viewBox="0 0 72 24" width="72" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <g transform="translate(0,1) scale(0.4583)">
-                    <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v9h11.8c-.51 2.74-2.06 5.06-4.39 6.62v5.49h7.07c4.15-3.82 6.54-9.46 6.54-16.61z"/>
-                    <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.07-5.49c-1.96 1.33-4.49 2.12-7.49 2.12-5.76 0-10.66-3.89-12.4-9.12H4.31v5.65C7.92 41.5 15.36 46 24 46z"/>
-                    <path fill="#FBBC05" d="M11.6 28.18A14.4 14.4 0 0 1 10.8 24c0-1.46.25-2.87.7-4.18v-5.65H4.31C3.17 16.5 2.5 20.13 2.5 24s.67 7.5 1.81 9.83z"/>
-                    <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.27-6.27C34.91 4.18 29.93 2 24 2 15.36 2 7.92 6.5 4.31 14.18l7.29 5.65c1.74-5.23 6.64-9.08 12.4-9.08z"/>
-                  </g>
-                  <text x="25" y="17" fill="#3C4043" font-family="'Google Sans', Roboto, system-ui, -apple-system, sans-serif" font-weight="500" font-size="15.5">Pay</text>
-                </svg>
+            ${methods.map(m => `
+              <div class="payment-card-option ${growState.paymentMethod === m.id ? 'selected' : ''}" 
+                   onclick="growSelectPayment('${m.id}')" id="pm-${m.id}">
+                <div class="payment-method-icon">${m.icon}</div>
+                <span class="payment-method-name">${esc(m.name)}</span>
               </div>
-              <span class="payment-method-name">Google Pay</span>
-            </div>
-
-            <!-- Razorpay -->
-            <div class="payment-card-option ${growState.paymentMethod === 'razorpay' ? 'selected' : ''}"
-                 onclick="growSelectPayment('razorpay')" id="pm-razorpay">
-              <div class="payment-method-icon">
-                <svg viewBox="0 0 108 30" width="108" height="30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect y="1" width="28" height="28" rx="7" fill="#072654"/>
-                  <text x="5" y="21" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="900" font-size="16px">R</text>
-                  <text x="36" y="21" fill="#072654" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="16px" letter-spacing="-0.02em">Razorpay</text>
-                </svg>
-              </div>
-              <span class="payment-method-name">Razorpay</span>
-            </div>
-
-            <!-- Paytm -->
-            <div class="payment-card-option ${growState.paymentMethod === 'paytm' ? 'selected' : ''}" 
-                 onclick="growSelectPayment('paytm')" id="pm-paytm">
-              <div class="payment-method-icon">
-                <svg viewBox="0 0 74 24" width="74" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <text x="0" y="18" fill="#002E7F" font-family="'Inter', system-ui, sans-serif" font-weight="900" font-size="19px" letter-spacing="-0.06em">Pay<tspan fill="#00BAF2">tm</tspan></text>
-                </svg>
-              </div>
-              <span class="payment-method-name">PayTM</span>
-            </div>
-
-            <!-- UPI -->
-            <div class="payment-card-option ${growState.paymentMethod === 'upi' ? 'selected' : ''}" 
-                 onclick="growSelectPayment('upi')" id="pm-upi">
-              <div class="payment-method-icon">
-                <svg viewBox="0 0 60 22" width="60" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <text x="0" y="17" fill="#097939" font-family="system-ui, sans-serif" font-style="italic" font-weight="800" font-size="16px" letter-spacing="-0.03em">U<tspan fill="#0b66c2">P</tspan><tspan fill="#F59E0B">I</tspan></text>
-                  <path d="M42 4l-4 14h3.5l4-14H42z" fill="#0b66c2"/>
-                  <path d="M49 4l-4 14h3.5l4-14H49z" fill="#097939"/>
-                </svg>
-              </div>
-              <span class="payment-method-name">UPI</span>
-            </div>
-
-            <!-- Cards -->
-            <div class="payment-card-option ${growState.paymentMethod === 'credit_card' ? 'selected' : ''}" 
-                 onclick="growSelectPayment('credit_card')" id="pm-credit_card">
-              <div class="payment-method-icon">
-                <svg viewBox="0 0 76 22" width="76" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <g transform="translate(0, 1)">
-                    <circle cx="10" cy="10" r="8" fill="#EB001B"/>
-                    <circle cx="18" cy="10" r="8" fill="#F79E1B" fill-opacity="0.85"/>
-                  </g>
-                  <text x="34" y="16" fill="#0F3595" font-family="system-ui, sans-serif" font-weight="800" font-style="italic" font-size="16px" letter-spacing="-0.05em">VISA</text>
-                </svg>
-              </div>
-              <span class="payment-method-name">Cards</span>
-            </div>
-
-            <!-- Net Banking -->
-            <div class="payment-card-option ${growState.paymentMethod === 'net_banking' ? 'selected' : ''}" 
-                 onclick="growSelectPayment('net_banking')" id="pm-net_banking">
-              <div class="payment-method-icon">
-                <svg viewBox="0 0 48 24" width="48" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M24 3L6 10v3h36v-3L24 3zm-13 10v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm6 0v7h3v-7h-3zm5 8H7v2h34v-2z" fill="#334155"/>
-                </svg>
-              </div>
-              <span class="payment-method-name">Net Banking</span>
-            </div>
-
-            <!-- Wallets -->
-            <div class="payment-card-option ${growState.paymentMethod === 'wallet' ? 'selected' : ''}" 
-                 onclick="growSelectPayment('wallet')" id="pm-wallet">
-              <div class="payment-method-icon">
-                <svg viewBox="0 0 48 24" width="48" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M36 12H28c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h8V4c0-1.1-.9-2-2-2H14c-2.2 0-4 1.8-4 4v12c0 2.2 1.8 4 4 4h20c1.1 0 2-.9 2-2v-4z" fill="#7C3AED"/>
-                  <circle cx="31" cy="9" r="1.5" fill="#FFFFFF"/>
-                </svg>
-              </div>
-              <span class="payment-method-name">Wallets</span>
-            </div>
+            `).join('')}
           </div>
         </div>
 
@@ -8119,15 +8279,15 @@ function renderGrowPayment(el) {
             <div class="payment-pricing-details">
               <div class="payment-summary-row">
                 <span>Base Campaign Cost</span>
-                <span>₹${base.toLocaleString('en-IN')}</span>
+                <span>${currencySymbol}${base.toLocaleString()}</span>
               </div>
               <div class="payment-summary-row">
-                <span>GST Breakdown (18%)</span>
-                <span>₹${gst.toLocaleString('en-IN')}</span>
+                <span>${esc(meta.taxLabel)}</span>
+                <span>${currencySymbol}${gst.toLocaleString()}</span>
               </div>
               <div class="payment-summary-row total">
-                <span>Final Total (INR)</span>
-                <span class="total-amount">₹${total.toLocaleString('en-IN')}</span>
+                <span>Final Total (${esc(currencyCode)})</span>
+                <span class="total-amount">${currencySymbol}${total.toLocaleString()}</span>
               </div>
             </div>
 

@@ -61,10 +61,10 @@ const WedEazzyStore = {
     return memoryStore;
   },
 
-  save(data) {
-    const prev = JSON.stringify(memoryStore);
+  save(data, forceUpdate = false) {
+    const prevFingerprint = memoryStore ? `${memoryStore.vendors?.length || 0}_${memoryStore.users?.length || 0}_${memoryStore.bookings?.length || 0}_${JSON.stringify(memoryStore.stats || {})}` : '';
     memoryStore = data;
-    const next = JSON.stringify(data);
+    const nextFingerprint = `${data.vendors?.length || 0}_${data.users?.length || 0}_${data.bookings?.length || 0}_${JSON.stringify(data.stats || {})}`;
 
     try {
       localStorage.setItem("wedeazzy_admin_store", JSON.stringify({
@@ -75,8 +75,8 @@ const WedEazzyStore = {
       console.warn("Failed to persist admin store summary to localStorage:", e);
     }
 
-    // Only fire if the in-memory data actually changed — prevents blink on every sync tick
-    if (prev !== next) {
+    // Only fire if stats or counts actually changed, or if forceUpdate is true — prevents UI thread freeze
+    if (forceUpdate || prevFingerprint !== nextFingerprint) {
       window.dispatchEvent(new CustomEvent("wedeazzy_store_updated"));
     }
   },
@@ -93,39 +93,42 @@ const WedEazzyStore = {
   /**
    * Synchronize state store with the active database values via backend REST API
    */
-  async sync() {
+  async sync(force = false) {
     const token = localStorage.getItem("wedeazzy_admin_token") || sessionStorage.getItem("wedeazzy_admin_token");
     if (!token) return;
 
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-
-      // Throws on non-2xx (a 401/403/500 with a JSON error body used to
-      // resolve fine here, so the `if (xRes.stats)`-style guards below just
-      // skipped silently — the dashboard kept showing stale data with no
-      // indication anything failed).
       const fetchJson = (url) => fetch(url, { headers }).then((r) => {
         if (!r.ok) throw new Error(`${url} -> HTTP ${r.status}`);
         return r.json();
       });
 
-      const [analyticsRes, vendorsRes, usersRes, bookingsRes, paymentsRes] = await Promise.all([
-        fetchJson(`${API_BASE}/api/admin/analytics`),
-        fetchJson(`${API_BASE}/api/admin/vendors`),
-        fetchJson(`${API_BASE}/api/admin/users`),
-        fetchJson(`${API_BASE}/api/admin/bookings`),
-        fetchJson(`${API_BASE}/api/reports/export/payments`).catch(() => ({ ok: false }))
-      ]);
-
       const store = this.get();
-      if (analyticsRes.stats) store.stats = analyticsRes.stats;
-      if (vendorsRes.vendors) { store.vendors = vendorsRes.vendors; store.vendorsTotalCount = vendorsRes.totalCount ?? vendorsRes.vendors.length; }
-      if (usersRes.users) { store.users = usersRes.users; store.usersTotalCount = usersRes.totalCount ?? usersRes.users.length; }
-      if (bookingsRes.bookings) { store.bookings = bookingsRes.bookings; store.bookingsTotalCount = bookingsRes.totalCount ?? bookingsRes.bookings.length; }
-      if (paymentsRes && paymentsRes.ok) store.payments = paymentsRes.data;
+      const needVendors = force || !store.vendors || store.vendors.length === 0;
+      const needUsers = force || !store.users || store.users.length === 0;
+      const needBookings = force || !store.bookings || store.bookings.length === 0;
+      const needPayments = force || !store.payments || store.payments.length === 0;
 
-      // Extract venues list from vendors list where category = 'Banquet Halls' to keep compatibility
-      if (vendorsRes.vendors) {
+      const promises = [fetchJson(`${API_BASE}/api/admin/analytics`)];
+      if (needVendors) promises.push(fetchJson(`${API_BASE}/api/admin/vendors`));
+      else promises.push(Promise.resolve(null));
+
+      if (needUsers) promises.push(fetchJson(`${API_BASE}/api/admin/users`));
+      else promises.push(Promise.resolve(null));
+
+      if (needBookings) promises.push(fetchJson(`${API_BASE}/api/admin/bookings`));
+      else promises.push(Promise.resolve(null));
+
+      if (needPayments) promises.push(fetchJson(`${API_BASE}/api/reports/export/payments`).catch(() => ({ ok: false })));
+      else promises.push(Promise.resolve(null));
+
+      const [analyticsRes, vendorsRes, usersRes, bookingsRes, paymentsRes] = await Promise.all(promises);
+
+      if (analyticsRes && analyticsRes.stats) store.stats = analyticsRes.stats;
+      if (vendorsRes && vendorsRes.vendors) {
+        store.vendors = vendorsRes.vendors;
+        store.vendorsTotalCount = vendorsRes.totalCount ?? vendorsRes.vendors.length;
         store.venues = vendorsRes.vendors
           .filter(v => v.category === 'Banquet Halls')
           .map(v => ({
@@ -140,8 +143,11 @@ const WedEazzyStore = {
             contact: v.contact
           }));
       }
+      if (usersRes && usersRes.users) { store.users = usersRes.users; store.usersTotalCount = usersRes.totalCount ?? usersRes.users.length; }
+      if (bookingsRes && bookingsRes.bookings) { store.bookings = bookingsRes.bookings; store.bookingsTotalCount = bookingsRes.totalCount ?? bookingsRes.bookings.length; }
+      if (paymentsRes && paymentsRes.ok) store.payments = paymentsRes.data;
 
-      this.save(store);
+      this.save(store, force);
     } catch (e) {
       console.warn("Failed to synchronize with administrative API:", e);
       // sync() polls every few seconds — throttle the toast so a backend
@@ -409,9 +415,10 @@ const WedEazzyStore = {
     }
   },
 
-  async getPlans() {
+  async getPlans(countryCode) {
     try {
-      const res = await fetch(`${API_BASE}/api/public/plans`);
+      const q = countryCode ? `?countryCode=${encodeURIComponent(countryCode)}` : '?all=true';
+      const res = await fetch(`${API_BASE}/api/public/plans${q}`);
       const data = await res.json();
       return data;
     } catch (e) {
@@ -420,7 +427,7 @@ const WedEazzyStore = {
     }
   },
 
-  async updatePlans(plans) {
+  async updatePlans(plans, countryCode) {
     const token = localStorage.getItem("wedeazzy_admin_token") || sessionStorage.getItem("wedeazzy_admin_token");
     try {
       const res = await fetch(`${API_BASE}/api/admin/plans`, {
@@ -429,7 +436,7 @@ const WedEazzyStore = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ plans })
+        body: JSON.stringify({ plans, countryCode })
       });
       const data = await res.json();
       await this.sync();
