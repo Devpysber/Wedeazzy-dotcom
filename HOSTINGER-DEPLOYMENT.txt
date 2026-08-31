@@ -1,0 +1,79 @@
+==================================================
+WedEazzy — Hostinger Production Deployment Guide
+==================================================
+
+Follow these step-by-step instructions to deploy WedEazzy to Hostinger Node.js Application Hosting.
+
+--------------------------------------------------
+1. UPLOAD & EXTRACT ARCHIVE
+--------------------------------------------------
+1. Log in to Hostinger hPanel and open File Manager.
+2. Navigate to your Node.js application root directory:
+   /home/u277519461/domains/wedeazzy.com/nodejs/ (or your public_html folder).
+3. Upload `WedEazzy-Production-Ready.zip`.
+4. Extract the ZIP file directly into the application root directory.
+   Verify that app.js, package.json, backend/, and public/ appear at the root level of the folder.
+
+--------------------------------------------------
+2. NODE.JS DASHBOARD CONFIGURATION
+--------------------------------------------------
+1. In Hostinger hPanel, go to "Node.js Dashboard".
+2. Set Node.js Version: 20.x (or higher).
+3. Set Application Root: /home/u277519461/domains/wedeazzy.com/nodejs/
+4. Set Application Startup File: app.js
+5. Configure Environment Variables (refer to HOSTINGER-ENV-REQUIRED.txt):
+   - NODE_ENV=production
+   - PORT=4000
+   - PUBLIC_BASE_URL=https://wedeazzy.com
+   - FRONTEND_ORIGIN=https://wedeazzy.com
+   - DATABASE_URL=mysql://db_username:db_password@127.0.0.1:3306/db_name
+   - JWT_SECRET=your_secure_random_hex_string
+   - ADMIN_EMAIL=wedeazzy@gmail.com
+   - ADMIN_PASSWORD=your_secure_password
+   - SMTP_HOST=smtp.hostinger.com
+   - SMTP_PORT=465
+   - SMTP_USER=info@wedeazzy.com
+   - SMTP_PASS=your_smtp_password
+
+--------------------------------------------------
+3. INSTALL DEPENDENCIES & GENERATE PRISMA CLIENT
+--------------------------------------------------
+Click "Run npm install" in Hostinger Node.js Dashboard (or via SSH terminal):
+   cd /home/u277519461/domains/wedeazzy.com/nodejs
+   npm install
+
+--------------------------------------------------
+4. REPAIR PRODUCTION DATABASE SCHEMA
+--------------------------------------------------
+IMPORTANT: Before repairing the schema, take a MySQL database backup in Hostinger hPanel -> Databases -> Backup.
+
+Run the non-destructive schema repair script via SSH terminal (or Node.js Dashboard Terminal):
+
+   cd /home/u277519461/domains/wedeazzy.com/nodejs/backend
+   node src/scripts/db-repair.js
+
+What db-repair.js does:
+- Clears any previous P3009 failed migration lock.
+- Safely alters the database tables to add missing columns in-place (Vendor.state, email_campaigns.preview_text, countries, cities, etc.).
+- Baselines the migration history so future server boots succeed cleanly.
+- Preserves 100% of existing production rows and data.
+
+Next, seed countries and link vendor listings:
+   node src/scripts/seed-countries.js
+
+--------------------------------------------------
+5. START & VERIFY APPLICATION
+--------------------------------------------------
+1. In Hostinger Node.js Dashboard, click "Restart Application".
+2. Test the health endpoint:
+   https://wedeazzy.com/health
+   Expected response:
+   {
+     "ok": true,
+     "env": "production",
+     "database": "ok",
+     "schema": "ok",
+     "migrations": "successful",
+     "adminSeed": "ok"
+   }
+3. Open https://wedeazzy.com and test homepage vendor browsing, city pages, and admin login at https://wedeazzy.com/pages/admin-login.html.

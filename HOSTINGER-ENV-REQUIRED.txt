@@ -1,0 +1,54 @@
+==================================================
+WedEazzy — Hostinger Required Environment Variables
+==================================================
+
+Set these environment variables in your Hostinger hPanel -> Node.js Dashboard -> Environment Variables panel (or in your host environment).
+
+DO NOT paste passwords or secrets into source control files.
+
+--------------------------------------------------
+REQUIRED (Core Server & Database)
+--------------------------------------------------
+NODE_ENV=production
+PORT=4000
+PUBLIC_BASE_URL=https://wedeazzy.com
+FRONTEND_ORIGIN=https://wedeazzy.com
+DATABASE_URL=mysql://db_username:db_password@127.0.0.1:3306/db_name
+JWT_SECRET=
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+
+--------------------------------------------------
+REQUIRED (Email OTP & Transactional Notifications)
+--------------------------------------------------
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=WedEazzy <info@wedeazzy.com>
+SUPPORT_EMAIL=support@wedeazzy.com
+
+--------------------------------------------------
+OPTIONAL / FEATURE-SPECIFIC
+--------------------------------------------------
+# Admin WhatsApp notification recipients (comma-separated phone numbers in E.164 without +)
+ADMIN_PHONES=
+
+# Google OAuth 2.0 (For Google Social Login)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=https://wedeazzy.com/api/auth/google/callback
+
+# Razorpay Payment Gateway
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+
+# Public FAQ Chatbot AI Fallback (NVIDIA NIM API Key)
+NVIDIA_NIM_API_KEY=
+
+# Storage & Auth Directories
+UPLOAD_DIR=./uploads
+BAILEYS_AUTH_DIR=./baileys-auth
+MAX_UPLOAD_MB=5

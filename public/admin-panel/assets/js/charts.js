@@ -18,6 +18,14 @@ const WedEazzyCharts = {
     window.activeCharts = {};
   },
 
+  renderAll() {
+    Object.keys(window.activeCharts || {}).forEach(key => {
+      if (window.activeCharts[key] && typeof window.activeCharts[key].resize === 'function') {
+        try { window.activeCharts[key].resize(); window.activeCharts[key].update(); } catch (e) {}
+      }
+    });
+  },
+
   // Read current CSS variables to match exact theme states dynamically
   getThemeColors() {
     const isDark = document.documentElement.getAttribute("data-theme") === "dark";

@@ -1,0 +1,16 @@
+# Defence-in-depth: if this app root ends up inside public_html, Apache must not
+# serve the server-side files as plain text. Harmless when Apache isn't in front.
+<IfModule mod_authz_core.c>
+  <FilesMatch "^\.env">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  <FilesMatch "^\.env">
+    Order allow,deny
+    Deny from all
+  </FilesMatch>
+</IfModule>
+
+RedirectMatch 404 ^/backend/
+RedirectMatch 404 ^/.*/\.env

@@ -37,6 +37,16 @@ const path = require('path');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 
+// Load environment variables from backend/.env or root .env
+const backendEnv = path.resolve(__dirname, '../../.env');
+const rootEnv = path.resolve(__dirname, '../../../../.env');
+if (fs.existsSync(backendEnv)) {
+  require('dotenv').config({ path: backendEnv });
+}
+if (fs.existsSync(rootEnv)) {
+  require('dotenv').config({ path: rootEnv });
+}
+
 const BACKEND_ROOT = path.resolve(__dirname, '..', '..');
 const SCHEMA = 'prisma/schema.prisma';
 const MIGRATIONS_DIR = path.join(BACKEND_ROOT, 'prisma', 'migrations');
@@ -44,7 +54,13 @@ const MIGRATIONS_DIR = path.join(BACKEND_ROOT, 'prisma', 'migrations');
 // Bare `node` is not on the shell PATH under Hostinger's Passenger
 // environment, so always invoke the interpreter running this script.
 const NODE_BIN = process.execPath;
-const PRISMA_CLI = path.join(BACKEND_ROOT, 'node_modules', 'prisma', 'build', 'index.js');
+
+// Resolve Prisma CLI binary from backend/node_modules or root node_modules
+const PRISMA_CLI_BACKEND = path.join(BACKEND_ROOT, 'node_modules', 'prisma', 'build', 'index.js');
+const PRISMA_CLI_ROOT = path.join(BACKEND_ROOT, '..', 'node_modules', 'prisma', 'build', 'index.js');
+const PRISMA_CLI = fs.existsSync(PRISMA_CLI_BACKEND)
+  ? PRISMA_CLI_BACKEND
+  : (fs.existsSync(PRISMA_CLI_ROOT) ? PRISMA_CLI_ROOT : null);
 
 const acceptDataLoss = process.argv.includes('--accept-data-loss');
 
@@ -53,11 +69,20 @@ function log(msg) { console.log(`[db-repair] ${msg}`); }
 /** Run the local Prisma CLI. Returns { ok, output } instead of throwing. */
 function prisma(args, { quiet = false } = {}) {
   try {
-    const output = execFileSync(NODE_BIN, [PRISMA_CLI, ...args], {
-      cwd: BACKEND_ROOT,
-      encoding: 'utf8',
-      stdio: 'pipe',
-    });
+    let output;
+    if (PRISMA_CLI) {
+      output = execFileSync(NODE_BIN, [PRISMA_CLI, ...args], {
+        cwd: BACKEND_ROOT,
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+    } else {
+      output = execFileSync('npx', ['prisma', ...args], {
+        cwd: BACKEND_ROOT,
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+    }
     if (!quiet) process.stdout.write(output);
     return { ok: true, output };
   } catch (err) {
@@ -76,9 +101,8 @@ function migrationNames() {
 }
 
 function main() {
-  if (!fs.existsSync(PRISMA_CLI)) {
-    console.error('[db-repair] Prisma CLI not found. Run `npm install` in the backend folder first.');
-    process.exit(1);
+  if (!PRISMA_CLI) {
+    log('Local prisma CLI binary not found at node_modules/prisma/build/index.js — falling back to npx prisma');
   }
   if (!process.env.DATABASE_URL) {
     console.error('[db-repair] DATABASE_URL is not set. Fill it in backend/.env before running this.');

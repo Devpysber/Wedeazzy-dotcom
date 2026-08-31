@@ -22,8 +22,18 @@ function buildUserWhereClause(rules = {}) {
 
   if (audienceType === 'couples') {
     where.role = 'couple';
-  } else if (audienceType === 'vendors' || audienceType === 'claimed' || audienceType === 'unclaimed' || audienceType === 'verified' || audienceType === 'unverified' || audienceType === 'active' || audienceType === 'inactive') {
+  } else if (audienceType === 'vendors') {
     where.role = 'vendor';
+    vendorWhere.userId = { not: null };
+  } else if (audienceType === 'claimed' || claimStatus === 'claimed') {
+    where.role = 'vendor';
+    vendorWhere.userId = { not: null };
+  } else if (audienceType === 'unclaimed' || claimStatus === 'unclaimed') {
+    where.role = 'vendor';
+    vendorWhere.userId = null;
+  } else if (audienceType === 'verified' || verificationStatus === 'verified' || audienceType === 'unverified' || verificationStatus === 'unverified' || audienceType === 'active' || audienceType === 'inactive') {
+    where.role = 'vendor';
+    vendorWhere.userId = { not: null };
   }
 
   // Vendor relation filters
@@ -132,6 +142,39 @@ async function resolveRecipients(rules = {}, customEmailsRaw = '') {
     });
   });
 
+  // Process unclaimed listings ONLY if explicitly requested by Admin
+  if (rules.audienceType === 'unclaimed' || rules.claimStatus === 'unclaimed') {
+    const unclaimedWhere = { userId: null };
+    if (rules.categories && rules.categories.length > 0) {
+      unclaimedWhere.categorySlug = Array.isArray(rules.categories) ? { in: rules.categories } : rules.categories;
+    }
+    if (rules.cities && rules.cities.length > 0) {
+      unclaimedWhere.citySlug = Array.isArray(rules.cities) ? { in: rules.cities } : rules.cities;
+    }
+    const unclaimedVendors = await prisma.vendor.findMany({
+      where: unclaimedWhere,
+      select: { id: true, businessName: true, email: true, city: true, category: true, isActive: true }
+    });
+
+    unclaimedVendors.forEach(v => {
+      if (!v.email || !EMAIL_REGEX.test(v.email.trim())) return;
+      const cleanEmail = v.email.trim().toLowerCase();
+      if (!recipientMap.has(cleanEmail)) {
+        recipientMap.set(cleanEmail, {
+          id: null,
+          vendorId: v.id,
+          email: cleanEmail,
+          name: v.businessName || 'Valued Business',
+          role: 'unclaimed_vendor',
+          businessName: v.businessName || '',
+          city: v.city || '',
+          category: v.category || '',
+          status: 'Unclaimed Listing'
+        });
+      }
+    });
+  }
+
   // Process manual/custom emails
   if (customEmailsRaw) {
     let emails = [];
@@ -212,18 +255,56 @@ async function getAudiencePreview(rules = {}, customEmailsRaw = '', page = 1, li
   };
 }
 
+const env = require('../config/env');
+
+function calculateVendorProfileCompletion(vendor = {}) {
+  let score = 20;
+  if (vendor.businessName && vendor.city && vendor.category) score += 20;
+  if (vendor.description && vendor.description.length > 20) score += 20;
+  if (vendor.phone || vendor.user?.phone) score += 15;
+  if (vendor.priceRange || vendor.address) score += 10;
+  if (Array.isArray(vendor.photos) && vendor.photos.length > 0) score += 15;
+  return Math.min(100, score);
+}
+
 /**
  * Replaces personalization variables in email text/HTML content.
  */
 function replacePersonalization(content = '', recipient = {}) {
   if (!content) return '';
+  const baseUrl = env.PUBLIC_BASE_URL || 'https://wedeazzy.com';
+  const supportEmail = env.SUPPORT_EMAIL || 'info@wedeazzy.com';
+  const ownerName = recipient.name || recipient.ownerName || 'Valued Partner';
+  const businessName = recipient.businessName || recipient.name || 'Valued Vendor';
+  const city = recipient.city || 'your area';
+  const category = recipient.category || 'Wedding Vendor';
+  const completionPct = recipient.completionPercentage != null
+    ? `${recipient.completionPercentage}%`
+    : `${calculateVendorProfileCompletion(recipient)}%`;
+  const slug = recipient.slug || '';
+  const subscriptionName = recipient.subscriptionPlan || recipient.tier || 'Free Plan';
+
   return content
-    .replace(/\{\{\s*name\s*\}\}/gi, recipient.name || 'there')
-    .replace(/\{\{\s*businessName\s*\}\}/gi, recipient.businessName || recipient.name || 'Valued Partner')
-    .replace(/\{\{\s*city\s*\}\}/gi, recipient.city || 'your area')
-    .replace(/\{\{\s*category\s*\}\}/gi, recipient.category || 'wedding vendor')
-    .replace(/\{\{\s*vendorLoginUrl\s*\}\}/gi, 'https://wedeazzy.com/pages/vendor-login.html')
-    .replace(/\{\{\s*claimUrl\s*\}\}/gi, 'https://wedeazzy.com/pages/claim.html');
+    .replace(/\{\{\s*business_name\s*\}\}/gi, businessName)
+    .replace(/\{\{\s*businessName\s*\}\}/gi, businessName)
+    .replace(/\{\{\s*owner_name\s*\}\}/gi, ownerName)
+    .replace(/\{\{\s*ownerName\s*\}\}/gi, ownerName)
+    .replace(/\{\{\s*name\s*\}\}/gi, ownerName)
+    .replace(/\{\{\s*city\s*\}\}/gi, city)
+    .replace(/\{\{\s*business_category\s*\}\}/gi, category)
+    .replace(/\{\{\s*category\s*\}\}/gi, category)
+    .replace(/\{\{\s*profile_completion_percentage\s*\}\}/gi, completionPct)
+    .replace(/\{\{\s*profile_url\s*\}\}/gi, slug ? `${baseUrl}/pages/vendor.html?slug=${slug}` : `${baseUrl}/pages/vendor-login.html`)
+    .replace(/\{\{\s*vendorLoginUrl\s*\}\}/gi, `${baseUrl}/pages/vendor-login.html`)
+    .replace(/\{\{\s*dashboard_url\s*\}\}/gi, `${baseUrl}/pages/bdashboard.html`)
+    .replace(/\{\{\s*subscription_name\s*\}\}/gi, subscriptionName)
+    .replace(/\{\{\s*upgrade_url\s*\}\}/gi, `${baseUrl}/pages/bdashboard.html#pricing`)
+    .replace(/\{\{\s*grow_business_url\s*\}\}/gi, `${baseUrl}/pages/marketing.html`)
+    .replace(/\{\{\s*whatsapp_leads_url\s*\}\}/gi, `${baseUrl}/pages/marketing.html#whatsapp`)
+    .replace(/\{\{\s*website_leads_url\s*\}\}/gi, `${baseUrl}/pages/marketing.html#website`)
+    .replace(/\{\{\s*social_media_leads_url\s*\}\}/gi, `${baseUrl}/pages/marketing.html#social`)
+    .replace(/\{\{\s*support_email\s*\}\}/gi, supportEmail)
+    .replace(/\{\{\s*claimUrl\s*\}\}/gi, `${baseUrl}/pages/claim.html`);
 }
 
 /**
@@ -418,22 +499,137 @@ async function retryFailedCampaign(campaignId) {
 }
 
 /**
- * Automatically checks for scheduled campaigns whose dispatch time has arrived.
+ * Calculates the next execution timestamp for recurring or scheduled email campaigns.
+ */
+function calculateNextRunAt(config = {}, fromTime = new Date()) {
+  const { scheduleType, scheduleTime, daysOfWeek, dayOfMonth, scheduledAt } = config;
+  const type = (scheduleType || 'once').toLowerCase();
+
+  if (type === 'once') {
+    return scheduledAt ? new Date(scheduledAt) : null;
+  }
+
+  const base = new Date(fromTime.getTime());
+  let targetHour = 9;
+  let targetMinute = 0;
+
+  if (scheduleTime && typeof scheduleTime === 'string' && scheduleTime.includes(':')) {
+    const parts = scheduleTime.split(':');
+    targetHour = parseInt(parts[0], 10) || 0;
+    targetMinute = parseInt(parts[1], 10) || 0;
+  }
+
+  if (type === 'daily') {
+    const candidate = new Date(base);
+    candidate.setHours(targetHour, targetMinute, 0, 0);
+    if (candidate <= base) {
+      candidate.setDate(candidate.getDate() + 1);
+    }
+    return candidate;
+  }
+
+  if (type === 'weekly') {
+    let days = [];
+    if (Array.isArray(daysOfWeek)) {
+      days = daysOfWeek;
+    } else if (typeof daysOfWeek === 'string') {
+      try {
+        const parsed = JSON.parse(daysOfWeek);
+        days = Array.isArray(parsed) ? parsed : daysOfWeek.split(',');
+      } catch (e) {
+        days = daysOfWeek.split(',');
+      }
+    }
+
+    const dayMap = {
+      SUN: 0, MON: 1, TUE: 2, WED: 3, THU: 4, FRI: 5, SAT: 6,
+      SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6
+    };
+
+    const targetDays = days.map(d => {
+      const u = String(d).trim().toUpperCase();
+      return dayMap[u] !== undefined ? dayMap[u] : (parseInt(d, 10) % 7 || 0);
+    });
+
+    if (targetDays.length === 0) targetDays.push(1); // default Monday
+
+    for (let dayOffset = 0; dayOffset <= 7; dayOffset++) {
+      const candidate = new Date(base);
+      candidate.setDate(candidate.getDate() + dayOffset);
+      candidate.setHours(targetHour, targetMinute, 0, 0);
+      if (candidate > base && targetDays.includes(candidate.getDay())) {
+        return candidate;
+      }
+    }
+
+    const fallback = new Date(base);
+    fallback.setDate(fallback.getDate() + 1);
+    fallback.setHours(targetHour, targetMinute, 0, 0);
+    return fallback;
+  }
+
+  if (type === 'monthly') {
+    const targetDom = Math.max(1, Math.min(31, parseInt(dayOfMonth, 10) || 1));
+    let candidate = new Date(base);
+    candidate.setDate(targetDom);
+    candidate.setHours(targetHour, targetMinute, 0, 0);
+
+    if (candidate <= base) {
+      candidate.setMonth(candidate.getMonth() + 1);
+      candidate.setDate(targetDom);
+      candidate.setHours(targetHour, targetMinute, 0, 0);
+    }
+    return candidate;
+  }
+
+  return null;
+}
+
+/**
+ * Automatically checks for scheduled or recurring campaigns whose dispatch time has arrived.
  */
 async function processScheduledCampaigns() {
   try {
+    const now = new Date();
     const dueCampaigns = await prisma.emailCampaign.findMany({
       where: {
         status: 'scheduled',
-        scheduledAt: { lte: new Date() }
+        OR: [
+          { scheduledAt: { lte: now } },
+          { nextRunAt: { lte: now } }
+        ]
       }
     });
 
     for (const campaign of dueCampaigns) {
-      logger.info({ campaignId: campaign.id, name: campaign.name }, 'Triggering scheduled email campaign broadcast');
-      dispatchCampaign(campaign.id).catch(err => {
-        logger.error({ err, campaignId: campaign.id }, 'Error during scheduled campaign dispatch');
-      });
+      logger.info({ campaignId: campaign.id, name: campaign.name, scheduleType: campaign.scheduleType }, 'Triggering scheduled/recurring email campaign broadcast');
+      
+      try {
+        await dispatchCampaign(campaign.id);
+      } catch (err) {
+        logger.error({ err, campaignId: campaign.id }, 'Error during campaign dispatch execution');
+      }
+
+      const scheduleType = (campaign.scheduleType || 'once').toLowerCase();
+      if (scheduleType !== 'once') {
+        const nextRun = calculateNextRunAt(campaign, new Date());
+        await prisma.emailCampaign.update({
+          where: { id: campaign.id },
+          data: {
+            status: 'scheduled',
+            lastRunAt: new Date(),
+            nextRunAt: nextRun
+          }
+        });
+        logger.info({ campaignId: campaign.id, nextRunAt: nextRun }, 'Rescheduled recurring email campaign');
+      } else {
+        await prisma.emailCampaign.update({
+          where: { id: campaign.id },
+          data: {
+            lastRunAt: new Date()
+          }
+        });
+      }
     }
   } catch (err) {
     logger.error({ err }, 'Error checking scheduled email campaigns');
@@ -452,5 +648,6 @@ module.exports = {
   getEmailCampaignStats,
   dispatchCampaign,
   retryFailedCampaign,
-  processScheduledCampaigns
+  processScheduledCampaigns,
+  calculateNextRunAt
 };

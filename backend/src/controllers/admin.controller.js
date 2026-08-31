@@ -61,17 +61,17 @@ async function getAnalytics(req, res, next) {
 
     // Format legacy stats object to maintain full backward compatibility
     const stats = {
-      pendingBookings: overview.bookingsOverview.pending,
-      inProgressBookings: overview.bookingsOverview.pending,
-      confirmedBookings: overview.bookingsOverview.confirmed,
-      cancelledBookings: overview.bookingsOverview.cancelled,
-      venuesCount: overview.listingHealth.totalListings,
-      vendorsCount: overview.kpis.vendors.value,
-      servicesCount: overview.kpis.categories.value,
-      usersCount: overview.kpis.users.value,
-      businessClaims: overview.claimAnalytics.pendingRequests,
-      regionsCount: overview.kpis.cities.value,
-      citiesCount: overview.kpis.cities.value
+      pendingBookings: (overview.bookingsOverview && overview.bookingsOverview.pending) || 0,
+      inProgressBookings: (overview.bookingsOverview && overview.bookingsOverview.pending) || 0,
+      confirmedBookings: (overview.bookingsOverview && overview.bookingsOverview.confirmed) || 0,
+      cancelledBookings: (overview.bookingsOverview && overview.bookingsOverview.cancelled) || 0,
+      venuesCount: (overview.listingHealth && overview.listingHealth.totalListings) || (overview.kpis && overview.kpis.listings ? overview.kpis.listings.value : 0),
+      vendorsCount: (overview.kpis && overview.kpis.vendors) ? overview.kpis.vendors.value : 0,
+      servicesCount: (overview.kpis && overview.kpis.categories) ? overview.kpis.categories.value : 0,
+      usersCount: (overview.kpis && overview.kpis.users) ? overview.kpis.users.value : 0,
+      businessClaims: (overview.claimAnalytics && overview.claimAnalytics.pendingRequests) || (overview.kpis && overview.kpis.claimedListings ? overview.kpis.claimedListings.value : 0),
+      regionsCount: (overview.kpis && overview.kpis.cities) ? overview.kpis.cities.value : 0,
+      citiesCount: (overview.kpis && overview.kpis.cities) ? overview.kpis.cities.value : 0
     };
 
     res.json({
@@ -1298,10 +1298,32 @@ async function sendTestEmail(req, res, next) {
 /**
  * Admin: List reusable email templates.
  */
+/**
+ * Admin: list email templates with optional category, status, and search filters.
+ */
 async function listEmailTemplates(req, res, next) {
   try {
+    const { category, status, search } = req.query;
+    const where = {};
+
+    if (category && category !== 'all') {
+      where.category = category;
+    }
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { name: { contains: q } },
+        { subject: { contains: q } },
+        { category: { contains: q } }
+      ];
+    }
+
     const templates = await prisma.emailTemplate.findMany({
-      orderBy: { createdAt: 'desc' }
+      where,
+      orderBy: { updatedAt: 'desc' }
     });
     res.json({ ok: true, templates });
   } catch (e) {
@@ -1310,33 +1332,247 @@ async function listEmailTemplates(req, res, next) {
 }
 
 /**
- * Admin: Create a reusable email template.
+ * Admin: get single email template details.
  */
-async function createEmailTemplate(req, res, next) {
+async function getEmailTemplateById(req, res, next) {
   try {
-    const { name, subject, previewText, body, category } = req.body || {};
-    if (!name || !subject || !body) {
-      throw new HttpError(400, 'Template name, subject, and body are required', 'ERR_INPUT');
-    }
-
-    const template = await prisma.emailTemplate.create({
-      data: { name, subject, previewText: previewText || '', body, category: category || 'general' }
-    });
-
-    res.status(201).json({ ok: true, template });
+    const { id } = req.params;
+    const template = await prisma.emailTemplate.findUnique({ where: { id } });
+    if (!template) throw new HttpError(404, 'Email template not found', 'ERR_NOT_FOUND');
+    res.json({ ok: true, template });
   } catch (e) {
     next(e);
   }
 }
 
 /**
- * Admin: Delete an email template.
+ * Admin: Create or update a reusable email template.
+ */
+async function createEmailTemplate(req, res, next) {
+  try {
+    const { id, name, subject, previewText, body, category, status } = req.body || {};
+    if (!name || !name.trim()) throw new HttpError(400, 'Template name is required', 'ERR_INPUT');
+    if (!subject || !subject.trim()) throw new HttpError(400, 'Subject line is required', 'ERR_INPUT');
+    if (!body || !body.trim()) throw new HttpError(400, 'Email content body is required', 'ERR_INPUT');
+
+    const cleanData = {
+      name: name.trim(),
+      subject: subject.trim(),
+      previewText: (previewText || '').trim(),
+      body: body.trim(),
+      category: (category || 'General').trim(),
+      status: status === 'inactive' ? 'inactive' : 'active'
+    };
+
+    let template;
+    if (id || req.params.id) {
+      const targetId = id || req.params.id;
+      template = await prisma.emailTemplate.update({
+        where: { id: targetId },
+        data: cleanData
+      });
+    } else {
+      template = await prisma.emailTemplate.create({
+        data: cleanData
+      });
+    }
+
+    res.status(id ? 200 : 201).json({ ok: true, template });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Update partial fields or toggle template status.
+ */
+async function updateEmailTemplate(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { name, subject, previewText, body, category, status } = req.body || {};
+
+    const data = {};
+    if (name !== undefined) data.name = name.trim();
+    if (subject !== undefined) data.subject = subject.trim();
+    if (previewText !== undefined) data.previewText = previewText.trim();
+    if (body !== undefined) data.body = body.trim();
+    if (category !== undefined) data.category = category.trim();
+    if (status !== undefined) data.status = status === 'inactive' ? 'inactive' : 'active';
+
+    const template = await prisma.emailTemplate.update({
+      where: { id },
+      data
+    });
+
+    res.json({ ok: true, template });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Duplicate an email template into a new database record.
+ */
+async function duplicateEmailTemplate(req, res, next) {
+  try {
+    const { id } = req.params;
+    const original = await prisma.emailTemplate.findUnique({ where: { id } });
+    if (!original) throw new HttpError(404, 'Email template not found', 'ERR_NOT_FOUND');
+
+    const duplicate = await prisma.emailTemplate.create({
+      data: {
+        name: `${original.name} — Copy`,
+        category: original.category,
+        subject: original.subject,
+        previewText: original.previewText,
+        body: original.body,
+        status: 'active',
+        isSystem: false
+      }
+    });
+
+    res.status(201).json({ ok: true, template: duplicate, message: 'Template duplicated successfully' });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Delete or archive an email template.
  */
 async function deleteEmailTemplate(req, res, next) {
   try {
     const { id } = req.params;
+    const existing = await prisma.emailTemplate.findUnique({ where: { id } });
+    if (!existing) throw new HttpError(404, 'Email template not found', 'ERR_NOT_FOUND');
+
+    // System templates are archived rather than permanently deleted to preserve platform integrity
+    if (existing.isSystem) {
+      await prisma.emailTemplate.update({
+        where: { id },
+        data: { status: 'inactive' }
+      });
+      return res.json({ ok: true, message: 'System template archived (marked inactive)' });
+    }
+
     await prisma.emailTemplate.delete({ where: { id } });
     res.json({ ok: true, message: 'Template deleted successfully' });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Send a real test email for a template using Nodemailer/SMTP.
+ */
+async function testEmailTemplate(req, res, next) {
+  try {
+    const { testEmail, subject, previewText, body, vendorId } = req.body || {};
+    if (!testEmail || !testEmail.trim()) throw new HttpError(400, 'Test email address is required', 'ERR_INPUT');
+    if (!subject || !body) throw new HttpError(400, 'Subject and email body content are required', 'ERR_INPUT');
+
+    const { sendMail } = require('../services/email.service');
+    const { replacePersonalization } = require('../services/emailCampaign.service');
+
+    let recipientData = {
+      name: 'Test Vendor Admin',
+      businessName: 'Royal Palace Banquets',
+      city: 'Mumbai',
+      category: 'Wedding Venue',
+      completionPercentage: 85,
+      slug: 'royal-palace-banquets',
+      subscriptionPlan: 'Featured Tier'
+    };
+
+    if (vendorId) {
+      const vendor = await prisma.vendor.findUnique({
+        where: { id: vendorId },
+        include: { user: { select: { name: true, email: true } }, photos: true }
+      });
+      if (vendor) {
+        recipientData = {
+          name: vendor.user?.name || vendor.businessName,
+          businessName: vendor.businessName,
+          city: vendor.city || 'your area',
+          category: vendor.category || 'Wedding Vendor',
+          slug: vendor.slug,
+          subscriptionPlan: vendor.tier || 'Free Tier'
+        };
+      }
+    }
+
+    const resolvedSubject = replacePersonalization(subject, recipientData);
+    const resolvedBody = replacePersonalization(body, recipientData);
+    const resolvedPreview = replacePersonalization(previewText || '', recipientData);
+
+    const mailResult = await sendMail({
+      to: testEmail.trim(),
+      subject: resolvedSubject,
+      html: resolvedBody,
+      text: resolvedBody.replace(/<[^>]+>/g, '')
+    });
+
+    const emailSent = !!(mailResult && mailResult.ok && !mailResult.fallback);
+    res.json({
+      ok: true,
+      emailSent,
+      message: emailSent
+        ? `Test email sent to ${testEmail.trim()} successfully!`
+        : `Email dispatched, but SMTP fallback mode was active.`
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/**
+ * Admin: Resolve dynamic template variables for live vendor preview.
+ */
+async function resolveTemplatePreview(req, res, next) {
+  try {
+    const { subject, previewText, body, vendorId } = req.body || {};
+    const { replacePersonalization } = require('../services/emailCampaign.service');
+
+    let recipientData = {
+      name: 'Rahul Sharma',
+      businessName: 'Royal Palace Banquets',
+      city: 'Mumbai',
+      category: 'Wedding Venue',
+      completionPercentage: 75,
+      slug: 'royal-palace-banquets',
+      subscriptionPlan: 'Premium Pro'
+    };
+
+    if (vendorId) {
+      const vendor = await prisma.vendor.findUnique({
+        where: { id: vendorId },
+        include: { user: { select: { name: true, email: true } }, photos: true }
+      });
+      if (vendor) {
+        recipientData = {
+          name: vendor.user?.name || vendor.businessName,
+          businessName: vendor.businessName,
+          city: vendor.city || 'Mumbai',
+          category: vendor.category || 'Wedding Venue',
+          slug: vendor.slug,
+          subscriptionPlan: vendor.tier || 'Free Tier'
+        };
+      }
+    }
+
+    const resolvedSubject = replacePersonalization(subject || '', recipientData);
+    const resolvedPreview = replacePersonalization(previewText || '', recipientData);
+    const resolvedBody = replacePersonalization(body || '', recipientData);
+
+    res.json({
+      ok: true,
+      resolved: {
+        subject: resolvedSubject,
+        previewText: resolvedPreview,
+        body: resolvedBody
+      },
+      sampleVendor: recipientData
+    });
   } catch (e) {
     next(e);
   }
@@ -1362,7 +1598,10 @@ async function listEmailCampaigns(req, res, next) {
  */
 async function createEmailCampaign(req, res, next) {
   try {
-    const { name, subject, previewText, body, audienceRules, customEmails, action, scheduledAt } = req.body || {};
+    const {
+      name, subject, previewText, body, audienceRules, customEmails, action, scheduledAt,
+      scheduleType, scheduleTime, daysOfWeek, dayOfMonth
+    } = req.body || {};
 
     if (!name || !subject || !body) {
       throw new HttpError(400, 'Campaign name, subject, and body are required', 'ERR_INPUT');
@@ -1377,19 +1616,32 @@ async function createEmailCampaign(req, res, next) {
 
     let status = 'draft';
     let parsedScheduledAt = null;
+    const cleanType = (scheduleType || 'once').toLowerCase();
+    const formattedDaysOfWeek = typeof daysOfWeek === 'object' ? JSON.stringify(daysOfWeek) : (daysOfWeek || null);
+    const parsedDayOfMonth = dayOfMonth ? parseInt(dayOfMonth, 10) : null;
 
-    if (action === 'send') {
+    if (action === 'send' && cleanType === 'once') {
       status = 'queued';
-    } else if (action === 'schedule') {
-      if (!scheduledAt) {
-        throw new HttpError(400, 'Please select a valid future date and time to schedule this campaign', 'ERR_INPUT');
-      }
-      parsedScheduledAt = new Date(scheduledAt);
-      if (isNaN(parsedScheduledAt.getTime()) || parsedScheduledAt <= new Date()) {
-        throw new HttpError(400, 'Scheduled date and time must be in the future', 'ERR_INPUT');
+    } else if (action === 'schedule' || cleanType !== 'once') {
+      if (cleanType === 'once') {
+        if (!scheduledAt) {
+          throw new HttpError(400, 'Please select a valid future date and time to schedule this campaign', 'ERR_INPUT');
+        }
+        parsedScheduledAt = new Date(scheduledAt);
+        if (isNaN(parsedScheduledAt.getTime()) || parsedScheduledAt <= new Date()) {
+          throw new HttpError(400, 'Scheduled date and time must be in the future', 'ERR_INPUT');
+        }
       }
       status = 'scheduled';
     }
+
+    const initialNextRun = emailCampaignService.calculateNextRunAt({
+      scheduleType: cleanType,
+      scheduleTime,
+      daysOfWeek: formattedDaysOfWeek,
+      dayOfMonth: parsedDayOfMonth,
+      scheduledAt: parsedScheduledAt
+    });
 
     const campaign = await prisma.emailCampaign.create({
       data: {
@@ -1402,13 +1654,18 @@ async function createEmailCampaign(req, res, next) {
         customEmails: typeof customEmails === 'string' ? customEmails : (Array.isArray(customEmails) ? customEmails.join(', ') : ''),
         totalRecipients: recipients.length,
         status,
-        scheduledAt: parsedScheduledAt
+        scheduledAt: parsedScheduledAt,
+        scheduleType: cleanType,
+        scheduleTime: scheduleTime || null,
+        daysOfWeek: formattedDaysOfWeek,
+        dayOfMonth: parsedDayOfMonth,
+        nextRunAt: initialNextRun
       }
     });
 
     res.status(201).json({ ok: true, campaign });
 
-    if (action === 'send') {
+    if (action === 'send' && cleanType === 'once') {
       // Fire-and-forget background queueing
       emailCampaignService.dispatchCampaign(campaign.id).catch(err => {
         logger.error({ err, campaignId: campaign.id }, 'Background campaign dispatch crashed');
@@ -2250,8 +2507,13 @@ module.exports = {
   getAudiencePreview,
   sendTestEmail,
   listEmailTemplates,
+  getEmailTemplateById,
   createEmailTemplate,
+  updateEmailTemplate,
+  duplicateEmailTemplate,
   deleteEmailTemplate,
+  testEmailTemplate,
+  resolveTemplatePreview,
   listEmailCampaigns,
   createEmailCampaign,
   retryFailedEmailCampaign,

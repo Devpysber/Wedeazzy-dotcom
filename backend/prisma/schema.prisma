@@ -540,11 +540,18 @@ model EmailCampaign {
   deliveredCount   Int      @default(0) @map("delivered_count")
   status           String   @default("draft")                   // "draft" | "scheduled" | "queued" | "sending" | "completed" | "failed" | "partially_failed"
   scheduledAt      DateTime? @map("scheduled_at")
+  scheduleType     String   @default("once") @map("schedule_type") // "once" | "daily" | "weekly" | "monthly"
+  scheduleTime     String?  @map("schedule_time")
+  daysOfWeek       String?  @db.Text @map("days_of_week")
+  dayOfMonth       Int?     @map("day_of_month")
+  lastRunAt        DateTime? @map("last_run_at")
+  nextRunAt        DateTime? @map("next_run_at")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("email_campaigns")
   @@index([createdAt])
+  @@index([status, nextRunAt])
 }
 
 model EmailTemplate {
@@ -554,8 +561,10 @@ model EmailTemplate {
   previewText String?  @map("preview_text")
   body        String   @db.Text
   category    String?  @default("general")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  status      String   @default("active")
+  isSystem    Boolean  @default(false)      @map("is_system")
+  createdAt   DateTime @default(now())      @map("created_at")
+  updatedAt   DateTime @updatedAt           @map("updated_at")
 
   @@map("email_templates")
 }

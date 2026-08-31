@@ -39,6 +39,11 @@ const WedEazzyAuth = {
     return session ? JSON.parse(session) : null;
   },
 
+  // Get active token for API requests
+  getToken() {
+    return sessionStorage.getItem("wedeazzy_admin_token") || localStorage.getItem("wedeazzy_admin_token") || sessionStorage.getItem("wedeazzy_token") || localStorage.getItem("wedeazzy_token");
+  },
+
   // Guard dashboard page â€” redirect to login if not authenticated
   guardRoute() {
     if (!this.isAuthenticated()) {

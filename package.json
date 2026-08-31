@@ -7,8 +7,8 @@
   },
   "scripts": {
     "dev": "npm run dev --prefix backend",
-    "build": "npm install --prefix backend --production && node backend/node_modules/prisma/build/index.js generate --schema=backend/prisma/schema.prisma",
-    "postinstall": "npm install --prefix backend --production && node backend/node_modules/prisma/build/index.js generate --schema=backend/prisma/schema.prisma",
+    "build": "npm install --prefix backend --omit=dev && node backend/node_modules/prisma/build/index.js generate --schema=backend/prisma/schema.prisma",
+    "postinstall": "npm install --prefix backend --omit=dev && node backend/node_modules/prisma/build/index.js generate --schema=backend/prisma/schema.prisma",
     "start": "node backend/src/server.js",
     "seed:admin": "npm run seed:admin --prefix backend",
     "seed:vendors": "npm run seed:vendors --prefix backend",
@@ -19,7 +19,14 @@
     "prisma:migrate": "npm run prisma:migrate --prefix backend",
     "db:repair": "npm run db:repair --prefix backend",
     "db:repair:force": "npm run db:repair:force --prefix backend",
-    "db:check": "npm run db:check --prefix backend"
+    "db:check": "npm run db:check --prefix backend",
+    "build:zip": "node build-deploy.js"
+  },
+  "dependencies": {
+    "prisma": "5.22.0"
+  },
+  "devDependencies": {
+    "prisma": "5.22.0"
   },
   "prisma": {
     "schema": "backend/prisma/schema.prisma"

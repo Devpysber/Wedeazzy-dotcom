@@ -138,7 +138,8 @@ async function startOtp({ phone, purpose = 'login' }) {
   return {
     ok: true,
     phone: p,
-    devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? code : undefined,
+    // Only when delivery FAILED — echoing a successfully-sent code back to the caller lets anyone request an OTP for any address and read it out of the response.
+    devCode: ((env.OTP_FALLBACK_ENABLED && !r.ok) || env.OTP_DEBUG_LOG) ? code : undefined,
     waDelivered: !!r.ok,
     expiresIn: env.OTP_TTL_MIN * 60,
   };
@@ -415,7 +416,9 @@ async function login({ emailOrPhone, password }) {
       user: { email: user.email, verified: false },
       // Return the OTP code when SMTP can't deliver, so the frontend can
       // auto-fill it — same pattern as admin 2FA.
-      devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? code : undefined,
+      // The send above is fire-and-forget, so there is no delivery result to
+      // gate on here. Never echo the code on this path outside debug builds.
+      devCode: env.OTP_DEBUG_LOG ? code : undefined,
     };
   }
 
@@ -498,7 +501,8 @@ async function startEmailOtp(email) {
     ok: true,
     email: normalizedEmail,
     emailSent,
-    devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? code : undefined,
+    // Only when delivery FAILED — echoing a successfully-sent code back to the caller lets anyone request an OTP for any address and read it out of the response.
+    devCode: ((env.OTP_FALLBACK_ENABLED && !emailSent) || env.OTP_DEBUG_LOG) ? code : undefined,
     expiresIn: env.OTP_TTL_MIN * 60,
   };
 }
@@ -715,7 +719,8 @@ async function checkUser(email) {
   return { 
     userExists: true, 
     emailSent,
-    devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? otp : undefined 
+    // Only when delivery FAILED — echoing a successfully-sent code back to the caller lets anyone request an OTP for any address and read it out of the response.
+    devCode: ((env.OTP_FALLBACK_ENABLED && !emailSent) || env.OTP_DEBUG_LOG) ? otp : undefined
   };
 }
 
@@ -808,7 +813,8 @@ async function registerAndSendOtp({ email, name, mobile }) {
       : 'Registration successful! However, the OTP verification email could not be delivered.',
     email: normalizedEmail,
     emailSent,
-    devCode: (env.OTP_FALLBACK_ENABLED || env.OTP_DEBUG_LOG) ? otp : undefined
+    // Only when delivery FAILED — echoing a successfully-sent code back to the caller lets anyone request an OTP for any address and read it out of the response.
+    devCode: ((env.OTP_FALLBACK_ENABLED && !emailSent) || env.OTP_DEBUG_LOG) ? otp : undefined
   };
 }
 

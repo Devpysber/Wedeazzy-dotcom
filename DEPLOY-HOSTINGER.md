@@ -48,20 +48,24 @@ needs to sit in `public_html`.
 
 > **Why this matters:** if you extract into `public_html`, Apache can serve
 > `backend/.env` as a plain text file and hand your database password to anyone who
-> guesses the URL. If your plan forces the app root into `public_html`, tell me and
-> I'll add an `.htaccess` that blocks `backend/` — do not skip this.
+> guesses the URL. This zip ships an `.htaccess` at the root that blocks `backend/`
+> and any `.env` as a fallback — but keeping the app root out of `public_html` is
+> still the real defence.
 
 ### 3. Fill in `backend/.env`
 
-Open `backend/.env` in File Manager's editor and replace every `FILL_ME`:
+Open `backend/.env` in File Manager's editor. Only **two** values are `FILL_ME` —
+everything else (SMTP, Google OAuth, Razorpay, admin email, Google Sheet URL) is
+already filled in with your real working credentials.
 
 ```
 DATABASE_URL="mysql://u123456_user:YourPassword@localhost:3306/u123456_wedeazzy"
 ADMIN_PASSWORD=<a strong password you choose>
-SMTP_PASS=<password of the info@wedeazzy.com mailbox>
 ```
 
-Also confirm `PUBLIC_BASE_URL` and `FRONTEND_ORIGIN` match your real domain.
+`PUBLIC_BASE_URL`, `FRONTEND_ORIGIN` and `GOOGLE_CALLBACK_URL` are pre-set to
+`https://wedeazzy.com`. If you deploy to a different domain, change all three —
+and register the new callback URL in Google Cloud Console, or Google login breaks.
 
 Two gotchas that cause most failed deploys here:
 
@@ -217,10 +221,11 @@ Logs: the hPanel Node.js panel, or `backend/logs/`.
 
 ```
 app.js                  Passenger entry point
+.htaccess               blocks Apache from serving backend/ and .env as text
 package.json            root scripts (install / build / start)
 public/                 the full website (11 MB) — served by Express
 backend/
-  .env                  PRODUCTION TEMPLATE — edit the FILL_ME values
+  .env                  PRODUCTION config — live secrets, edit DATABASE_URL + ADMIN_PASSWORD
   .env.example          reference for every supported variable
   src/                  API source
   prisma/
@@ -231,9 +236,15 @@ backend/
   DEPLOY.md             VPS playbook
 ```
 
-**Excluded on purpose:** `node_modules` (installed on the server), your local `.env`
-(dev secrets), the WhatsApp session in `baileys-auth/` (device-bound, must be
-re-paired), `kyc-private/` and `import-staging/` (customer PII), and `tests/`.
+**Excluded on purpose:** `node_modules` (installed on the server), the WhatsApp
+session in `baileys-auth/` (device-bound, must be re-paired), `kyc-private/` and
+`import-staging/` (customer PII), and `tests/`.
+
+**`backend/.env` in this zip holds live credentials** (SMTP password, Google OAuth
+secret, Razorpay secrets). Treat this zip like a password: do not email it, do not
+put it in a public repo, and delete it from your local Downloads once deployed.
+
+Rebuild this zip any time after further code changes with `npm run build:zip`.
 
 **Added to the original project:** `backend/prisma/migrations/20250101000000_init/` —
 the project shipped an empty migrations folder, so `prisma migrate deploy` would have

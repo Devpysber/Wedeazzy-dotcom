@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard Console - WedEazzy</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
   
   <!-- Font Awesome Icons & Stylesheets -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -470,12 +471,18 @@
           </span>
         </button>
 
-        <button class="nav-link-btn" data-tab-trigger="send-emails">
+        <!-- Email Marketing Dropdown -->
+        <button class="nav-link-btn" data-submenu-trigger="email-marketing">
           <span class="nav-link-left">
-            <i class="fa-solid fa-paper-plane"></i>
-            <span class="menu-label">Send Emails</span>
+            <i class="fa-solid fa-paper-plane" style="color: var(--brand-rose);"></i>
+            <span class="menu-label" style="color: var(--brand-rose); font-weight: 600;">Email Marketing</span>
           </span>
+          <i class="fa-solid fa-chevron-down submenu-arrow"></i>
         </button>
+        <div class="sub-links-drawer" id="submenu-email-marketing">
+          <a class="sub-link-item" data-tab-trigger="send-emails">Send Emails</a>
+          <a class="sub-link-item" data-tab-trigger="email-templates">Email Templates</a>
+        </div>
 
         <!-- Send WhatsApp (circular green badge icon) -->
         <button class="nav-link-btn" data-tab-trigger="whatsapp">

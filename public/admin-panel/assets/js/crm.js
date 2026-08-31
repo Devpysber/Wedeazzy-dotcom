@@ -654,11 +654,62 @@
     const categories = uniqueSorted(all.map(v => v.category));
     const rawScope = window.WedEazzyCountryScope || 'all';
     const currentScope = rawScope.toUpperCase();
-    const relevantVendors = currentScope !== 'ALL' 
+    const isGlobalScope = currentScope === 'ALL';
+    const relevantVendors = !isGlobalScope
       ? all.filter(v => matchesCountryScope(v, currentScope)) 
       : all;
     const cities = uniqueSorted(relevantVendors.map(vendorCity));
-    const anyFilter = s.search || s.category || s.city || (currentScope !== 'ALL') || s.approval || s.plan || s.dateFrom;
+    const anyFilter = s.search || s.category || s.city || (!isGlobalScope) || s.approval || s.plan || s.dateFrom;
+
+    // Stat cards calculations
+    const totalListingsCount = store.vendorsTotalCount ?? relevantVendors.length;
+
+    // Top Category
+    const categoryCounts = {};
+    relevantVendors.forEach(v => {
+      const cat = v.category || 'Uncategorized';
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+    let topCategory = 'None';
+    let topCategoryCount = 0;
+    Object.entries(categoryCounts).forEach(([cat, cnt]) => {
+      if (cnt > topCategoryCount) {
+        topCategoryCount = cnt;
+        topCategory = cat;
+      }
+    });
+
+    // Top City
+    const cityCounts = {};
+    relevantVendors.forEach(v => {
+      const city = vendorCity(v) || 'Unspecified';
+      cityCounts[city] = (cityCounts[city] || 0) + 1;
+    });
+    let topCity = 'None';
+    let topCityCount = 0;
+    Object.entries(cityCounts).forEach(([c, cnt]) => {
+      if (cnt > topCityCount) {
+        topCityCount = cnt;
+        topCity = c;
+      }
+    });
+
+    // Top Country (Only computed when isGlobalScope is TRUE)
+    let topCountry = 'None';
+    let topCountryCount = 0;
+    if (isGlobalScope) {
+      const countryCounts = {};
+      all.forEach(v => {
+        const country = v.country || (v.countryCode === 'IN' ? 'India' : v.countryCode || 'Other');
+        countryCounts[country] = (countryCounts[country] || 0) + 1;
+      });
+      Object.entries(countryCounts).forEach(([c, cnt]) => {
+        if (cnt > topCountryCount) {
+          topCountryCount = cnt;
+          topCountry = c;
+        }
+      });
+    }
 
     const KNOWN_COUNTRIES = [
       { code: 'IN', name: 'India', flag: '🇮🇳' },
@@ -679,6 +730,65 @@
         </div>
 
         ${renderCrmCountryScopeHeader()}
+
+        <!-- Dynamic Stat Cards Deck -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          <!-- Card 1: Total Listings -->
+          <div class="panel-card" style="padding: 18px 20px; background: var(--surface-bg); border-top: 4px solid var(--brand-rose); border-radius: 14px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub); letter-spacing: 0.05em;">Total Listings</span>
+              <i class="fa-solid fa-store" style="color: var(--brand-rose); font-size: 1.1rem;"></i>
+            </div>
+            <div style="font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin-top: 6px;">
+              ${fmtNum(totalListingsCount)}
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Active business listings</div>
+          </div>
+
+          <!-- Card 2: Most Listings Category -->
+          <div class="panel-card" style="padding: 18px 20px; background: var(--surface-bg); border-top: 4px solid #3b82f6; border-radius: 14px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub); letter-spacing: 0.05em;">Top Category</span>
+              <i class="fa-solid fa-layer-group" style="color: #3b82f6; font-size: 1.1rem;"></i>
+            </div>
+            <div style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${ctx.escHtml(topCategory)}">
+              ${ctx.escHtml(topCategory)}
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+              <strong>${fmtNum(topCategoryCount)}</strong> listings
+            </div>
+          </div>
+
+          <!-- Card 3: Most Listings City -->
+          <div class="panel-card" style="padding: 18px 20px; background: var(--surface-bg); border-top: 4px solid #10b981; border-radius: 14px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub); letter-spacing: 0.05em;">Top City</span>
+              <i class="fa-solid fa-city" style="color: #10b981; font-size: 1.1rem;"></i>
+            </div>
+            <div style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${ctx.escHtml(topCity)}">
+              ${ctx.escHtml(topCity)}
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+              <strong>${fmtNum(topCityCount)}</strong> listings
+            </div>
+          </div>
+
+          <!-- Card 4: Most Listings Country (ONLY rendered when isGlobalScope is TRUE) -->
+          ${isGlobalScope ? `
+            <div class="panel-card" style="padding: 18px 20px; background: var(--surface-bg); border-top: 4px solid #f59e0b; border-radius: 14px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-sub); letter-spacing: 0.05em;">Top Country</span>
+                <i class="fa-solid fa-globe" style="color: #f59e0b; font-size: 1.1rem;"></i>
+              </div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${ctx.escHtml(topCountry)}">
+                ${ctx.escHtml(topCountry)}
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+                <strong>${fmtNum(topCountryCount)}</strong> listings
+              </div>
+            </div>
+          ` : ''}
+        </div>
 
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
           <div>

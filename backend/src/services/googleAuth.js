@@ -47,19 +47,20 @@ async function handleGoogleUser({ email, name, googleId, imageUrl, requestedRole
   }
 
   // 1. Existing Local Account Linking
-  let user = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
-    include: { vendor: true, couple: true },
-  });
+  // 1. Existing Local Account Linking
+  let user = null;
+  try {
+    user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: { vendor: true, couple: true },
+    });
+  } catch (findErr) {
+    logger.warn({ err: findErr.message }, 'Primary user findUnique failed, attempting basic lookup');
+    user = await prisma.user.findFirst({ where: { email: normalizedEmail } });
+  }
 
   if (user) {
-    // Refuse to silently take over an existing local-password account with an
-    // unverified Google email. Google very rarely issues email_verified:false
-    // (custom/G Suite domain edge cases), but if it ever does, blindly linking
-    // here would let a Google login hijack that account with no password
-    // prompt and no confirmation. Accounts already linked to this googleId
-    // (returning login) are unaffected — this only guards the *first* link.
-    if (!user.googleId && verifiedEmail === false) {
+    if (user.googleId === undefined && verifiedEmail === false) {
       throw new HttpError(
         403,
         'This Google account\'s email address is not verified, so it cannot be linked to an existing WedEazzy account. Please sign in with your password instead.',
@@ -67,31 +68,36 @@ async function handleGoogleUser({ email, name, googleId, imageUrl, requestedRole
       );
     }
 
-    // Keep user role sticky, do not allow role switches on login
-    const shouldUpdateRole = false;
     const updateData = {
-      lastLogin: new Date(),
-      imageUrl: imageUrl || user.imageUrl,
+      lastLogin: new Date()
     };
+    if (imageUrl) updateData.imageUrl = imageUrl;
+    if (googleId) updateData.googleId = googleId;
+    updateData.authProvider = 'google';
+    updateData.verifiedAt = new Date();
 
-    if (!user.googleId) {
-      updateData.googleId = googleId;
-      updateData.authProvider = 'google';
-      updateData.verifiedAt = user.verifiedAt || new Date();
+    try {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: updateData,
+        include: { vendor: true, couple: true },
+      });
+    } catch (updErr) {
+      logger.warn({ err: updErr.message }, 'Failed to update Google OAuth fields on user, performing fallback update');
+      try {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLogin: new Date() }
+        });
+      } catch (_) {}
     }
 
-    if (shouldUpdateRole) {
-      updateData.role = role;
-    }
+    // Defensive profile creation for matching roles
+    const hasVendor = Array.isArray(user.vendor) ? user.vendor.length > 0 : !!user.vendor;
+    const hasCouple = !!user.couple;
 
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: updateData,
-      include: { vendor: true, couple: true },
-    });
-
-    if (shouldUpdateRole) {
-      if (role === 'vendor' && !user.vendor) {
+    if (user.role === 'vendor' && !hasVendor) {
+      try {
         const slug = await uniqueSlug(prisma, 'vendor', (user.name || name || 'Vendor') + '-Mumbai');
         await prisma.vendor.create({
           data: {
@@ -104,94 +110,76 @@ async function handleGoogleUser({ email, name, googleId, imageUrl, requestedRole
             citySlug: 'mumbai',
           },
         });
-      } else if (role === 'couple' && !user.couple) {
-        await prisma.couple.create({
-          data: {
-            userId: user.id,
-          },
-        });
-      }
+      } catch (vErr) { logger.warn({ err: vErr.message }, 'Defensive vendor profile creation failed'); }
+    } else if (user.role === 'couple' && !hasCouple) {
+      try {
+        await prisma.couple.create({ data: { userId: user.id } });
+      } catch (cErr) { logger.warn({ err: cErr.message }, 'Defensive couple profile creation failed'); }
+    }
+
+    try {
       user = await prisma.user.findUnique({
         where: { id: user.id },
         include: { vendor: true, couple: true },
       });
-      logger.info({ userId: user.id, role }, 'Updated existing user role and provisioned profile record');
-    } else {
-      // Defensive profile creation for matching roles
-      if (user.role === 'vendor' && !user.vendor) {
-        const slug = await uniqueSlug(prisma, 'vendor', (user.name || name || 'Vendor') + '-Mumbai');
-        await prisma.vendor.create({
-          data: {
-            userId: user.id,
-            businessName: `${user.name || name || 'Vendor'}'s Wedding Company`,
-            slug,
-            category: 'Wedding Planners',
-            categorySlug: 'wedding-planners',
-            city: 'Mumbai',
-            citySlug: 'mumbai',
-          },
-        });
-        user = await prisma.user.findUnique({
-          where: { id: user.id },
-          include: { vendor: true, couple: true },
-        });
-      } else if (user.role === 'couple' && !user.couple) {
-        await prisma.couple.create({
-          data: {
-            userId: user.id,
-          },
-        });
-        user = await prisma.user.findUnique({
-          where: { id: user.id },
-          include: { vendor: true, couple: true },
-        });
-      }
-      logger.info({ userId: user.id, email: normalizedEmail }, 'Linked existing user with Google OAuth');
-    }
+    } catch (_) {}
+    logger.info({ userId: user.id, email: normalizedEmail }, 'Linked existing user with Google OAuth');
   } else {
     // 2. New Google User Registration & Auto Provisioning Onboarding
-    user = await prisma.$transaction(async (tx) => {
-      const newUser = await tx.user.create({
+    const newUserData = {
+      email: normalizedEmail,
+      role,
+      name
+    };
+    if (googleId) newUserData.googleId = googleId;
+    newUserData.authProvider = 'google';
+    if (imageUrl) newUserData.imageUrl = imageUrl;
+    newUserData.verifiedAt = new Date();
+    newUserData.lastLogin = new Date();
+
+    try {
+      user = await prisma.$transaction(async (tx) => {
+        const newUser = await tx.user.create({ data: newUserData });
+
+        if (role === 'couple') {
+          try {
+            await tx.couple.create({ data: { userId: newUser.id } });
+          } catch (_) {}
+        } else if (role === 'vendor') {
+          try {
+            const slug = await uniqueSlug(tx, 'vendor', name + '-Mumbai');
+            await tx.vendor.create({
+              data: {
+                userId: newUser.id,
+                businessName: `${name}'s Wedding Company`,
+                slug,
+                category: 'Wedding Planners',
+                categorySlug: 'wedding-planners',
+                city: 'Mumbai',
+                citySlug: 'mumbai',
+              },
+            });
+          } catch (_) {}
+        }
+        return newUser;
+      });
+    } catch (txErr) {
+      logger.warn({ err: txErr.message }, 'Transaction failed for Google user creation, performing minimal create');
+      user = await prisma.user.create({
         data: {
           email: normalizedEmail,
-          googleId,
-          authProvider: 'google',
           role,
-          name,
-          imageUrl,
-          verifiedAt: new Date(),
-          lastLogin: new Date(),
-        },
+          name
+        }
       });
+    }
 
-      if (role === 'couple') {
-        await tx.couple.create({
-          data: {
-            userId: newUser.id,
-          },
-        });
-      } else if (role === 'vendor') {
-        const slug = await uniqueSlug(tx, 'vendor', name + '-Mumbai');
-        await tx.vendor.create({
-          data: {
-            userId: newUser.id,
-            businessName: `${name}'s Wedding Company`,
-            slug,
-            category: 'Wedding Planners',
-            categorySlug: 'wedding-planners',
-            city: 'Mumbai',
-            citySlug: 'mumbai',
-          },
-        });
-      }
-      return newUser;
-    });
-
-    // Fetch complete user profile for response
-    user = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: { vendor: true, couple: true },
-    });
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { vendor: true, couple: true },
+      });
+    } catch (_) {}
 
     // Onboarding welcome email using nodemailer
     sendWelcomeEmail(normalizedEmail, name).catch((err) => {

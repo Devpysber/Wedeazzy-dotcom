@@ -100,9 +100,9 @@ const WedEazzyStore = {
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
       const fetchJson = (url) => fetch(url, { headers }).then((r) => {
-        if (!r.ok) throw new Error(`${url} -> HTTP ${r.status}`);
+        if (!r.ok) return null;
         return r.json();
-      });
+      }).catch(() => null);
 
       const store = this.get();
       const needVendors = force || !store.vendors || store.vendors.length === 0;

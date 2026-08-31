@@ -54,7 +54,9 @@ app.set('trust proxy', 1);
 if (env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
     if (req.secure) return next();
-    return res.redirect(308, `https://${req.headers.host}${req.originalUrl}`);
+    const host = req.headers.host || '';
+    if (/^localhost|^127\.0\.0\.1/i.test(host)) return next();
+    return res.redirect(308, `https://${host}${req.originalUrl}`);
   });
 }
 
@@ -67,7 +69,11 @@ if (env.NODE_ENV === 'production') {
 // This trades away an XSS defense-in-depth layer for that reason; the
 // stored-XSS fixes made in this codebase (escaping, upload extension
 // whitelisting, sanitization) are the actual primary defenses.
-app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  hsts: env.NODE_ENV === 'production' ? { maxAge: 31536000, includeSubDomains: true } : false,
+}));
 app.use(compression());
 app.use(express.json({
   limit: '1mb',
@@ -77,15 +83,11 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // --- CORS Configuration ---
-// In production, only allow the configured FRONTEND_ORIGIN(s).
-// In development, also allow localhost variants for local testing.
 const allowedOrigins = [
-  ...(env.NODE_ENV !== 'production' ? [
-    'http://localhost:4000',
-    'http://127.0.0.1:4000',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-  ] : []),
+  'http://localhost:4000',
+  'http://127.0.0.1:4000',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
   ...env.FRONTEND_ORIGIN.filter(Boolean),
   env.PUBLIC_BASE_URL,
 ].map(origin => origin ? origin.replace(/\/$/, '') : ''); // normalize by stripping trailing slashes
@@ -151,13 +153,17 @@ const csrfProtection = (req, res, next) => {
 
 // Initialize Cookie Session
 const cookieSession = require('cookie-session');
-app.use(cookieSession({
-  name: 'wedeazzy_session',
-  keys: [env.JWT_SECRET],
-  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-  secure: env.NODE_ENV === 'production',
-  sameSite: 'lax',
-}));
+app.use((req, res, next) => {
+  const host = req.headers.host || '';
+  const isLocalHost = /^localhost|^127\.0\.0\.1/i.test(host);
+  cookieSession({
+    name: 'wedeazzy_session',
+    keys: [env.JWT_SECRET],
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    secure: env.NODE_ENV === 'production' && !isLocalHost && req.secure,
+    sameSite: 'lax',
+  })(req, res, next);
+});
 
 // Workaround for Passport.js session regeneration compatibility with cookie-session
 app.use((req, res, next) => {
@@ -354,16 +360,25 @@ async function googleCallback(req, res, next) {
 
 // Root-level routes matching GOOGLE_CALLBACK_URL=http://localhost:4000/google/callback
 app.get('/google', googleInit);
-app.get(
-  '/google/callback',
-  passport.authenticate('google', { failureRedirect: '/pages/admin-login.html?error=google_auth_failed', failureMessage: true }),
-  googleCallback
-);
+app.get('/google/callback', (req, res, next) => {
+  passport.authenticate('google', (err, user, info) => {
+    if (err || !user) {
+      const errMsg = err ? (err.message || err.code || 'auth_failed') : (info ? (info.message || 'user_not_found') : 'auth_failed');
+      logger.error({ err: err ? err.message : null, info, msg: errMsg }, 'Google OAuth Strategy callback failed');
+      return res.redirect('/pages/admin-login.html?error=google_auth_failed&reason=' + encodeURIComponent(errMsg));
+    }
+    req.user = user;
+    return googleCallback(req, res, next);
+  })(req, res, next);
+});
 
 // /api/auth/google mirrors the root-level route so the frontend button
 // (onclick="...API_BASE + '/api/auth/google'") also works.
 // The callback ALWAYS goes to GOOGLE_CALLBACK_URL (/google/callback).
 app.get('/api/auth/google', googleInit);
+app.get('/api/auth/google/callback', (req, res, next) => {
+  res.redirect('/google/callback?' + new URLSearchParams(req.query).toString());
+});
 
 // Alias: /auth/google/callback → /google/callback (keeps backward compat)
 app.get('/auth/google/callback', (req, res) =>
@@ -451,6 +466,20 @@ async function startServer() {
         logger.error({ err }, 'Admin seeding failed — no admin account may exist yet. Check ADMIN_EMAIL/ADMIN_PASSWORD in .env.');
       }
 
+      try {
+        logger.info('Seeding countries & cities structure...');
+        execSync(`"${nodeBin}" src/scripts/seed-countries.js`, { stdio: 'inherit', cwd: execCwd });
+      } catch (err) {
+        logger.warn({ err }, 'Country/city seeding encountered warnings during boot.');
+      }
+
+      try {
+        logger.info('Seeding email marketing templates...');
+        execSync(`"${nodeBin}" src/scripts/seed-templates.js`, { stdio: 'inherit', cwd: execCwd });
+      } catch (err) {
+        logger.warn({ err }, 'Email template seeding encountered warnings during boot.');
+      }
+
       // NOTE: Demo/sample data is NEVER auto-seeded on startup (production or
       // otherwise). It ships fake vendors/couples/bookings and must never land
       // in a real database. Seed it manually only when needed for local dev:
@@ -474,7 +503,7 @@ async function startServer() {
     logger.error({ err: e }, 'Cron initialization failed');
   }
 
-  const server = app.listen(env.PORT, () => {
+  const server = app.listen(env.PORT, '0.0.0.0', () => {
     logger.info(`WedEazzy API listening on http://localhost:${env.PORT} [${env.NODE_ENV}]`);
   });
 

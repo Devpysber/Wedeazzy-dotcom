@@ -158,7 +158,12 @@ router.delete('/email-campaigns/:id', ctrl.deleteEmailCampaign);
 
 router.get('/email-templates', ctrl.listEmailTemplates);
 router.post('/email-templates', ctrl.createEmailTemplate);
+router.get('/email-templates/:id', ctrl.getEmailTemplateById);
+router.patch('/email-templates/:id', ctrl.updateEmailTemplate);
+router.post('/email-templates/:id/duplicate', ctrl.duplicateEmailTemplate);
 router.delete('/email-templates/:id', ctrl.deleteEmailTemplate);
+router.post('/email-templates/test', ctrl.testEmailTemplate);
+router.post('/email-templates/preview-resolve', ctrl.resolveTemplatePreview);
 
 router.get('/vendor-categories', ctrl.listVendorCategories);
 router.post('/vendor-categories', ctrl.createVendorCategory);
