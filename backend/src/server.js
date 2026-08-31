@@ -57,6 +57,7 @@ if (env.NODE_ENV === 'production') {
     const host = req.headers.host || '';
     if (/^localhost|^127\.0\.0\.1/i.test(host)) return next();
     return res.redirect(308, `https://${host}${req.originalUrl}`);
+<<<<<<< HEAD
   });
 }
 
@@ -83,11 +84,14 @@ if (env.NODE_ENV === 'production' && canonicalHost) {
     const host = (req.headers.host || '').toLowerCase();
     if (host !== redirectFrom) return next();
     return res.redirect(301, `https://${canonicalHost}${req.originalUrl}`);
+=======
+>>>>>>> a743f56 (feat: flexible recurring & scheduled email campaigns with target audience defaults)
   });
 }
 
 // helmet's defaults include Strict-Transport-Security (HSTS); only
 // contentSecurityPolicy and crossOriginResourcePolicy are overridden below.
+<<<<<<< HEAD
 //
 // This is a multi-page static HTML site built on inline <script>/onclick
 // handlers throughout (public/, public/admin-panel/), so script-src has to
@@ -139,9 +143,6 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // --- CORS Configuration ---
-// The localhost origins are a development convenience and have no business
-// being credentialed-allowlisted by the production API, so they are added
-// only outside production.
 const devOrigins = env.NODE_ENV === 'production' ? [] : [
   'http://localhost:4000',
   'http://127.0.0.1:4000',
@@ -459,6 +460,7 @@ async function googleCallback(req, res, next) {
 // Root-level routes matching GOOGLE_CALLBACK_URL=http://localhost:4000/google/callback
 app.get('/google', googleInit);
 app.get('/google/callback', (req, res, next) => {
+<<<<<<< HEAD
   // Guard: passport's OAuth2 strategy treats a callback carrying neither `code`
   // nor `error` as a fresh authorization request and redirects back to Google,
   // which immediately returns here � an infinite bounce the browser reports as
@@ -467,6 +469,8 @@ app.get('/google/callback', (req, res, next) => {
     logger.warn({ query: req.query }, 'Google OAuth callback hit without a code � refusing to re-initiate');
     return res.redirect('/pages/admin-login.html?error=google_auth_failed&reason=missing_code');
   }
+=======
+>>>>>>> a743f56 (feat: flexible recurring & scheduled email campaigns with target audience defaults)
   passport.authenticate('google', (err, user, info) => {
     if (err || !user) {
       const errMsg = err ? (err.message || err.code || 'auth_failed') : (info ? (info.message || 'user_not_found') : 'auth_failed');
