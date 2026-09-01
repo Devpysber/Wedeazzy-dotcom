@@ -62,15 +62,45 @@ if (env.NODE_ENV === 'production') {
 
 // helmet's defaults include Strict-Transport-Security (HSTS); only
 // contentSecurityPolicy and crossOriginResourcePolicy are overridden below.
-// CSP is intentionally left disabled: this is a multi-page static HTML site
-// that relies extensively on inline <script>/onclick handlers throughout
-// (public/, public/admin-panel/) â€” a default CSP would break the app outright
-// without a much larger refactor to externalize/hash every inline handler.
-// This trades away an XSS defense-in-depth layer for that reason; the
-// stored-XSS fixes made in this codebase (escaping, upload extension
-// whitelisting, sanitization) are the actual primary defenses.
+//
+// This is a multi-page static HTML site built on inline <script>/onclick
+// handlers throughout (public/, public/admin-panel/), so script-src has to
+// keep 'unsafe-inline' until those are externalized â€” a default CSP would
+// break the app outright. What the policy below still buys, and what having
+// no CSP at all gave up, is the source allowlist: injected <script src> to an
+// attacker-controlled host is blocked, as are plugins (object-src), <base>
+// rewriting (base-uri), form exfiltration to third parties (form-action), and
+// framing by other origins (frame-ancestors). The escaping/sanitization/
+// upload-whitelisting fixes elsewhere in this codebase remain the primary
+// XSS defenses; this is the defense-in-depth layer under them.
+//
+// Allowlisted third parties are the ones the pages actually load: jsDelivr and
+// cdnjs (libraries, icon CSS), Google Fonts, Razorpay Checkout, Tawk.to chat,
+// and remote images (Unsplash covers, the GitHub-hosted logo fallback).
+const scriptHosts = ['https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://checkout.razorpay.com', 'https://embed.tawk.to', 'https://*.tawk.to', 'https://www.google.com'];
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      'default-src': ["'self'"],
+      // 'unsafe-eval' is required by the SheetJS/Chart.js bundles the
+      // dashboards load; drop it once those are upgraded off eval.
+      'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", ...scriptHosts],
+      'script-src-attr': ["'unsafe-inline'"], // inline onclick= handlers
+      'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com', 'https://cdn.jsdelivr.net'],
+      'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
+      'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+      'media-src': ["'self'", 'data:', 'blob:', 'https:'],
+      'connect-src': ["'self'", 'https://checkout.razorpay.com', 'https://api.razorpay.com', 'https://*.tawk.to', 'wss://*.tawk.to'],
+      'frame-src': ["'self'", 'https://checkout.razorpay.com', 'https://api.razorpay.com', 'https://www.google.com', 'https://*.tawk.to'],
+      'worker-src': ["'self'", 'blob:'],
+      'object-src': ["'none'"],
+      'base-uri': ["'self'"],
+      'form-action': ["'self'"],
+      'frame-ancestors': ["'self'"],
+      'upgrade-insecure-requests': [],
+    },
+  },
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   hsts: env.NODE_ENV === 'production' ? { maxAge: 31536000, includeSubDomains: true } : false,
 }));
@@ -363,10 +393,10 @@ app.get('/google', googleInit);
 app.get('/google/callback', (req, res, next) => {
   // Guard: passport's OAuth2 strategy treats a callback carrying neither `code`
   // nor `error` as a fresh authorization request and redirects back to Google,
-  // which immediately returns here — an infinite bounce the browser reports as
+  // which immediately returns here ï¿½ an infinite bounce the browser reports as
   // ERR_TOO_MANY_REDIRECTS. Fail it as an auth error instead.
   if (!req.query.code && !req.query.error) {
-    logger.warn({ query: req.query }, 'Google OAuth callback hit without a code — refusing to re-initiate');
+    logger.warn({ query: req.query }, 'Google OAuth callback hit without a code ï¿½ refusing to re-initiate');
     return res.redirect('/pages/admin-login.html?error=google_auth_failed&reason=missing_code');
   }
   passport.authenticate('google', (err, user, info) => {
