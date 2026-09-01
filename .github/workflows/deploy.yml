@@ -1,0 +1,51 @@
+# Deploy to the Hostinger VPS on every push to main.
+#
+# Requires two repository secrets:
+#   VPS_SSH_KEY  - private half of a deploy keypair whose public half is in
+#                  /root/.ssh/authorized_keys on the VPS
+#   VPS_HOST     - the VPS IP (148.230.66.88)
+#
+# Production secrets are NOT shipped by this workflow. They live only in
+# /opt/wedeazzy-com/backend.env on the server and are never in the repo.
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Never let two deploys rebuild the same container at once.
+  group: vps-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Load the deploy key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Pull and rebuild
+        run: |
+          ssh root@"${{ secrets.VPS_HOST }}" bash -s <<'REMOTE'
+          set -euo pipefail
+          cd /opt/wedeazzy-com
+          git fetch --prune origin
+          git reset --hard origin/main
+          docker compose -f docker-compose.prod.yml up -d --build app
+          REMOTE
+
+      - name: Verify the deploy came back healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf https://wedeazzy.com/health | grep -q '"ok":true'; then
+              echo "healthy"; exit 0
+            fi
+            sleep 5
+          done
+          echo "health check never passed"; exit 1
