@@ -118,19 +118,34 @@ function initCron() {
   cron.schedule('0 12 * * *', async () => {
     logger.info('[CRON] Running daily outreach marketing campaign check...');
     try {
-      // Find couples who haven't completed any planning tasks or have empty checklist details
+      // Couples whose profile is still bare, restricted to accounts that
+      // turned three days old since the last run. The previous query took
+      // every incomplete couple ever registered and only logged "Dispatching
+      // onboarding helper email" without sending anything — wiring a real send
+      // to it would have mailed the same people every single day. This window
+      // reaches each couple exactly once, without needing a sent-flag column.
+      const windowEnd = new Date(Date.now() - 3 * 86400 * 1000);
+      const windowStart = new Date(Date.now() - 4 * 86400 * 1000);
       const incompleteCouples = await prisma.couple.findMany({
-        where: { partnerName: null },
+        where: {
+          partnerName: null,
+          createdAt: { gte: windowStart, lt: windowEnd },
+        },
         include: { user: true },
         take: 200,
       });
 
       if (incompleteCouples.length > 0) {
         logger.info(`[CRON] Found ${incompleteCouples.length} couples with incomplete profile metadata. Triggering outreach...`);
-        // Simulated WhatsApp / Email triggers for onboarding conversion loops
         for (const c of incompleteCouples) {
-          if (c.user.email) {
-            logger.info(`[CRON] Dispatching onboarding helper email to ${c.user.email}`);
+          if (!c.user || !c.user.email) continue;
+          const result = await emailService
+            .sendProfileNudgeEmail(c.user.email, c.user.name || '')
+            .catch((err) => ({ ok: false, error: err && err.message }));
+          if (result && result.ok) {
+            logger.info(`[CRON] Sent onboarding helper email to ${c.user.email}`);
+          } else {
+            logger.error({ to: c.user.email, result }, '[CRON] Onboarding helper email failed');
           }
         }
       }

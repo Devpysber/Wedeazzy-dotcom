@@ -591,12 +591,19 @@ function calculateNextRunAt(config = {}, fromTime = new Date()) {
 async function processScheduledCampaigns() {
   try {
     const now = new Date();
+    // A recurring campaign is put back to 'scheduled' with a fresh nextRunAt
+    // after each run, but its original scheduledAt stays in the past forever.
+    // Matching on either date therefore made the scheduledAt arm true on every
+    // pass, so a recurring campaign re-dispatched to its whole audience every
+    // 60 seconds instead of on its schedule. Once nextRunAt is set it is the
+    // only due date that counts; scheduledAt applies solely to a campaign that
+    // has never run.
     const dueCampaigns = await prisma.emailCampaign.findMany({
       where: {
         status: 'scheduled',
         OR: [
-          { scheduledAt: { lte: now } },
-          { nextRunAt: { lte: now } }
+          { nextRunAt: { lte: now } },
+          { AND: [{ nextRunAt: null }, { scheduledAt: { lte: now } }] }
         ]
       }
     });
@@ -613,6 +620,17 @@ async function processScheduledCampaigns() {
       const scheduleType = (campaign.scheduleType || 'once').toLowerCase();
       if (scheduleType !== 'once') {
         const nextRun = calculateNextRunAt(campaign, new Date());
+        if (!nextRun) {
+          // No further occurrence — leave the dispatch result standing rather
+          // than returning it to 'scheduled' with no date, which would make it
+          // due immediately and forever.
+          await prisma.emailCampaign.update({
+            where: { id: campaign.id },
+            data: { lastRunAt: new Date(), nextRunAt: null }
+          });
+          logger.warn({ campaignId: campaign.id, scheduleType }, 'Recurring campaign has no next run — leaving it stopped');
+          continue;
+        }
         await prisma.emailCampaign.update({
           where: { id: campaign.id },
           data: {

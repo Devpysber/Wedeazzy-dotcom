@@ -669,6 +669,33 @@ module.exports = {
    * recipient never told anything. This is the fallback channel for exactly
    * that window — the message still reaches them, just by email.
    */
+  /**
+   * Nudge a couple whose profile is still empty a few days after signing up.
+   * Fired once per couple by the daily outreach cron.
+   */
+  async sendProfileNudgeEmail(to, name) {
+    if (!isWorkflowEnabled('profile-nudge')) {
+      return { ok: true, skipped: true, reason: 'workflow_disabled' };
+    }
+    const title = 'Finish your wedding profile';
+    const heading = 'Tell Us About Your Wedding';
+    const html = getWorkflowCustomHtml('profile-nudge') || renderHtmlFrame(title, heading, `
+      <p>Hello ${esc(name) || 'there'},</p>
+      <p>You signed up on WedEazzy a few days ago but haven't added your wedding details yet. It takes about a minute, and it changes what we can do for you:</p>
+      <ul>
+        <li>Vendors near your city, not a generic list</li>
+        <li>Availability checked against your wedding date</li>
+        <li>Quotes that fit the budget band you set</li>
+      </ul>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/user-dashboard.html" class="btn">Complete My Profile</a>
+      </div>
+      <p>Best regards,<br>The WedEazzy Team</p>
+    `);
+    const text = `Hello ${name || 'there'}, you signed up on WedEazzy a few days ago but haven't added your wedding details yet. Adding your city, date and budget gets you matched vendors and accurate quotes.`;
+    return sendMail({ to, subject: 'Finish your WedEazzy wedding profile', html, text });
+  },
+
   async sendWhatsAppFallbackEmail(to, body, subjectHint) {
     if (!isWorkflowEnabled('wa-fallback')) {
       return { ok: true, skipped: true, reason: 'workflow_disabled' };

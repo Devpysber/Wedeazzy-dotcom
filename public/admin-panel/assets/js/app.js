@@ -2112,7 +2112,8 @@ document.addEventListener("DOMContentLoaded", () => {
       { id: "inquiry-ack", code: "WF-07", desc: "Acknowledgement sent to the couple who submitted an inquiry." },
       { id: "claim-ack", code: "WF-08", desc: "Confirms a manual business-claim request to the claimant." },
       { id: "payment-failed", code: "WF-09", desc: "Notifies a vendor when a payment attempt fails and the plan stays inactive." },
-      { id: "wa-fallback", code: "WF-10", desc: "Delivers a WhatsApp message by email when the WhatsApp line cannot send it." }
+      { id: "wa-fallback", code: "WF-10", desc: "Delivers a WhatsApp message by email when the WhatsApp line cannot send it." },
+      { id: "profile-nudge", code: "WF-11", desc: "Reminds a couple to finish their profile three days after signing up." }
     ];
 
     el.portalBody.innerHTML = `
