@@ -1540,6 +1540,7 @@
   }
 </style>
   <link rel="stylesheet" href="css/enhance.css?v=1" />
+  <script src="/js/wedeazzy-notify.js"></script>
 </head>
 <body>
 
@@ -3048,7 +3049,7 @@
   }
 
   async function resendEmailOtp() {
-    if (!currentVerifyEmail) return alert('No email has been set.');
+    if (!currentVerifyEmail) return wedeazzyNotify('No email has been set.', 'error');
     try {
       const res = await fetch(API_BASE + '/api/auth/email/send-otp', {
         method: 'POST',
@@ -3057,9 +3058,9 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to resend code');
-      alert('Verification code resent successfully to ' + currentVerifyEmail);
+      wedeazzyNotify('Verification code resent successfully to ' + currentVerifyEmail, 'success');
     } catch (err) {
-      alert(err.message);
+      wedeazzyNotify(err.message, 'error');
     }
   }
 
@@ -3078,7 +3079,7 @@
       
       if (!emailPhone.value.trim()) { emailPhone.classList.add('error'); isValid = false; }
       if (!pass.value.trim()) { pass.classList.add('error'); isValid = false; }
-      if (!isValid) return alert('Please enter both username/email and password.');
+      if (!isValid) return wedeazzyNotify('Please enter both username/email and password.', 'error');
 
       try {
         const res = await fetch(API_BASE + '/api/auth/login', {
@@ -3123,11 +3124,11 @@
           return;
         }
 
-        alert('Welcome back to WedEazzy!');
+        wedeazzyNotify('Welcome back to WedEazzy!', 'success');
         window.location.href = redirectUrl;
 
       } catch (err) {
-        alert(err.message);
+        wedeazzyNotify(err.message, 'error');
       }
       
     } else if (action === 'signup-couple') {
@@ -3144,7 +3145,7 @@
       else if (!pass.value.trim()) { pass.classList.add('error'); errorMsg = 'Please create a password.'; isValid = false; }
       else if (pass.value.length < 6) { pass.classList.add('error'); errorMsg = 'Password must be at least 6 characters.'; isValid = false; }
       
-      if (!isValid) return alert(errorMsg);
+      if (!isValid) return wedeazzyNotify(errorMsg, 'error');
       
       try {
         const res = await fetch(API_BASE + '/api/auth/signup', {
@@ -3170,7 +3171,7 @@
           alert('Welcome! We sent a 6-digit verification code to ' + currentVerifyEmail);
 
       } catch (err) {
-        alert(err.message);
+        wedeazzyNotify(err.message, 'error');
       }
       
     } else if (action === 'signup-vendor') {
@@ -3191,7 +3192,7 @@
       else if (!pass.value.trim()) { pass.classList.add('error'); errorMsg = 'Please create a password.'; isValid = false; }
       else if (pass.value.length < 6) { pass.classList.add('error'); errorMsg = 'Password must be at least 6 characters.'; isValid = false; }
       
-      if (!isValid) return alert(errorMsg);
+      if (!isValid) return wedeazzyNotify(errorMsg, 'error');
       
       try {
         const res = await fetch(API_BASE + '/api/auth/signup', {
@@ -3220,13 +3221,13 @@
           alert('Welcome! We sent a 6-digit verification code to ' + currentVerifyEmail);
 
       } catch (err) {
-        alert(err.message);
+        wedeazzyNotify(err.message, 'error');
       }
     } else if (action === 'verify-email-otp') {
       const code = document.getElementById('emailOtpInput');
       if (!code.value.trim() || code.value.trim().length !== 6) {
         code.classList.add('error');
-        return alert('Please enter a valid 6-digit security code.');
+        return wedeazzyNotify('Please enter a valid 6-digit security code.', 'error');
       }
 
       try {
@@ -3246,11 +3247,11 @@
         } else {
           sessionStorage.setItem(TOKEN_KEY, data.token);
         }
-        alert('Email verified successfully! Opening your dashboard...');
+        wedeazzyNotify('Email verified successfully! Opening your dashboard...', 'success');
         window.location.href = data.user.role === 'admin' ? 'pages/admin-dashboard.html' : (data.user.role === 'vendor' ? 'pages/bdashboard.html' : 'pages/user-dashboard.html');
 
       } catch (err) {
-        alert(err.message);
+        wedeazzyNotify(err.message, 'error');
       }
     } else if (action === 'force-password-change') {
       const newPw = document.getElementById('forcePwNew');
@@ -3258,10 +3259,10 @@
 
       if (!newPw.value || newPw.value !== confirmPw.value) {
         confirmPw.classList.add('error');
-        return alert('Passwords do not match.');
+        return wedeazzyNotify('Passwords do not match.', 'error');
       }
       if (!pendingPasswordChange) {
-        return alert('Your session expired — please log in again.');
+        return wedeazzyNotify('Your session expired — please log in again.', 'error');
       }
 
       try {
@@ -3274,11 +3275,11 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Could not set your new password.');
 
-        alert('Password updated! Opening your dashboard...');
+        wedeazzyNotify('Password updated! Opening your dashboard...', 'success');
         window.location.href = pendingPasswordChange.redirectUrl;
         pendingPasswordChange = null;
       } catch (err) {
-        alert(err.message);
+        wedeazzyNotify(err.message, 'error');
       }
     }
   }
