@@ -36,7 +36,7 @@
   }
 
   function dashboardFor(role) {
-    if (role === 'admin') return '/admin-panel/dashboard.html';
+    if (role === 'admin') return '/pages/admin-dashboard.html';
     if (role === 'vendor') return '/pages/bdashboard.html';
     return '/pages/user-dashboard.html';
   }

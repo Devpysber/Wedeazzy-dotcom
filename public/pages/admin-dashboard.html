@@ -4,10 +4,36 @@
   <meta charset="UTF-8">
   <title>Redirecting...</title>
   <script>
-    window.location.replace("../admin-panel/dashboard.html");
+    /* replaced below, once the panel path is known */
   </script>
   <script src="/js/wedeazzy-notify.js"></script>
+  <script>
+    /* Resolves where the admin panel lives. The path is server configuration,
+       not public markup, so it is fetched with the admin's own token and only
+       an authenticated administrator ever learns it. Falls back to the default
+       path, which is what a deployment that has not customised it still uses. */
+    window.wedeazzyAdminPanelUrl = async function (page) {
+      var token = sessionStorage.getItem('wedeazzy_admin_token')
+        || localStorage.getItem('wedeazzy_admin_token')
+        || sessionStorage.getItem('wedeazzy_token')
+        || localStorage.getItem('wedeazzy_token');
+      var base = 'admin-panel';
+      try {
+        var res = await fetch('/api/admin-panel-path', { headers: { Authorization: 'Bearer ' + token } });
+        if (res.ok) {
+          var data = await res.json();
+          if (data && data.path) base = data.path;
+        }
+      } catch (e) { /* keep the default */ }
+      return '/' + base + '/' + page;
+    };
+  </script>
 </head>
 <body>
+  <script>
+    window.wedeazzyAdminPanelUrl('dashboard.html').then(function (url) {
+      window.location.replace(url);
+    });
+  </script>
 </body>
 </html>

@@ -29,6 +29,16 @@ const env = {
 
   ADMIN_PHONES: (process.env.ADMIN_PHONES || '').split(',').map(s => s.trim()).filter(Boolean),
 
+  // URL segment the admin panel is served under. Set it to an unguessable
+  // value in the environment — never here, since this repository is public and
+  // anything committed is published with it. When set, the default
+  // /admin-panel/ path stops resolving, which takes the panel off the path
+  // every scanner tries first. Obscurity only: the admin API is what actually
+  // enforces access (requireAuth + requireRole('admin') + rate limit + 2FA).
+  ADMIN_PANEL_PATH: (process.env.ADMIN_PANEL_PATH || 'admin-panel')
+    .trim()
+    .replace(/^\/+|\/+$/g, '') || 'admin-panel',
+
   // Notification recipients — configurable, never hardcoded in senders.
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || '',

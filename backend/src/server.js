@@ -260,6 +260,37 @@ const STATIC_ROOT = (() => {
   return flat; // fallback
 })();
 
+// --- Admin panel path ---------------------------------------------------
+// The panel's own markup uses relative links throughout, so mounting the same
+// directory under a different segment works without touching a single file in
+// it. When ADMIN_PANEL_PATH is customised, the well-known /admin-panel/ path
+// is answered with the normal 404 page so the panel is not sitting where
+// every scanner looks first. Real enforcement is on the API, not here.
+const ADMIN_PANEL_DIR = path.join(STATIC_ROOT, 'admin-panel');
+if (env.ADMIN_PANEL_PATH !== 'admin-panel') {
+  app.use(`/${env.ADMIN_PANEL_PATH}`, express.static(ADMIN_PANEL_DIR, {
+    index: 'login.html',
+    extensions: ['html'],
+    setHeaders(res) { res.setHeader('Cache-Control', 'no-cache'); },
+  }));
+  app.use('/admin-panel', (req, res) => {
+    return res.status(404).sendFile(path.join(STATIC_ROOT, 'pages', '404.html'));
+  });
+}
+
+// Tells an authenticated administrator where the panel lives, so the login
+// page can redirect there without the path being written into public HTML.
+app.get('/api/admin-panel-path', (req, res, next) => {
+  const { requireAuth, requireRole } = require('./middleware/auth');
+  requireAuth(req, res, (err) => {
+    if (err) return next(err);
+    requireRole('admin')(req, res, (err2) => {
+      if (err2) return next(err2);
+      res.json({ ok: true, path: env.ADMIN_PANEL_PATH });
+    });
+  });
+});
+
 app.use(express.static(STATIC_ROOT, {
   index: 'index.html',
   extensions: ['html'],
@@ -322,8 +353,13 @@ app.get('/health', async (req, res) => {
 });
 
 // --- Page Navigation Routes ---
-app.get('/admin', (req, res) => res.redirect('/admin-panel/login.html'));
-app.get('/admin/dashboard', (req, res) => res.redirect('/admin-panel/dashboard.html'));
+// These conveniences would hand the panel's location to anyone who asked, via
+// the redirect's Location header — which defeats the point of moving it. They
+// stay only while the panel is at its default, public path.
+if (env.ADMIN_PANEL_PATH === 'admin-panel') {
+  app.get('/admin', (req, res) => res.redirect('/admin-panel/login.html'));
+  app.get('/admin/dashboard', (req, res) => res.redirect('/admin-panel/dashboard.html'));
+}
 app.get('/vendor-dashboard', (req, res) => res.redirect('/pages/bdashboard.html'));
 app.get('/user-dashboard', (req, res) => res.redirect('/pages/user-dashboard.html'));
 

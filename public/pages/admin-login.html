@@ -89,6 +89,27 @@
     }
   </style>
   <script src="/js/wedeazzy-notify.js"></script>
+  <script>
+    /* Resolves where the admin panel lives. The path is server configuration,
+       not public markup, so it is fetched with the admin's own token and only
+       an authenticated administrator ever learns it. Falls back to the default
+       path, which is what a deployment that has not customised it still uses. */
+    window.wedeazzyAdminPanelUrl = async function (page) {
+      var token = sessionStorage.getItem('wedeazzy_admin_token')
+        || localStorage.getItem('wedeazzy_admin_token')
+        || sessionStorage.getItem('wedeazzy_token')
+        || localStorage.getItem('wedeazzy_token');
+      var base = 'admin-panel';
+      try {
+        var res = await fetch('/api/admin-panel-path', { headers: { Authorization: 'Bearer ' + token } });
+        if (res.ok) {
+          var data = await res.json();
+          if (data && data.path) base = data.path;
+        }
+      } catch (e) { /* keep the default */ }
+      return '/' + base + '/' + page;
+    };
+  </script>
 </head>
 <body>
 
@@ -128,7 +149,7 @@
         if (el.msg) el.msg.textContent = 'We were unable to verify your identity via Google. Redirecting you back to login portal...';
 
         setTimeout(() => {
-          window.location.href = "../admin-panel/login.html?error=google_failed";
+          window.location.href = "/pages/admin-login.html?error=google_failed";
         }, 3000);
         return;
       }
@@ -187,8 +208,8 @@
             // Store admin session in sessionStorage only (tab-scoped, not persisted to disk)
             sessionStorage.setItem('wedeazzy_admin_session', JSON.stringify(adminSession));
             
-            setTimeout(() => {
-              window.location.href = "../admin-panel/dashboard.html";
+            setTimeout(async () => {
+              window.location.href = await window.wedeazzyAdminPanelUrl('dashboard.html');
             }, 1000);
             return;
           }
@@ -230,7 +251,7 @@
       if (el.msg) el.msg.textContent = 'Initializing secure administrative keys...';
       
       // Pass along any other query parameters (e.g. ?action=reset&token=...)
-      window.location.href = "../admin-panel/login.html" + window.location.search;
+      window.location.href = "/pages/admin-login.html" + window.location.search;
     });
   </script>
 </body>

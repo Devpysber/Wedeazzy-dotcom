@@ -7,8 +7,8 @@
   
   <!-- Font Awesome Icons & Fonts -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="stylesheet" href="/admin-panel/assets/css/variables.css">
-  <link rel="stylesheet" href="/admin-panel/assets/css/templates.css">
+  <link rel="stylesheet" href="/css/shared-variables.css">
+  <link rel="stylesheet" href="/css/shared-templates.css">
 
   <style>
     body {
@@ -605,7 +605,7 @@
           if (!res.ok) {
             if (data && (data.code === "ERR_ADMIN_ONLY" || (data.message && data.message.includes("Admin")))) {
               showToast("Admins must log in through the Admin Portal. Redirecting to Admin Portal...", "info");
-              setTimeout(function () { window.location.href = "/admin-panel/login.html"; }, 1200);
+              setTimeout(function () { window.location.href = "/pages/admin-login.html"; }, 1200);
               return;
             }
             showToast((data && data.message) || "Invalid email or password.", "danger");
