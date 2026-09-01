@@ -13,10 +13,22 @@ const app = require('../src/server');
 const xhr = (req) => req.set('X-Requested-With', 'XMLHttpRequest');
 
 describe('WedEazzy API smoke tests', () => {
-  test('health check responds ok', async () => {
+  // /health is the one endpoint here that does touch the database — reporting
+  // 503 when MySQL is unreachable is the whole point of it. Asserting a flat
+  // 200 made this fail on any machine without a live database, which is every
+  // machine the rest of this DB-free suite is designed for. Assert the
+  // contract instead: the two states must agree with each other.
+  test('health check reports its own database state consistently', async () => {
     const res = await request(app).get('/health');
-    expect(res.status).toBe(200);
-    expect(res.body.ok).toBe(true);
+    expect([200, 503]).toContain(res.status);
+    expect(res.body).toHaveProperty('database');
+    if (res.body.database === 'ok') {
+      expect(res.status).toBe(200);
+      expect(res.body.ok).toBe(true);
+    } else {
+      expect(res.status).toBe(503);
+      expect(res.body.ok).toBe(false);
+    }
   });
 
   describe('Authentication', () => {
