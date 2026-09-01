@@ -568,6 +568,12 @@ async function verifyEmailOtp({ email, code }) {
     sendVendorRegistrationNotification(normalizedEmail, (user.vendor && user.vendor[0]?.businessName) || user.name || 'your business').catch(e => {
       logger.error({ err: e, to: normalizedEmail }, 'Failed to send vendor registration notification email');
     });
+  } else if (!wasAlreadyVerified) {
+    // Couples completed the same verification flow but got no welcome mail.
+    const { sendCoupleWelcomeEmail } = require('./email.service');
+    sendCoupleWelcomeEmail(normalizedEmail, user.name || '').catch(e => {
+      logger.error({ err: e, to: normalizedEmail }, 'Failed to send couple welcome email');
+    });
   }
 
   const token = signToken(user);

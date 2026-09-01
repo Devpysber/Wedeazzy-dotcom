@@ -50,20 +50,6 @@ function getTransporter() {
     return null;
   }
 
-  // TEMPORARY diagnostic — never logs the password itself, only its shape,
-  // to catch a hidden whitespace/newline or non-ASCII lookalike character
-  // introduced by copy-pasting SMTP_PASS into a hosting panel. Remove once
-  // the SMTP auth issue is confirmed resolved.
-  logger.info(
-    {
-      passLength: pass.length,
-      firstCharCode: pass.charCodeAt(0),
-      lastCharCode: pass.charCodeAt(pass.length - 1),
-      hasLeadingOrTrailingWhitespace: pass !== pass.trim(),
-    },
-    '[SMTP DIAGNOSTIC] SMTP_PASS shape as seen by the running process'
-  );
-
   transporter = nodemailer.createTransport({
     host,
     port,
@@ -551,5 +537,125 @@ module.exports = {
     `);
     const text = `Welcome to WedEazzy! Your business "${businessName}" is ready. Login Email: ${loginEmail || to}, Temporary Password: ${tempPassword}. Login at: ${loginUrl}`;
     return sendMail({ to, subject: 'Your WedEazzy Vendor Account Credentials', html, text });
+  },
+
+  /**
+   * Send the couple/user welcome email after email verification.
+   *
+   * Vendors already got sendVendorRegistrationNotification on verify; couples
+   * completed the same OTP flow and heard nothing back, so this is the
+   * matching welcome for the non-vendor side.
+   */
+  async sendCoupleWelcomeEmail(to, name) {
+    if (!isWorkflowEnabled('couple-welcome')) {
+      return { ok: true, skipped: true, reason: 'workflow_disabled' };
+    }
+    const title = 'Welcome to WedEazzy';
+    const heading = 'Welcome to WedEazzy!';
+    const html = getWorkflowCustomHtml('couple-welcome') || renderHtmlFrame(title, heading, `
+      <p>Hello ${esc(name) || 'there'},</p>
+      <p>Your WedEazzy account is verified and ready. You can now shortlist venues and vendors, send inquiries, compare quotes, and keep your whole wedding plan in one place.</p>
+      <p>Here's a good place to start:</p>
+      <ul>
+        <li>Browse verified vendors in your city</li>
+        <li>Save your favourites to your shortlist</li>
+        <li>Send an inquiry and get quotes back on WhatsApp</li>
+      </ul>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/user-dashboard.html" class="btn">Open My Dashboard</a>
+      </div>
+      <p>Best regards,<br>The WedEazzy Team</p>
+    `);
+    const text = `Welcome to WedEazzy, ${name || 'there'}! Your account is verified. Browse vendors, shortlist favourites, and send inquiries from your dashboard.`;
+    return sendMail({ to, subject: 'Welcome to WedEazzy — Your Account is Ready', html, text });
+  },
+
+  /**
+   * Acknowledge an inquiry back to the couple who submitted it.
+   *
+   * The admin and the vendor were both notified on submit; the couple was
+   * not, so from their side the form vanished into nothing.
+   */
+  async sendInquiryReceivedEmail(to, inquiryData, vendorName) {
+    if (!isWorkflowEnabled('inquiry-ack')) {
+      return { ok: true, skipped: true, reason: 'workflow_disabled' };
+    }
+    const title = 'Inquiry Received';
+    const heading = 'We Have Your Inquiry';
+    const eventDateStr = inquiryData.eventDate ? new Date(inquiryData.eventDate).toDateString() : 'your event date';
+    const html = getWorkflowCustomHtml('inquiry-ack') || renderHtmlFrame(title, heading, `
+      <p>Hello ${esc(inquiryData.name) || 'there'},</p>
+      <p>Thank you for your inquiry to <strong>${esc(vendorName)}</strong> for <strong>${esc(eventDateStr)}</strong>. Our team is verifying the details and will forward them to the vendor.</p>
+      <p>You can expect a response on WhatsApp at <strong>${esc(inquiryData.phone)}</strong>, usually within one business day.</p>
+      <p>In the meantime, shortlisting two or three more vendors in the same category is the fastest way to compare quotes.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/user-dashboard.html" class="btn">View My Inquiries</a>
+      </div>
+      <p>Best regards,<br>The WedEazzy Team</p>
+    `);
+    const text = `We have your inquiry for ${vendorName} (${eventDateStr}). Our team is verifying it and the vendor will reach you on ${inquiryData.phone}, usually within one business day.`;
+    return sendMail({ to, subject: `We received your inquiry for ${vendorName} - WedEazzy.com`, html, text });
+  },
+
+  /**
+   * Acknowledge a manual business-claim request back to the claimant.
+   * Only the admin was notified on submit.
+   */
+  async sendClaimReceivedEmail(to, claimantName, businessName) {
+    if (!isWorkflowEnabled('claim-ack')) {
+      return { ok: true, skipped: true, reason: 'workflow_disabled' };
+    }
+    const title = 'Claim Request Received';
+    const heading = 'Your Claim Is Under Review';
+    const html = getWorkflowCustomHtml('claim-ack') || renderHtmlFrame(title, heading, `
+      <p>Hello ${esc(claimantName) || 'there'},</p>
+      <p>We received your request to claim the listing for <strong>${esc(businessName)}</strong> on WedEazzy.</p>
+      <p>Our verification team reviews claims manually, typically within 1–2 business days. Once approved, you'll receive your vendor login details by email and can manage the listing yourself.</p>
+      <p>If we need anything further to verify ownership, we'll reply to this address.</p>
+      <p>Best regards,<br>The WedEazzy Verification Team</p>
+    `);
+    const text = `We received your claim request for "${businessName}". Our team reviews claims within 1-2 business days and will email your vendor login details once approved.`;
+    return sendMail({ to, subject: `Claim request received: ${businessName} - WedEazzy.com`, html, text });
+  },
+
+  /**
+   * Notify a vendor that a payment attempt failed, so a dropped checkout
+   * doesn't end in silence with the subscription still inactive.
+   */
+  async sendPaymentFailedEmail(to, txn, reason) {
+    if (!isWorkflowEnabled('payment-failed')) {
+      return { ok: true, skipped: true, reason: 'workflow_disabled' };
+    }
+    const title = 'Payment Failed';
+    const heading = 'Your Payment Did Not Go Through';
+    const planName = txn && txn.purpose && txn.purpose.startsWith('subscription:')
+      ? txn.purpose.slice(13)
+      : 'Ad Campaign';
+    const amountRs = txn && txn.amount ? (txn.amount / 100).toFixed(2) : null;
+    const html = getWorkflowCustomHtml('payment-failed') || renderHtmlFrame(title, heading, `
+      <p>Hello,</p>
+      <p>Your payment for the <strong>${esc(planName)}</strong> plan could not be completed, so the upgrade has not been activated.</p>
+      <table style="width:100%; border-collapse:collapse; margin:20px 0; font-size:14px; text-align:left;">
+        <tr style="border-bottom:1px solid #E8DFD4;">
+          <td style="padding:10px; font-weight:bold;">Transaction ID</td>
+          <td style="padding:10px; font-family: monospace;">${esc(txn && txn.id)}</td>
+        </tr>
+        ${amountRs ? `<tr style="border-bottom:1px solid #E8DFD4;">
+          <td style="padding:10px; font-weight:bold;">Amount</td>
+          <td style="padding:10px;">₹${esc(amountRs)}</td>
+        </tr>` : ''}
+        <tr style="border-bottom:1px solid #E8DFD4;">
+          <td style="padding:10px; font-weight:bold;">Reason</td>
+          <td style="padding:10px;">${esc(reason) || 'The payment was declined or left incomplete'}</td>
+        </tr>
+      </table>
+      <p>No amount has been captured. If your bank shows a debit, it is a pre-authorisation that is released automatically, usually within 5–7 working days.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/bdashboard.html" class="btn">Retry Payment</a>
+      </div>
+      <p>Best regards,<br>The WedEazzy Team</p>
+    `);
+    const text = `Payment failed for the ${planName} plan (Transaction ${txn && txn.id}). No amount was captured. Retry from your partner dashboard.`;
+    return sendMail({ to, subject: `Payment Failed: ${planName} - WedEazzy.com`, html, text });
   }
 };

@@ -451,6 +451,13 @@ async function verifyPayment(req, res, next) {
     if (!verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)) {
       logger.error({ transactionId, razorpay_order_id }, 'Razorpay payment signature verification failed');
       await markFailed(transactionId, 'verify-signature-mismatch');
+      // A failed verification leaves the plan inactive; tell the payer rather
+      // than relying on them noticing. Sent only on this real gateway failure,
+      // never on the stale-"initiated" sweep, which would spam abandoned carts.
+      if (req.user && req.user.email) {
+        emailService.sendPaymentFailedEmail(req.user.email, txn, 'Payment could not be verified with the gateway')
+          .catch(err => logger.error({ err, to: req.user.email }, 'Failed to send payment failure email'));
+      }
       throw new HttpError(400, 'Payment verification failed — signature mismatch.', 'ERR_SIGNATURE');
     }
 

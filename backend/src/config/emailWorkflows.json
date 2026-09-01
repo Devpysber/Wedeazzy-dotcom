@@ -1,7 +1,11 @@
 {
   "welcome-otp": { "name": "Vendor Registration Welcome", "enabled": true, "customHtml": null },
   "couple-otp": { "name": "Couple OTP Login Sign-In", "enabled": true, "customHtml": null },
+  "couple-welcome": { "name": "Couple Account Welcome", "enabled": true, "customHtml": null },
   "inquiry-forward": { "name": "Inquiry Forwarded to Partner", "enabled": true, "customHtml": null },
+  "inquiry-ack": { "name": "Inquiry Received Acknowledgement", "enabled": true, "customHtml": null },
+  "claim-ack": { "name": "Business Claim Received", "enabled": true, "customHtml": null },
+  "payment-failed": { "name": "Payment Failed Notice", "enabled": true, "customHtml": null },
   "booking-confirm": { "name": "Booking Confirmed Milestone", "enabled": true, "customHtml": null },
   "user-suspend": { "name": "Account Suspension Warnings", "enabled": true, "customHtml": null }
 }

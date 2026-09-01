@@ -117,6 +117,14 @@ async function create(payload) {
     });
   }
 
+  // 3. Acknowledge back to the couple, who otherwise saw the form submit
+  //    and heard nothing while admin and vendor were both notified.
+  if (inq.email) {
+    emailService.sendInquiryReceivedEmail(inq.email, inq, vendor.businessName).catch(e => {
+      logger.error({ err: e, to: inq.email }, 'Failed to send couple inquiry acknowledgement email');
+    });
+  }
+
   return inq;
 }
 

@@ -680,6 +680,12 @@ async function requestManual(req, res, next) {
       text: `Manual claim request for "${vendor.businessName}" by ${claimantName} (${claimantEmail}).`,
     }).catch(err => logger.error({ err }, 'Failed to send admin notification for manual claim'));
 
+    // Acknowledge to the claimant — manual review takes days, and until now
+    // the submit produced no confirmation of any kind on their side.
+    const { sendClaimReceivedEmail } = require('../services/email.service');
+    sendClaimReceivedEmail(request.claimantEmail, request.claimantName, vendor.businessName)
+      .catch(err => logger.error({ err, to: request.claimantEmail }, 'Failed to send claim acknowledgement to claimant'));
+
     res.json({ ok: true, requestId: request.id.slice(-8) });
   } catch (e) { next(e); }
 }

@@ -2107,7 +2107,11 @@ document.addEventListener("DOMContentLoaded", () => {
       { id: "couple-otp", code: "WF-02", desc: "Dynamic login security code sent to couple clients." },
       { id: "inquiry-forward", code: "WF-03", desc: "Sent automatically when a couple's inquiry is captured for a vendor." },
       { id: "booking-confirm", code: "WF-04", desc: "Fires when an administrator marks a booking as confirmed." },
-      { id: "user-suspend", code: "WF-05", desc: "Triggered upon administrative restriction of user credentials." }
+      { id: "user-suspend", code: "WF-05", desc: "Triggered upon administrative restriction of user credentials." },
+      { id: "couple-welcome", code: "WF-06", desc: "Welcome email sent to a couple once their account email is verified." },
+      { id: "inquiry-ack", code: "WF-07", desc: "Acknowledgement sent to the couple who submitted an inquiry." },
+      { id: "claim-ack", code: "WF-08", desc: "Confirms a manual business-claim request to the claimant." },
+      { id: "payment-failed", code: "WF-09", desc: "Notifies a vendor when a payment attempt fails and the plan stays inactive." }
     ];
 
     el.portalBody.innerHTML = `
