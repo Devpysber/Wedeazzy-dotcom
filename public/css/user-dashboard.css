@@ -99,6 +99,10 @@ h1, h2, h3, h4 {
   display: flex;
   align-items: center;
   gap: 8px;
+  /* The logo is an <a> back to the homepage — keep it looking like a logo. */
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 .logo-img {
