@@ -3125,7 +3125,8 @@
         }
 
         wedeazzyNotify('Welcome back to WedEazzy!', 'success');
-        window.location.href = redirectUrl;
+        // Hold briefly so the toast is readable before the page navigates away.
+        setTimeout(function () { window.location.href = redirectUrl; }, 900);
 
       } catch (err) {
         wedeazzyNotify(err.message, 'error');
@@ -3248,7 +3249,8 @@
           sessionStorage.setItem(TOKEN_KEY, data.token);
         }
         wedeazzyNotify('Email verified successfully! Opening your dashboard...', 'success');
-        window.location.href = data.user.role === 'admin' ? 'pages/admin-dashboard.html' : (data.user.role === 'vendor' ? 'pages/bdashboard.html' : 'pages/user-dashboard.html');
+        var verifiedTarget = data.user.role === 'admin' ? 'pages/admin-dashboard.html' : (data.user.role === 'vendor' ? 'pages/bdashboard.html' : 'pages/user-dashboard.html');
+        setTimeout(function () { window.location.href = verifiedTarget; }, 900);
 
       } catch (err) {
         wedeazzyNotify(err.message, 'error');
@@ -3276,8 +3278,9 @@
         if (!res.ok) throw new Error(data.message || 'Could not set your new password.');
 
         wedeazzyNotify('Password updated! Opening your dashboard...', 'success');
-        window.location.href = pendingPasswordChange.redirectUrl;
+        var passwordTarget = pendingPasswordChange.redirectUrl;
         pendingPasswordChange = null;
+        setTimeout(function () { window.location.href = passwordTarget; }, 900);
       } catch (err) {
         wedeazzyNotify(err.message, 'error');
       }

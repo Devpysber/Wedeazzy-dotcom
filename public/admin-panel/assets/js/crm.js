@@ -2532,7 +2532,7 @@
   async function bulkInvite() {
     const ids = [...view.vendors.selected];
     if (ids.length === 0) return;
-    if (!confirm(`Send a claim invitation to ${ids.length} listing${ids.length === 1 ? '' : 's'}?`)) return;
+    if (!await wedeazzyConfirm(`Send a claim invitation to ${ids.length} listing${ids.length === 1 ? '' : 's'}?`)) return;
 
     ctx.showToast(`Sending ${ids.length} invitation${ids.length === 1 ? '' : 's'}…`, 'info');
     try {

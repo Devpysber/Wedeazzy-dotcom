@@ -1751,7 +1751,7 @@ function esc(s) {
 }
 
 async function handleLogout() {
-  if (!confirm('Log out from WedEazzy Wedding Planning Portal?')) return;
+  if (!await wedeazzyConfirm('Log out from WedEazzy Wedding Planning Portal?')) return;
   const token = getStoredToken();
   if (token) {
     try {

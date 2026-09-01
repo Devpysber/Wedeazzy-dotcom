@@ -8,8 +8,14 @@
  * window.alert is overridden rather than editing every call site, so existing
  * and future alert() calls are upgraded automatically. Call
  * wedeazzyNotify(message, type) directly to pick a type: 'success', 'error',
- * 'info' (default). Native confirm() is left alone — it returns a boolean
- * synchronously and cannot be replaced without rewriting each caller.
+ * 'info' (default).
+ *
+ * wedeazzyConfirm(message, opts) is the confirm() replacement. It returns a
+ * Promise<boolean> rather than a synchronous boolean, so each caller had to
+ * be converted to await it — every one of them was already an async function.
+ * It resolves false for anything that is not an explicit click on the confirm
+ * button (Escape, backdrop click, Cancel), so a destructive action can never
+ * proceed by accident.
  * ========================================================================== */
 (function () {
   if (window.wedeazzyNotify) return;
@@ -39,7 +45,26 @@
       'font-size:18px;line-height:1;padding:0 2px;font-family:inherit;}',
       '.wz-toast-close:hover{color:#2A2320;}',
       '@media (max-width:520px){#' + WRAP_ID + '{top:12px;right:12px;left:12px;max-width:none;}}',
-      '@media (prefers-reduced-motion:reduce){.wz-toast{transition:none;}}'
+      '@media (prefers-reduced-motion:reduce){.wz-toast{transition:none;}}',
+      /* confirm dialog */
+      '.wz-backdrop{position:fixed;inset:0;z-index:2147483100;background:rgba(30,16,12,.55);',
+      'display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .18s ease;}',
+      '.wz-backdrop.wz-in{opacity:1;}',
+      '.wz-dialog{background:#fff;border-radius:16px;max-width:440px;width:100%;padding:26px 26px 20px;',
+      'box-shadow:0 24px 60px rgba(40,15,10,.3);border:1px solid #E8DFD4;',
+      "font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#2A2320;",
+      'transform:translateY(10px) scale(.97);transition:transform .18s ease;}',
+      '.wz-backdrop.wz-in .wz-dialog{transform:translateY(0) scale(1);}',
+      '.wz-dialog-title{font-size:17.5px;font-weight:700;margin:0 0 8px;}',
+      '.wz-dialog-msg{font-size:14.5px;line-height:1.6;margin:0 0 22px;white-space:pre-wrap;color:#5A514B;}',
+      '.wz-dialog-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;}',
+      '.wz-btn{font:inherit;font-size:14px;font-weight:600;padding:10px 20px;border-radius:999px;',
+      'cursor:pointer;border:1px solid transparent;transition:filter .15s ease;}',
+      '.wz-btn:hover{filter:brightness(.94);}',
+      '.wz-btn-cancel{background:#F4EFEA;color:#4A423C;border-color:#E2D8CE;}',
+      '.wz-btn-ok{background:#8B1E3F;color:#fff;}',
+      '.wz-btn-ok.wz-danger{background:#C1272D;}',
+      '@media (prefers-reduced-motion:reduce){.wz-backdrop,.wz-dialog{transition:none;}}'
     ].join('');
     var el = document.createElement('style');
     el.id = STYLE_ID;
@@ -112,5 +137,92 @@
   // Upgrade every existing alert() call site in one move.
   window.alert = function (message) {
     window.wedeazzyNotify(message, 'info');
+  };
+
+  /**
+   * Promise<boolean> replacement for confirm().
+   * opts: { title, confirmText, cancelText, danger }
+   */
+  window.wedeazzyConfirm = function (message, opts) {
+    var o = opts || {};
+    // Without a body there is nothing to render into; refusing (false) is the
+    // safe answer, since every caller guards a destructive action.
+    if (!document.body) return Promise.resolve(false);
+    injectStyle();
+
+    return new Promise(function (resolve) {
+      var settled = false;
+      function finish(result) {
+        if (settled) return;
+        settled = true;
+        document.removeEventListener('keydown', onKey, true);
+        backdrop.classList.remove('wz-in');
+        setTimeout(function () {
+          if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+          if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
+        }, 190);
+        resolve(result);
+      }
+
+      var lastFocus = document.activeElement;
+
+      var backdrop = document.createElement('div');
+      backdrop.className = 'wz-backdrop';
+      backdrop.addEventListener('click', function (e) {
+        if (e.target === backdrop) finish(false);
+      });
+
+      var dialog = document.createElement('div');
+      dialog.className = 'wz-dialog';
+      dialog.setAttribute('role', 'dialog');
+      dialog.setAttribute('aria-modal', 'true');
+
+      var title = document.createElement('p');
+      title.className = 'wz-dialog-title';
+      title.textContent = o.title || 'Please confirm';
+
+      var msg = document.createElement('p');
+      msg.className = 'wz-dialog-msg';
+      msg.textContent = String(message == null ? '' : message);
+
+      var actions = document.createElement('div');
+      actions.className = 'wz-dialog-actions';
+
+      var cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'wz-btn wz-btn-cancel';
+      cancel.textContent = o.cancelText || 'Cancel';
+      cancel.addEventListener('click', function () { finish(false); });
+
+      var ok = document.createElement('button');
+      ok.type = 'button';
+      ok.className = 'wz-btn wz-btn-ok' + (o.danger ? ' wz-danger' : '');
+      ok.textContent = o.confirmText || 'Confirm';
+      ok.addEventListener('click', function () { finish(true); });
+
+      function onKey(e) {
+        if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+        else if (e.key === 'Enter' && document.activeElement !== cancel) { e.preventDefault(); finish(true); }
+        else if (e.key === 'Tab') {
+          // Keep focus inside the dialog.
+          e.preventDefault();
+          (document.activeElement === ok ? cancel : ok).focus();
+        }
+      }
+      document.addEventListener('keydown', onKey, true);
+
+      actions.appendChild(cancel);
+      actions.appendChild(ok);
+      dialog.appendChild(title);
+      dialog.appendChild(msg);
+      dialog.appendChild(actions);
+      backdrop.appendChild(dialog);
+      document.body.appendChild(backdrop);
+      requestAnimationFrame(function () {
+        backdrop.classList.add('wz-in');
+        // Cancel takes initial focus so a stray Enter/Space does not destroy anything.
+        cancel.focus();
+      });
+    });
   };
 })();
