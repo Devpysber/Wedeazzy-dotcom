@@ -486,7 +486,7 @@ module.exports = {
       <p>Great news — your booking with <strong>${esc(vendorName)}</strong> for <strong>${esc(eventDateStr)}</strong> has been confirmed by our team.</p>
       <p>You can view the full booking details, chat with your vendor, and track your wedding checklist from your WedEazzy dashboard.</p>
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/dashboard.html" class="btn">View My Booking</a>
+        <a href="${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/user-dashboard.html" class="btn">View My Booking</a>
       </div>
       <p>Best regards,<br>The WedEazzy Team</p>
     `);
