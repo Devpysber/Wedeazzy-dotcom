@@ -2710,7 +2710,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.loadCities();
 
     window.deleteCity = async function(slug) {
-      if (!await wedeazzyConfirm(`Are you sure you want to permanently delete the city "${slug}"?`)) return;
+      if (!await wedeazzyConfirm(`Are you sure you want to permanently delete the city "${slug}"?`, { danger: true, confirmText: 'Yes, continue' })) return;
       try {
         const auth = window.WedEazzyAuth;
         const token = auth ? auth.getToken() : null;
@@ -2879,7 +2879,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
 
     window.deleteSuburb = async function(slug) {
-      if (!await wedeazzyConfirm(`Are you sure you want to permanently delete this suburb?`)) return;
+      if (!await wedeazzyConfirm(`Are you sure you want to permanently delete this suburb?`, { danger: true, confirmText: 'Yes, continue' })) return;
       try {
         const auth = window.WedEazzyAuth;
         const token = auth ? auth.getToken() : null;
@@ -3100,7 +3100,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.loadVendorCategories();
 
     window.deleteVendorCategory = async function(slug) {
-      if (!await wedeazzyConfirm(`Are you sure you want to permanently delete the vendor category "${slug}"?`)) return;
+      if (!await wedeazzyConfirm(`Are you sure you want to permanently delete the vendor category "${slug}"?`, { danger: true, confirmText: 'Yes, continue' })) return;
       try {
         const auth = window.WedEazzyAuth;
         const token = auth ? auth.getToken() : null;
@@ -4400,7 +4400,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   window.deleteCampaignRecord = async function(id) {
-    if (!await wedeazzyConfirm('Are you sure you want to delete this campaign history log?')) return;
+    if (!await wedeazzyConfirm('Are you sure you want to delete this campaign history log?', { danger: true, confirmText: 'Yes, continue' })) return;
     try {
       const auth = window.WedEazzyAuth;
       const token = auth ? auth.getToken() : null;
@@ -5235,7 +5235,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Booking Action Router
   window.handleBookingStatus = async function(id, status) {
-    if (status === "cancelled" && !await wedeazzyConfirm(`Are you sure you want to cancel booking #${id}?`)) return;
+    if (status === "cancelled" && !await wedeazzyConfirm(`Are you sure you want to cancel booking #${id}?`, { danger: true, confirmText: 'Yes, continue' })) return;
     try {
       const data = await window.WedEazzyStore.updateBookingStatus(id, status);
       if (data && data.ok) {
@@ -5372,7 +5372,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   window.handleVenueStatus = async function(id, status) {
-    if (status === "cancelled" && !await wedeazzyConfirm(`Are you sure you want to reject/archive venue #${id}?`)) return;
+    if (status === "cancelled" && !await wedeazzyConfirm(`Are you sure you want to reject/archive venue #${id}?`, { danger: true, confirmText: 'Yes, continue' })) return;
     try {
       const data = await window.WedEazzyStore.updateVenueStatus(id, status);
       if (data && data.ok) {
@@ -5650,7 +5650,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   window.handleVendorStatus = async function(id, status) {
-    if (status === "cancelled" && !await wedeazzyConfirm(`Are you sure you want to blacklist vendor #${id}?`)) return;
+    if (status === "cancelled" && !await wedeazzyConfirm(`Are you sure you want to blacklist vendor #${id}?`, { danger: true, confirmText: 'Yes, continue' })) return;
     try {
       const data = await window.WedEazzyStore.updateVendorStatus(id, status);
       if (data && data.ok) {
@@ -5666,7 +5666,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   window.handleDeleteVendor = async function(id) {
-    if (!await wedeazzyConfirm(`Permanently delete vendor listing #${id}?\n\nThis also permanently deletes ALL of their bookings, inquiries, reviews, and ad campaigns — this cannot be undone.`)) return;
+    if (!await wedeazzyConfirm(`Permanently delete vendor listing #${id}?\n\nThis also permanently deletes ALL of their bookings, inquiries, reviews, and ad campaigns — this cannot be undone.`, { danger: true, confirmText: 'Yes, continue' })) return;
     try {
       const data = await window.WedEazzyStore.deleteVendor(id);
       if (data && data.ok) {
@@ -5911,7 +5911,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   window.handleUserStatus = async function(id, status) {
-    if (status === "inactive" && !await wedeazzyConfirm(`Are you sure you want to suspend this user account (#${id})?`)) return;
+    if (status === "inactive" && !await wedeazzyConfirm(`Are you sure you want to suspend this user account (#${id})?`, { danger: true, confirmText: 'Yes, continue' })) return;
     try {
       const data = await window.WedEazzyStore.updateUserStatus(id, status);
       if (data && data.ok) {
@@ -6371,7 +6371,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   window.waDisconnect = async function() {
-    if (!await wedeazzyConfirm('Disconnect WhatsApp? You will need to click Connect and scan a fresh QR (or use a pairing code) to reconnect.')) return;
+    if (!await wedeazzyConfirm('Disconnect WhatsApp? You will need to click Connect and scan a fresh QR (or use a pairing code) to reconnect.', { danger: true, confirmText: 'Yes, continue' })) return;
     try {
       const apiFetch = window.WedEazzyAuth ? window.WedEazzyAuth.apiFetch.bind(window.WedEazzyAuth) : fetch;
       const r = await apiFetch('/api/whatsapp/disconnect', { method: 'POST' });
@@ -8560,7 +8560,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   window.deleteEmailTemplateRecord = async function(id) {
-    if (!await wedeazzyConfirm('Are you sure you want to delete or archive this template?')) return;
+    if (!await wedeazzyConfirm('Are you sure you want to delete or archive this template?', { danger: true, confirmText: 'Yes, continue' })) return;
     try {
       const auth = window.WedEazzyAuth;
       const token = auth ? auth.getToken() : null;

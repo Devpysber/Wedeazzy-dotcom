@@ -2810,7 +2810,7 @@ async function uploadBusinessPhotos(event) {
 }
 
 async function deleteBusinessPhoto(photoId) {
-  if (!await wedeazzyConfirm('Delete this photo?')) return;
+  if (!await wedeazzyConfirm('Delete this photo?', { danger: true, confirmText: 'Yes, continue' })) return;
   
   try {
     const res = await api(`/api/vendor/me/photos/${photoId}`, {
@@ -2848,7 +2848,7 @@ async function setCoverPhoto(photoId) {
 async function deleteMyListing(vendorId = null) {
   const targetId = vendorId || (state.vendor ? state.vendor.id : null);
   if (!targetId) return;
-  if (!await wedeazzyConfirm('Are you absolutely sure you want to delete this business listing? This will permanently delete the profile, photos, and inquiries, and cannot be undone.')) {
+  if (!await wedeazzyConfirm('Are you absolutely sure you want to delete this business listing? This will permanently delete the profile, photos, and inquiries, and cannot be undone.', { danger: true, confirmText: 'Yes, continue' })) {
     return;
   }
   
@@ -3659,7 +3659,7 @@ window.processRazorpayPayment = async function(planName, submitBtnId) {
 };
 
 window.cancelMySubscription = async function() {
-  if (!await wedeazzyConfirm("Are you sure you want to cancel your WedEazzy subscription? Your visibility will immediately revert to the Free plan tier, and pincode locks will be released.")) {
+  if (!await wedeazzyConfirm("Are you sure you want to cancel your WedEazzy subscription? Your visibility will immediately revert to the Free plan tier, and pincode locks will be released.", { danger: true, confirmText: 'Yes, continue' })) {
     return;
   }
   try {
@@ -7121,7 +7121,7 @@ window.toggleCampaignStatus = async function(id, newStatus) {
 };
 
 window.deleteCampaignFront = async function(id) {
-  if (!await wedeazzyConfirm('Are you sure you want to permanently delete this campaign? This cannot be undone.')) return;
+  if (!await wedeazzyConfirm('Are you sure you want to permanently delete this campaign? This cannot be undone.', { danger: true, confirmText: 'Yes, continue' })) return;
 
   try {
     const response = await api(`/api/campaigns/${id}`, {
