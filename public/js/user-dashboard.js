@@ -346,7 +346,10 @@ function renderDashboardTab(el) {
         <div>
           <h3 style="font-family:var(--sans); font-size:18px; margin-bottom:12px;">Let's design your dream wedding!</h3>
           <p style="font-size:14px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px;">
-            Your target destination is set as <strong>${esc(state.couple ? state.couple.city : 'Mumbai')}</strong>. You can find top wedding photographers, bridal makeup artists, mehndi designs, catering packages, and banquets to make your event unforgettable.
+            ${(state.couple && state.couple.city)
+              ? `Your target destination is set as <strong>${esc(state.couple.city)}</strong>.`
+              : `Set your wedding city in <a href="#" onclick="switchTab('settings'); return false;" style="color:inherit; font-weight:600;">Profile Settings</a> to see vendors near you.`}
+            You can find top wedding photographers, bridal makeup artists, mehndi designs, catering packages, and banquets to make your event unforgettable.
           </p>
         </div>
         <div style="display:flex; gap:12px;">

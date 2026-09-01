@@ -113,11 +113,17 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // --- CORS Configuration ---
-const allowedOrigins = [
+// The localhost origins are a development convenience and have no business
+// being credentialed-allowlisted by the production API, so they are added
+// only outside production.
+const devOrigins = env.NODE_ENV === 'production' ? [] : [
   'http://localhost:4000',
   'http://127.0.0.1:4000',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
+];
+const allowedOrigins = [
+  ...devOrigins,
   ...env.FRONTEND_ORIGIN.filter(Boolean),
   env.PUBLIC_BASE_URL,
 ].map(origin => origin ? origin.replace(/\/$/, '') : ''); // normalize by stripping trailing slashes
