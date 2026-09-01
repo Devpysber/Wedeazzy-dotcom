@@ -294,7 +294,7 @@ const WedEazzyStore = {
           location: venue.location,
           capacity: venue.capacity,
           price: venue.price,
-          contact: venue.contact || '917498987620',
+          contact: venue.contact || '919930090487',
           email: venue.email || ''
         })
       });

@@ -361,6 +361,14 @@ async function googleCallback(req, res, next) {
 // Root-level routes matching GOOGLE_CALLBACK_URL=http://localhost:4000/google/callback
 app.get('/google', googleInit);
 app.get('/google/callback', (req, res, next) => {
+  // Guard: passport's OAuth2 strategy treats a callback carrying neither `code`
+  // nor `error` as a fresh authorization request and redirects back to Google,
+  // which immediately returns here — an infinite bounce the browser reports as
+  // ERR_TOO_MANY_REDIRECTS. Fail it as an auth error instead.
+  if (!req.query.code && !req.query.error) {
+    logger.warn({ query: req.query }, 'Google OAuth callback hit without a code — refusing to re-initiate');
+    return res.redirect('/pages/admin-login.html?error=google_auth_failed&reason=missing_code');
+  }
   passport.authenticate('google', (err, user, info) => {
     if (err || !user) {
       const errMsg = err ? (err.message || err.code || 'auth_failed') : (info ? (info.message || 'user_not_found') : 'auth_failed');

@@ -1,0 +1,42 @@
+# Production stack for the VPS. Run from the app root (/opt/wedeazzy-com).
+# Secrets live in the sibling .env files, never in this file.
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wedeazzy
+      MYSQL_USER: wedeazzy
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env next to this file}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env next to this file}
+    # Deliberately no host port publish: Docker's iptables rules bypass ufw,
+    # so a 3306 mapping would expose MySQL to the internet. `app` reaches it
+    # over the compose network.
+    volumes:
+      - ./.data/mysql:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: backend.env
+    # Loopback-only: Nginx on the host terminates TLS and proxies here.
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - ./baileys-auth:/app/baileys-auth
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    command: sh -c "npx prisma migrate deploy && node src/server.js"

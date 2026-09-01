@@ -63,7 +63,7 @@
 
   function whatsappLink(v) {
     var msg = "Hi WedEazzy! I'm interested in *" + v.name + "* (" + v.category + " · " + v.city + (v.area ? ', ' + v.area : '') + "). I'm planning my wedding and would like availability, packages and pricing. Please connect me with the vendor. Thanks!";
-    return 'https://wa.me/917498987620?text=' + encodeURIComponent(msg);
+    return 'https://wa.me/919930090487?text=' + encodeURIComponent(msg);
   }
 
   function getSelectedFilters() {
@@ -208,7 +208,7 @@
     var list = document.getElementById('vendorList');
     
     if (!vendors.length) {
-      list.innerHTML = '<div class="empty" style="grid-column: 1/-1;"><h3>No vendors match your filters</h3><p>Clear filters or chat with us on WhatsApp - we\'ll find one for you.</p><a href="https://wa.me/917498987620" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;background:#25D366;color:#fff;padding:10px 22px;border-radius:8px;font-weight:700;">Chat on WhatsApp</a></div>';
+      list.innerHTML = '<div class="empty" style="grid-column: 1/-1;"><h3>No vendors match your filters</h3><p>Clear filters or chat with us on WhatsApp - we\'ll find one for you.</p><a href="https://wa.me/919930090487" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;background:#25D366;color:#fff;padding:10px 22px;border-radius:8px;font-weight:700;">Chat on WhatsApp</a></div>';
       getOrCreateLoadMoreContainer().innerHTML = '';
       return;
     }
@@ -469,7 +469,7 @@
     }
 
     var msg = "Hi WedEazzy! I'm interested in *" + v.name + "* (" + v.category + " · " + v.city + "). I saw their profile on the Quick View popup. Please connect me with them. Thanks!";
-    var waUrl = 'https://wa.me/917498987620?text=' + encodeURIComponent(msg);
+    var waUrl = 'https://wa.me/919930090487?text=' + encodeURIComponent(msg);
 
     modalEl.innerHTML = '\
       <div style="background:#fff; width:100%; max-width:850px; max-height:90vh; overflow-y:auto; border-radius:20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position:relative; display:flex; flex-direction:column; animation: modal-zoom 0.3s cubic-bezier(0.16, 1, 0.3, 1);">\

@@ -233,7 +233,7 @@ async function sendWelcomeEmail(to, name) {
         </div>
         <div class="footer">
           <p>© 2026 WedEazzy.com — Wedding planning, made eazzy.</p>
-          <p><a href="https://www.wedeazzy.com">Visit Website</a> | <a href="https://wa.me/917498987620">Support</a></p>
+          <p><a href="https://www.wedeazzy.com">Visit Website</a> | <a href="https://wa.me/919930090487">Support</a></p>
         </div>
       </div>
     </body>

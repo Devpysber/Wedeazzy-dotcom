@@ -277,7 +277,7 @@
   const supportInput = document.getElementById('weSupportInput');
   const chips = document.querySelectorAll('.we-chip');
 
-  const WHATSAPP_NUM = '917498987620';
+  const WHATSAPP_NUM = '919930090487';
 
   const togglePanel = () => {
     panelWindow.classList.toggle('show');

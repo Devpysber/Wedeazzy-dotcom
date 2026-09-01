@@ -3,7 +3,7 @@
   if (document.getElementById('wedeazzy-faq-chatbot')) return;
 
   // ---------- Content: menu-driven FAQ tree (no AI, no backend calls) ----------
-  var WHATSAPP_NUM = '917498987620';
+  var WHATSAPP_NUM = '919930090487';
   var ADMIN_WA_LINK = 'https://wa.me/' + WHATSAPP_NUM;
 
   var NODES = {
