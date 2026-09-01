@@ -7,6 +7,11 @@ node_modules/
 .env.*
 **/.env
 **/.env.*
+# The VPS keeps its production config as backend.env next to the compose file
+# (docker compose `env_file:`), which none of the .env globs above match — an
+# `git add -A` on the server would otherwise commit every live secret.
+backend.env
+**/backend.env
 # keep the placeholder templates only
 !.env.example
 !**/.env.example
