@@ -657,5 +657,35 @@ module.exports = {
     `);
     const text = `Payment failed for the ${planName} plan (Transaction ${txn && txn.id}). No amount was captured. Retry from your partner dashboard.`;
     return sendMail({ to, subject: `Payment Failed: ${planName} - WedEazzy.com`, html, text });
+  },
+
+  /**
+   * Deliver a WhatsApp message body over email instead, when WhatsApp itself
+   * could not deliver it.
+   *
+   * The WhatsApp session needs a human to scan a QR code in the admin panel;
+   * while it is unauthenticated every send fails with WA_OFFLINE and only
+   * queues for retry, so time-sensitive lead pings sat undelivered with the
+   * recipient never told anything. This is the fallback channel for exactly
+   * that window — the message still reaches them, just by email.
+   */
+  async sendWhatsAppFallbackEmail(to, body, subjectHint) {
+    if (!isWorkflowEnabled('wa-fallback')) {
+      return { ok: true, skipped: true, reason: 'workflow_disabled' };
+    }
+    const title = 'Message from WedEazzy';
+    const heading = subjectHint || 'A Message From WedEazzy';
+    // WhatsApp bodies use *asterisks* for bold; render that rather than
+    // leaking the markup into the email.
+    const rendered = esc(body).replace(/\*([^*]+)\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    const html = getWorkflowCustomHtml('wa-fallback') || renderHtmlFrame(title, heading, `
+      <div style="background:#F9FAFB; border:1px solid #E5E7EB; padding:16px; border-radius:8px; margin:20px 0; line-height:1.7;">
+        ${rendered}
+      </div>
+      <p style="color:#79706A; font-size:13px;">We normally send this on WhatsApp. It came by email because our WhatsApp line could not deliver it — you can reply to this email or reach us on WhatsApp any time.</p>
+      <p>Best regards,<br>The WedEazzy Team</p>
+    `);
+    const text = String(body || '').replace(/\*/g, '');
+    return sendMail({ to, subject: `${subjectHint || 'Message from WedEazzy'} - WedEazzy.com`, html, text });
   }
 };

@@ -2111,7 +2111,8 @@ document.addEventListener("DOMContentLoaded", () => {
       { id: "couple-welcome", code: "WF-06", desc: "Welcome email sent to a couple once their account email is verified." },
       { id: "inquiry-ack", code: "WF-07", desc: "Acknowledgement sent to the couple who submitted an inquiry." },
       { id: "claim-ack", code: "WF-08", desc: "Confirms a manual business-claim request to the claimant." },
-      { id: "payment-failed", code: "WF-09", desc: "Notifies a vendor when a payment attempt fails and the plan stays inactive." }
+      { id: "payment-failed", code: "WF-09", desc: "Notifies a vendor when a payment attempt fails and the plan stays inactive." },
+      { id: "wa-fallback", code: "WF-10", desc: "Delivers a WhatsApp message by email when the WhatsApp line cannot send it." }
     ];
 
     el.portalBody.innerHTML = `

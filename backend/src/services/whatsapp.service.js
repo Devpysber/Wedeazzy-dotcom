@@ -63,7 +63,34 @@ function _nextRetryDate(retryCount) {
  * @param {string}  [opts.mediaUrl] - Publicly-reachable image URL; when set, sends as an image with `body` as caption instead of a plain text message
  * @returns {{ ok: boolean, id: string, error?: string }}
  */
-async function sendWa({ to, body, template, campaignName = null, userId = null, existingId = null, mediaUrl = null }) {
+/**
+ * Deliver a message body by email because WhatsApp could not send it.
+ *
+ * Never throws and never blocks the WhatsApp result — the WaMessage row stays
+ * queued for retry either way, so a recovered WhatsApp session still sends the
+ * original. This only guarantees the recipient hears something meanwhile.
+ */
+async function _emailFallback({ fallbackEmail, body, subjectHint, logId, reason }) {
+  if (!fallbackEmail) return false;
+  try {
+    const { sendWhatsAppFallbackEmail } = require('./email.service');
+    const res = await sendWhatsAppFallbackEmail(fallbackEmail, body, subjectHint);
+    if (res && res.ok && !res.skipped) {
+      await prisma.waMessage.update({
+        where: { id: logId },
+        data: { error: `${reason} — delivered by email fallback to ${fallbackEmail}`.slice(0, 240) },
+      }).catch(() => {});
+      logger.info({ to: fallbackEmail, id: logId, reason }, 'WhatsApp undeliverable — sent email fallback instead');
+      return true;
+    }
+    return false;
+  } catch (err) {
+    logger.error({ err, to: fallbackEmail, id: logId }, 'WhatsApp email fallback failed');
+    return false;
+  }
+}
+
+async function sendWa({ to, body, template, campaignName = null, userId = null, existingId = null, mediaUrl = null, fallbackEmail = null, subjectHint = null }) {
   const phone = normalisePhone(to);
   if (!phone) {
     logger.warn({ to }, 'WhatsApp send skipped: invalid phone number');
@@ -133,7 +160,13 @@ async function sendWa({ to, body, template, campaignName = null, userId = null, 
           error:       `WA_OFFLINE (attempt ${retryCount})`,
         },
       });
-      return { ok: false, error: 'WhatsApp offline — queued for retry', id: log.id };
+      // WA_OFFLINE means the session is unauthenticated and needs a QR scan,
+      // which can take days. Fall back to email on the first attempt so the
+      // message isn't sitting in the retry queue in the meantime.
+      const emailed = retryCount === 1
+        ? await _emailFallback({ fallbackEmail, body, subjectHint, logId: log.id, reason: 'WA_OFFLINE' })
+        : false;
+      return { ok: false, error: 'WhatsApp offline — queued for retry', id: log.id, emailFallback: emailed };
     }
 
     if (retryCount < maxRetries) {
@@ -162,7 +195,8 @@ async function sendWa({ to, body, template, campaignName = null, userId = null, 
         error:       String(e.message || e).slice(0, 240),
       },
     });
-    return { ok: false, error: e.message || 'WA send failed', id: log.id };
+    const emailed = await _emailFallback({ fallbackEmail, body, subjectHint, logId: log.id, reason: 'WA retries exhausted' });
+    return { ok: false, error: e.message || 'WA send failed', id: log.id, emailFallback: emailed };
   }
 }
 
@@ -178,7 +212,7 @@ async function sendOtp(toE164, code) {
 
 // ── Template shortcut ─────────────────────────────────────────────────────────
 
-async function sendTemplate(toE164, templateKey, vars = {}) {
+async function sendTemplate(toE164, templateKey, vars = {}, opts = {}) {
   const templates = require('../config/whatsapp-templates');
   const t = templates[templateKey];
   if (!t) {
@@ -189,7 +223,13 @@ async function sendTemplate(toE164, templateKey, vars = {}) {
   Object.keys(vars).forEach((k) => {
     body = body.replaceAll('{{' + k + '}}', String(vars[k] ?? ''));
   });
-  return sendWa({ to: toE164, body, template: templateKey });
+  return sendWa({
+    to: toE164,
+    body,
+    template: templateKey,
+    fallbackEmail: opts.fallbackEmail || null,
+    subjectHint: opts.subjectHint || null,
+  });
 }
 
 // ── Retry sweep (called by cron every 5 min) ──────────────────────────────────

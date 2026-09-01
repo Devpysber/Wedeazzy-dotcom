@@ -74,6 +74,15 @@ async function create(payload) {
     });
   }
 
+  // Resolved once and reused: the vendor's own inbox is both the recipient of
+  // the inquiry notification below and the fallback channel for the WhatsApp
+  // ping while the WhatsApp session is unauthenticated.
+  const vendorEmail = vendor.userId
+    ? await prisma.user.findUnique({ where: { id: vendor.userId }, select: { email: true } })
+        .then(u => (u && u.email) || null)
+        .catch(() => null)
+    : null;
+
   // (Optional) light vendor ping with NO couple PII — admin still gatekeeps.
   if (vendor.whatsappNumber && /^\d{10,15}$/.test(vendor.whatsappNumber)) {
     sendWa({
@@ -81,6 +90,8 @@ async function create(payload) {
       body: `*WedEazzy:* a new couple inquiry just landed for *${vendor.businessName}*. Our team is verifying and will forward the couple's details to you on WhatsApp shortly.`,
       template: 'vendor_new_inquiry_blind',
       userId: vendor.userId,
+      fallbackEmail: vendorEmail,
+      subjectHint: 'New inquiry for your listing',
     }).catch((e) => {
       const logger = require('../config/logger');
       logger.error({ err: e, vendorId: vendor.id, inquiryId: inq.id }, 'WA vendor inquiry blind-ping failed');
@@ -102,18 +113,9 @@ async function create(payload) {
   }
 
   // 2. Notify Vendor via Email (if the vendor has an email)
-  if (vendor.userId) {
-    prisma.user.findUnique({
-      where: { id: vendor.userId },
-      select: { email: true }
-    }).then(u => {
-      if (u && u.email) {
-        emailService.sendInquiryNotification(u.email, inq, vendor.businessName, 'vendor').catch(e => {
-          logger.error({ err: e, to: u.email }, 'Failed to send vendor inquiry notification email');
-        });
-      }
-    }).catch(err => {
-      logger.error({ err }, 'Failed to query vendor user email for inquiry notification');
+  if (vendorEmail) {
+    emailService.sendInquiryNotification(vendorEmail, inq, vendor.businessName, 'vendor').catch(e => {
+      logger.error({ err: e, to: vendorEmail }, 'Failed to send vendor inquiry notification email');
     });
   }
 

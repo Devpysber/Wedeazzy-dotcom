@@ -209,7 +209,15 @@ async function inviteVendorToClaim(req, res, next) {
     const channels = [];
     if (wanted.includes('whatsapp') && phone) {
       require('../services/whatsapp.service')
-        .sendWa({ to: phone, body: message, template: 'claim_invitation' })
+        .sendWa({
+          to: phone,
+          body: message,
+          template: 'claim_invitation',
+          // Only when the admin did not already pick the email channel, so a
+          // WhatsApp-only send still lands while WhatsApp is unauthenticated.
+          fallbackEmail: wanted.includes('email') ? null : email,
+          subjectHint: `Claim your WedEazzy listing - ${vendor.businessName}`,
+        })
         .catch((err) => logger.error({ err, vendorId: vendor.id }, 'Failed to send claim-invitation WhatsApp'));
       channels.push('whatsapp');
     }
@@ -288,7 +296,13 @@ async function bulkInviteVendors(req, res, next) {
 
       if (wanted.includes('whatsapp') && phone) {
         require('../services/whatsapp.service')
-          .sendWa({ to: phone, body: message, template: 'claim_invitation' })
+          .sendWa({
+            to: phone,
+            body: message,
+            template: 'claim_invitation',
+            fallbackEmail: wanted.includes('email') ? null : email,
+            subjectHint: `Claim your WedEazzy listing - ${vendor.businessName}`,
+          })
           .catch((err) => logger.error({ err, vendorId: vendor.id }, 'Bulk claim-invitation WhatsApp failed'));
         channels.push('whatsapp');
       }

@@ -7,5 +7,6 @@
   "claim-ack": { "name": "Business Claim Received", "enabled": true, "customHtml": null },
   "payment-failed": { "name": "Payment Failed Notice", "enabled": true, "customHtml": null },
   "booking-confirm": { "name": "Booking Confirmed Milestone", "enabled": true, "customHtml": null },
-  "user-suspend": { "name": "Account Suspension Warnings", "enabled": true, "customHtml": null }
+  "user-suspend": { "name": "Account Suspension Warnings", "enabled": true, "customHtml": null },
+  "wa-fallback": { "name": "WhatsApp Undeliverable Email Fallback", "enabled": true, "customHtml": null }
 }
