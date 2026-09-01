@@ -60,6 +60,32 @@ if (env.NODE_ENV === 'production') {
   });
 }
 
+// Serve one canonical hostname.
+//
+// Both www.wedeazzy.com and wedeazzy.com answered 200 with identical content
+// while every canonical tag and sitemap entry named the www form — so search
+// engines saw the site on two hosts with contradictory signals, and a session
+// cookie set on one host was not sent on the other. Redirect the apex to the
+// host the canonical tags already declare, and let everything else through
+// (the health check, direct IP hits, and any additional domain served by this
+// app keep working).
+const canonicalHost = (() => {
+  try {
+    return env.PUBLIC_BASE_URL ? new URL(env.PUBLIC_BASE_URL).host : null;
+  } catch (err) {
+    return null;
+  }
+})();
+if (env.NODE_ENV === 'production' && canonicalHost) {
+  const apexHost = canonicalHost.replace(/^www\./i, '');
+  const redirectFrom = canonicalHost.startsWith('www.') ? apexHost : `www.${apexHost}`;
+  app.use((req, res, next) => {
+    const host = (req.headers.host || '').toLowerCase();
+    if (host !== redirectFrom) return next();
+    return res.redirect(301, `https://${canonicalHost}${req.originalUrl}`);
+  });
+}
+
 // helmet's defaults include Strict-Transport-Security (HSTS); only
 // contentSecurityPolicy and crossOriginResourcePolicy are overridden below.
 //
