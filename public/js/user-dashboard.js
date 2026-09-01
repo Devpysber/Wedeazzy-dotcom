@@ -1668,7 +1668,7 @@ function toggleChatBubble() {
 function triggerSupportRedirect(type) {
   triggerToast(`Initiating direct E.164 WhatsApp redirect for: ${type} help!`);
   setTimeout(() => {
-    window.open('https://wa.me/+919930090487?text=Hi%20WedEazzy%20Support!%20I%20need%20help%20coordinating%20a%20wedding...', '_blank');
+    window.open('https://wa.me/+917498987620?text=Hi%20WedEazzy%20Support!%20I%20need%20help%20coordinating%20a%20wedding...', '_blank');
   }, 1000);
 }
 
@@ -1814,7 +1814,7 @@ async function fetchUserStats() {
             status: b.status,
             payment: b.status === 'confirmed' || b.status === 'completed' ? 'Fully Paid' : 'Pending',
             amount: b.amount || 0,
-            phone: b.vendor?.whatsappNumber || '+919930090487'
+            phone: b.vendor?.whatsappNumber || '+917498987620'
           }));
         }
         
