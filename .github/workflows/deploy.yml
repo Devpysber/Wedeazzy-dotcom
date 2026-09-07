@@ -42,10 +42,28 @@ jobs:
 
       - name: Verify the deploy came back healthy
         run: |
-          for i in $(seq 1 30); do
-            if curl -sf https://wedeazzy.com/health | grep -q '"ok":true'; then
-              echo "healthy"; exit 0
+          for i in $(seq 1 45); do
+            echo "Attempt $i: Checking https://wedeazzy.com/health..."
+            STATUS=$(curl -s -k -o /tmp/health_response.txt -w "%{http_code}" https://wedeazzy.com/health || echo "CURL_ERROR")
+            BODY=$(cat /tmp/health_response.txt 2>/dev/null || echo "")
+            echo "HTTP Status: $STATUS | Response: $BODY"
+            if [ "$STATUS" = "200" ] && echo "$BODY" | grep -q '"ok":true'; then
+              echo "Deployment is healthy!"
+              exit 0
             fi
             sleep 5
           done
-          echo "health check never passed"; exit 1
+          echo "Health check never passed!"
+          exit 1
+
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          echo "Fetching container status and logs from VPS..."
+          ssh root@"${{ secrets.VPS_HOST }}" bash -s <<'REMOTE'
+          cd /opt/wedeazzy-com
+          echo "=== Container Status ==="
+          docker compose -f docker-compose.prod.yml ps
+          echo "=== Recent App Logs ==="
+          docker compose -f docker-compose.prod.yml logs --tail=100 app
+          REMOTE

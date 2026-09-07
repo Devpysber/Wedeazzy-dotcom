@@ -39,4 +39,4 @@ services:
       - ./baileys-auth:/app/baileys-auth
       - ./uploads:/app/uploads
       - ./logs:/app/logs
-    command: sh -c "npx prisma migrate deploy && node src/server.js"
+    command: node src/server.js
