@@ -297,20 +297,24 @@
 
       if (el.loader) el.loader.style.display = 'none';
       if (el.title) el.title.textContent = 'Administrator sign-in';
-      if (el.msg) el.msg.textContent = 'Sign in with the Google account linked to your administrator profile.';
+      if (el.msg) el.msg.textContent = 'Sign in with your email and password on the Admin Portal or continue with Google.';
 
       const container = document.querySelector('.gateway-container');
       if (container) {
+        const portalBtn = document.createElement('a');
+        portalBtn.className = 'gateway-action';
+        portalBtn.href = '/admin-panel/login.html';
+        portalBtn.textContent = 'Go to Admin Portal Login';
+        portalBtn.style.marginBottom = '12px';
+        container.appendChild(portalBtn);
+
         const signIn = document.createElement('a');
         signIn.className = 'gateway-action';
+        signIn.style.background = '#f5f5f7';
+        signIn.style.color = '#333';
         signIn.href = '/api/auth/google?role=admin';
         signIn.textContent = 'Continue with Google';
         container.appendChild(signIn);
-
-        const note = document.createElement('p');
-        note.className = 'gateway-note';
-        note.textContent = 'Signing in with an email and password is done on the admin panel URL itself, which is not published here.';
-        container.appendChild(note);
       }
     });
   </script>
