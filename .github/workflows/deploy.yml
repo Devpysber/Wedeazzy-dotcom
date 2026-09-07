@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Reject unresolved merge conflict markers
         run: |
@@ -54,7 +54,7 @@ jobs:
           fi
           echo "No conflict markers."
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -94,15 +94,31 @@ jobs:
           echo "Deploy target: ${SSH_USER}@<VPS_HOST>:${SSH_PORT}"
 
       - name: Check the VPS is reachable
-        # Done before anything else so an unreachable box fails in seconds with a
-        # readable message, instead of surfacing as an opaque ssh-keyscan exit 1
-        # followed by a two-minute ssh timeout in the diagnostics step.
+        # Done before anything else so an unreachable box fails with a readable
+        # message, instead of surfacing as an opaque ssh-keyscan exit 1 followed
+        # by a two-minute ssh timeout in the diagnostics step.
+        #
+        # Retried, not one-shot. A single 15s probe failed a re-run of a commit
+        # that had deployed successfully minutes earlier, from the same
+        # workflow against the same server: reachability from GitHub's runner
+        # pool is intermittent, whether that is fail2ban banning a runner IP,
+        # the hPanel firewall, or ordinary packet loss. One dropped probe is
+        # not evidence the server is down, so give it ~2 minutes before saying
+        # so. A genuinely unreachable host still fails, with the same guidance.
+        timeout-minutes: 4
         run: |
-          if timeout 15 bash -c "cat < /dev/null > /dev/tcp/${VPS_HOST}/${SSH_PORT}" 2>/dev/null; then
-            echo "TCP ${SSH_PORT} is open."
-            exit 0
-          fi
-          echo "::error::Cannot open a TCP connection to the VPS on port ${SSH_PORT}."
+          for attempt in $(seq 1 8); do
+            if timeout 10 bash -c "cat < /dev/null > /dev/tcp/${VPS_HOST}/${SSH_PORT}" 2>/dev/null; then
+              echo "TCP ${SSH_PORT} is open (attempt ${attempt})."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/8: no TCP connection on port ${SSH_PORT}."
+            # Explicit if, not `[ ] && sleep`: under `set -e` a failing test as
+            # the loop body's last command is a well-known way to end a job
+            # early with no error message at all.
+            if [ "$attempt" -lt 8 ]; then sleep 15; fi
+          done
+          echo "::error::Cannot open a TCP connection to the VPS on port ${SSH_PORT} after 8 attempts over ~2 minutes."
           echo "The deploy never got as far as authenticating - the packets are being"
           echo "dropped or the host is down. This is a server/firewall problem, not a"
           echo "problem with the code in this repository. Check, on the VPS:"
@@ -154,10 +170,19 @@ jobs:
       - name: Check the deploy key is authorised
         # Separates "the firewall blocked us" from "the key is wrong", which the
         # old workflow reported identically as a bare timeout.
+        timeout-minutes: 3
         run: |
-          if ssh vps 'echo "authenticated as $(whoami) on $(hostname)"'; then
-            exit 0
-          fi
+          # Same reasoning as the reachability retry above: the handshake is the
+          # next thing an intermittent block takes out, and a rejected key is
+          # not something that fixes itself, so retrying costs nothing when the
+          # key really is wrong.
+          for attempt in 1 2 3; do
+            if ssh vps 'echo "authenticated as $(whoami) on $(hostname)"'; then
+              exit 0
+            fi
+            echo "Attempt ${attempt}/3 failed."
+            if [ "$attempt" -lt 3 ]; then sleep 10; fi
+          done
           echo "::error::TCP connected but SSH authentication failed."
           echo "The public half of VPS_SSH_KEY must be in ~${SSH_USER}/.ssh/authorized_keys"
           echo "on the VPS, and sshd must permit that user (PermitRootLogin"
