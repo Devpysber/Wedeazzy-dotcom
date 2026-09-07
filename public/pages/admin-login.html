@@ -87,6 +87,31 @@
       margin: 0;
       line-height: 1.5;
     }
+
+    .gateway-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 22px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      background: var(--red);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+
+    .gateway-action:hover { background: var(--red-dark); }
+
+    .gateway-note {
+      margin-top: 16px;
+      font-size: 12.5px;
+      color: var(--text-mute);
+      line-height: 1.5;
+    }
   </style>
   <script src="/js/wedeazzy-notify.js"></script>
   <script>
@@ -246,12 +271,47 @@
         return;
       }
 
-      // 3. Fallback: standard staff routing direct redirect to staff panel
-      if (el.title) el.title.textContent = 'Loading Staff Portal';
-      if (el.msg) el.msg.textContent = 'Initializing secure administrative keys...';
-      
-      // Pass along any other query parameters (e.g. ?action=reset&token=...)
-      window.location.href = "/pages/admin-login.html" + window.location.search;
+      // 3. No OAuth result to process — someone arrived at the gate directly,
+      // from the footer's Admin Login link or from vendor-login.html bouncing
+      // an ERR_ADMIN_ONLY response here.
+      //
+      // This branch used to assign window.location.href the page's OWN URL.
+      // That reloaded the page, re-ran this same branch, and looped forever:
+      // the gate never rendered past its spinner, so the Admin Login link
+      // looked like a button that did nothing.
+      //
+      // An admin who already holds a token goes straight to the panel, whose
+      // location only /api/admin-panel-path knows. Everyone else gets the
+      // Google sign-in this gate exists to receive back — /api/auth/google
+      // returns here with ?auth=success&role=admin, which branch 2 above turns
+      // into a session. The panel's real path is never written into this page.
+      const existingToken = sessionStorage.getItem('wedeazzy_admin_token')
+        || localStorage.getItem('wedeazzy_admin_token');
+
+      if (existingToken) {
+        if (el.title) el.title.textContent = 'Loading Staff Portal';
+        if (el.msg) el.msg.textContent = 'Initializing secure administrative keys...';
+        window.location.href = await window.wedeazzyAdminPanelUrl('dashboard.html');
+        return;
+      }
+
+      if (el.loader) el.loader.style.display = 'none';
+      if (el.title) el.title.textContent = 'Administrator sign-in';
+      if (el.msg) el.msg.textContent = 'Sign in with the Google account linked to your administrator profile.';
+
+      const container = document.querySelector('.gateway-container');
+      if (container) {
+        const signIn = document.createElement('a');
+        signIn.className = 'gateway-action';
+        signIn.href = '/api/auth/google?role=admin';
+        signIn.textContent = 'Continue with Google';
+        container.appendChild(signIn);
+
+        const note = document.createElement('p');
+        note.className = 'gateway-note';
+        note.textContent = 'Signing in with an email and password is done on the admin panel URL itself, which is not published here.';
+        container.appendChild(note);
+      }
     });
   </script>
 </body>
