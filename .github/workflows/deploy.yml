@@ -35,7 +35,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Cheap checks that run before anything touches the server. Both of these
+  # exist because main once carried a server.js with unresolved merge conflict
+  # markers in it: node could not parse the file, the container crash-looped,
+  # and the only symptom anywhere was a 502 from Nginx. Catch that here, in
+  # seconds, instead of on the VPS.
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject unresolved merge conflict markers
+        run: |
+          if git grep -In -e '^<<<<<<< ' -e '^>>>>>>> ' -e '^=======$' -- . ; then
+            echo "::error::Merge conflict markers are committed - see the lines above."
+            exit 1
+          fi
+          echo "No conflict markers."
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Parse every backend source file
+        run: |
+          failed=0
+          while IFS= read -r f; do
+            node --check "$f" || { echo "::error file=$f::does not parse"; failed=1; }
+          done < <(find backend/src -name '*.js' -not -path '*/node_modules/*')
+          [ "$failed" -eq 0 ]
+
   deploy:
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -148,13 +180,16 @@ jobs:
         # Checked on the box first, over the loopback port the container
         # publishes. If this passes but the public check fails, the app is fine
         # and the fault is Nginx/TLS/DNS - a distinction worth having.
-        timeout-minutes: 5
+        timeout-minutes: 9
         run: |
           ssh vps 'bash -s' <<'REMOTE'
           set -uo pipefail
-          for i in $(seq 1 30); do
-            body=$(curl -fsS --max-time 10 http://127.0.0.1:4000/health 2>/dev/null || true)
-            echo "Attempt $i: ${body:-<no response>}"
+          cd /opt/wedeazzy-com
+          # 90 x 5s: migrations run in the background after the port opens, and
+          # /health reports 503 with `"migrations":"pending"` until they finish.
+          for i in $(seq 1 90); do
+            body=$(curl -sS --max-time 10 http://127.0.0.1:4000/health 2>/dev/null || true)
+            echo "Attempt $i: ${body:-<no response - port closed, app is not running>}"
             case "$body" in
               *'"ok":true'*)
                 echo "App is healthy on the VPS loopback."
@@ -163,7 +198,19 @@ jobs:
             esac
             sleep 5
           done
-          echo "App never answered on 127.0.0.1:4000/health."
+          echo "App never became healthy on 127.0.0.1:4000/health."
+          # Dump the evidence here rather than leaving it to the diagnostics
+          # step: a container that crash-loops answers nothing at all, and
+          # `<no response>` ninety times says nothing about why. The restart
+          # count is the tell - a syntax error in server.js shows up as a
+          # container that has restarted dozens of times in a couple of minutes.
+          echo "=== Container status ==="
+          docker compose -f docker-compose.prod.yml ps
+          echo "=== Restart counts ==="
+          docker inspect --format '{{.Name}} restarts={{.RestartCount}} state={{.State.Status}} exit={{.State.ExitCode}}' \
+            $(docker compose -f docker-compose.prod.yml ps -q) 2>/dev/null || true
+          echo "=== App logs (tail 150) ==="
+          docker compose -f docker-compose.prod.yml logs --tail=150 --no-color app
           exit 1
           REMOTE
 

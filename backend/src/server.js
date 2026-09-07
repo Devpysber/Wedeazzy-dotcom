@@ -57,7 +57,6 @@ if (env.NODE_ENV === 'production') {
     const host = req.headers.host || '';
     if (/^localhost|^127\.0\.0\.1/i.test(host)) return next();
     return res.redirect(308, `https://${host}${req.originalUrl}`);
-<<<<<<< HEAD
   });
 }
 
@@ -84,14 +83,11 @@ if (env.NODE_ENV === 'production' && canonicalHost) {
     const host = (req.headers.host || '').toLowerCase();
     if (host !== redirectFrom) return next();
     return res.redirect(301, `https://${canonicalHost}${req.originalUrl}`);
-=======
->>>>>>> a743f56 (feat: flexible recurring & scheduled email campaigns with target audience defaults)
   });
 }
 
 // helmet's defaults include Strict-Transport-Security (HSTS); only
 // contentSecurityPolicy and crossOriginResourcePolicy are overridden below.
-<<<<<<< HEAD
 //
 // This is a multi-page static HTML site built on inline <script>/onclick
 // handlers throughout (public/, public/admin-panel/), so script-src has to
@@ -312,6 +308,10 @@ app.use(express.static(STATIC_ROOT, {
 // reports it so a broken schema is visible from a single curl instead of
 // only from a 500 on some unrelated endpoint.
 const dbStatus = {
+  // `boot` covers the whole background bootstrap (migrations + every seed);
+  // `migrations` alone is what readiness depends on, since seeding a country
+  // list is not a prerequisite for serving traffic.
+  boot: env.NODE_ENV === 'production' ? 'pending' : 'skipped',
   migrations: env.NODE_ENV === 'production' ? 'pending' : 'skipped',
   adminSeed: env.NODE_ENV === 'production' ? 'pending' : 'skipped',
   detail: null,
@@ -335,7 +335,11 @@ app.get('/health', async (req, res) => {
   }
 
   const schemaOk = dbStatus.migrations !== 'failed';
-  const ok = database === 'ok' && schemaOk;
+  // Migrations now run after listen(), so the port answers while they are
+  // still going. Reporting ok:true in that window would tell a deploy the
+  // release was live against a schema that had not been applied yet.
+  const migrating = dbStatus.migrations === 'pending';
+  const ok = database === 'ok' && schemaOk && !migrating;
 
   res.status(ok ? 200 : 503).json({
     ok,
@@ -344,12 +348,13 @@ app.get('/health', async (req, res) => {
     database,
     databaseError: databaseError || undefined,
     schema: schemaOk ? 'ok' : 'broken',
+    boot: dbStatus.boot,
     migrations: dbStatus.migrations,
     adminSeed: dbStatus.adminSeed,
-    detail: dbStatus.detail || undefined,
+    detail: dbStatus.detail || (migrating ? 'Migrations are still running; the server is up but not ready yet.' : undefined),
     // Actionable, because the fix is a single command and the operator
     // reading this is usually staring at a 500 with no other clue.
-    fix: ok ? undefined : 'From the backend folder run: node src/scripts/db-repair.js',
+    fix: (ok || migrating) ? undefined : 'From the backend folder run: node src/scripts/db-repair.js',
   });
 });
 
@@ -460,7 +465,6 @@ async function googleCallback(req, res, next) {
 // Root-level routes matching GOOGLE_CALLBACK_URL=http://localhost:4000/google/callback
 app.get('/google', googleInit);
 app.get('/google/callback', (req, res, next) => {
-<<<<<<< HEAD
   // Guard: passport's OAuth2 strategy treats a callback carrying neither `code`
   // nor `error` as a fresh authorization request and redirects back to Google,
   // which immediately returns here � an infinite bounce the browser reports as
@@ -469,8 +473,6 @@ app.get('/google/callback', (req, res, next) => {
     logger.warn({ query: req.query }, 'Google OAuth callback hit without a code � refusing to re-initiate');
     return res.redirect('/pages/admin-login.html?error=google_auth_failed&reason=missing_code');
   }
-=======
->>>>>>> a743f56 (feat: flexible recurring & scheduled email campaigns with target audience defaults)
   passport.authenticate('google', (err, user, info) => {
     if (err || !user) {
       const errMsg = err ? (err.message || err.code || 'auth_failed') : (info ? (info.message || 'user_not_found') : 'auth_failed');
@@ -509,112 +511,146 @@ app.use((req, res, next) => {
 app.use(notFound);
 app.use(errorHandler);
 
-async function startServer() {
-  // Database setup in production
-  if (env.NODE_ENV === 'production') {
-    try {
-      const { execSync } = require('child_process');
-      const execCwd = path.resolve(__dirname, '..');
-      const prismaCliPath = path.resolve(execCwd, 'node_modules/prisma/build/index.js');
-      
-      // Use process.execPath — bare `node` is not on the shell PATH under
-      // Hostinger's Passenger environment (`/bin/sh: node: command not found`).
-      const nodeBin = process.execPath;
+// Boot work that can take minutes — migrations and seeding — deliberately runs
+// AFTER app.listen(), not before it.
+//
+// It used to run first, synchronously, via execSync. Until it finished the
+// process had not bound a port at all, and because execSync blocks the event
+// loop it could not have answered a request even if it had. Every probe got a
+// connection refusal, so "still migrating", "Prisma engine hung" and "crashed
+// on boot" were indistinguishable — the deploy workflow could only print
+// `<no response>` thirty times and give up.
+//
+// Now the port opens immediately, /health answers 503 with `boot: "pending"`
+// and the real reason as JSON while this runs, execFile keeps the event loop
+// free, and every child gets a timeout so a stuck engine ends as a logged
+// failure rather than permanent silence.
+const MIGRATE_TIMEOUT_MS = 5 * 60 * 1000;
+const SEED_TIMEOUT_MS = 3 * 60 * 1000;
 
-      // Hostinger's npm install can strip the execute bit from Prisma's engine
-      // binaries, making `migrate deploy` fail with EACCES. Restore it.
-      try {
-        const enginesDir = path.resolve(execCwd, 'node_modules', '@prisma', 'engines');
-        for (const f of require('fs').readdirSync(enginesDir)) {
-          require('fs').chmodSync(path.join(enginesDir, f), 0o755);
-        }
-      } catch (_) { /* engines dir missing */ }
-      // Migration and seeding are deliberately handled as two independent
-      // steps. They used to share one try block, so a migrate failure skipped
-      // the admin seed entirely — the operator got a database with no usable
-      // login on top of whatever the migration problem already was.
-      try {
-        if (require('fs').existsSync(prismaCliPath)) {
-          logger.info('Ensuring Prisma migrations are deployed via local CLI...');
-          execSync(`"${nodeBin}" "${prismaCliPath}" migrate deploy --schema=prisma/schema.prisma`, { stdio: 'inherit', cwd: execCwd });
-        } else {
-          logger.warn('Local Prisma CLI not found in node_modules, falling back to npx...');
-          execSync('npx prisma migrate deploy --schema=prisma/schema.prisma', { stdio: 'inherit', cwd: execCwd });
-        }
-        dbStatus.migrations = 'ok';
-      } catch (err) {
-        // A failed `migrate deploy` is not a transient hiccup — the schema the
-        // Prisma Client was generated against does not match the live
-        // database, so essentially every query 500s while the process itself
-        // looks perfectly healthy. Previously this was logged as one generic
-        // line and the server carried on serving a broken API with no signal
-        // anywhere that the schema was the cause.
-        const detail = `${err.stdout || ''}${err.stderr || ''}${err.message || ''}`;
-        dbStatus.migrations = 'failed';
-        dbStatus.detail = /P3009/.test(detail)
-          ? 'P3009: a previous migration is recorded as failed, so no further migrations will be applied.'
-          : 'migrate deploy failed — the live schema does not match prisma/schema.prisma.';
+async function runProductionBootstrap() {
+  const { execFile } = require('child_process');
+  const { promisify } = require('util');
+  const execFileAsync = promisify(execFile);
 
-        logger.error(
-          { err },
-          `DATABASE SCHEMA IS NOT USABLE — ${dbStatus.detail} ` +
-          'The API will return 500s on database-backed routes until this is fixed. ' +
-          'Repair it without losing data by running, from the backend folder: ' +
-          'node src/scripts/db-repair.js  (see /health for current status)'
-        );
-      }
+  const execCwd = path.resolve(__dirname, '..');
+  const prismaCliPath = path.resolve(execCwd, 'node_modules/prisma/build/index.js');
 
-      // Seeding runs even when migrations failed: if the schema happens to be
-      // usable it gets the admin account in place, and if it is not, the error
-      // it logs is a second independent confirmation of the schema problem.
-      try {
-        logger.info('Seeding admin credentials...');
-        execSync(`"${nodeBin}" src/scripts/seed-admin.js`, { stdio: 'inherit', cwd: execCwd });
-        dbStatus.adminSeed = 'ok';
-      } catch (err) {
-        dbStatus.adminSeed = 'failed';
-        logger.error({ err }, 'Admin seeding failed — no admin account may exist yet. Check ADMIN_EMAIL/ADMIN_PASSWORD in .env.');
-      }
+  // Use process.execPath — bare `node` is not on the shell PATH under
+  // Hostinger's Passenger environment (`/bin/sh: node: command not found`).
+  const nodeBin = process.execPath;
 
-      try {
-        logger.info('Seeding countries & cities structure...');
-        execSync(`"${nodeBin}" src/scripts/seed-countries.js`, { stdio: 'inherit', cwd: execCwd });
-      } catch (err) {
-        logger.warn({ err }, 'Country/city seeding encountered warnings during boot.');
-      }
+  const run = async (file, args, timeout) => {
+    const { stdout, stderr } = await execFileAsync(file, args, {
+      cwd: execCwd,
+      timeout,
+      killSignal: 'SIGKILL',
+      maxBuffer: 16 * 1024 * 1024,
+      env: process.env,
+    });
+    // execFile captures output instead of inheriting it, so relay it or the
+    // migration's own diagnostics never reach `docker compose logs`.
+    if (stdout && stdout.trim()) logger.info(stdout.trim());
+    if (stderr && stderr.trim()) logger.warn(stderr.trim());
+  };
 
-      try {
-        logger.info('Seeding email marketing templates...');
-        execSync(`"${nodeBin}" src/scripts/seed-templates.js`, { stdio: 'inherit', cwd: execCwd });
-      } catch (err) {
-        logger.warn({ err }, 'Email template seeding encountered warnings during boot.');
-      }
-
-      // NOTE: Demo/sample data is NEVER auto-seeded on startup (production or
-      // otherwise). It ships fake vendors/couples/bookings and must never land
-      // in a real database. Seed it manually only when needed for local dev:
-      //   ALLOW_DEMO_SEED=true node src/scripts/seed-demo.js
-    } catch (err) {
-      dbStatus.migrations = 'failed';
-      dbStatus.detail = 'Could not run the Prisma CLI at all.';
-      logger.error({ err }, 'Failed to complete production database setup');
+  // Describe a child-process failure in the terms a log reader needs: a
+  // timeout and a non-zero exit look identical on `err.message` alone.
+  const describe = (err) => {
+    if (err.killed || err.signal) {
+      return `timed out or was killed (${err.signal || 'timeout'}) - the child never finished`;
     }
-  }
+    return `${err.stdout || ''}${err.stderr || ''}${err.message || ''}`;
+  };
 
-  // Boot Baileys lazily so the server still starts if WA fails
-  const { initBaileys } = require('./services/baileys.client');
-  initBaileys().catch((e) => logger.error({ err: e }, 'Baileys init failed (server keeps running)'));
-
-  // Boot background cron scheduler
-  const { initCron } = require('./config/cron');
+  // Hostinger's npm install can strip the execute bit from Prisma's engine
+  // binaries, making `migrate deploy` fail with EACCES. Restore it.
   try {
-    initCron();
-  } catch (e) {
-    logger.error({ err: e }, 'Cron initialization failed');
+    const enginesDir = path.resolve(execCwd, 'node_modules', '@prisma', 'engines');
+    for (const f of fs.readdirSync(enginesDir)) {
+      fs.chmodSync(path.join(enginesDir, f), 0o755);
+    }
+  } catch (_) { /* engines dir missing */ }
+
+  // Migration and seeding are deliberately independent. They used to share one
+  // try block, so a migrate failure skipped the admin seed entirely — the
+  // operator got a database with no usable login on top of whatever the
+  // migration problem already was.
+  try {
+    if (fs.existsSync(prismaCliPath)) {
+      logger.info('Ensuring Prisma migrations are deployed via local CLI...');
+      await run(nodeBin, [prismaCliPath, 'migrate', 'deploy', '--schema=prisma/schema.prisma'], MIGRATE_TIMEOUT_MS);
+    } else {
+      logger.warn('Local Prisma CLI not found in node_modules, falling back to npx...');
+      await run('npx', ['prisma', 'migrate', 'deploy', '--schema=prisma/schema.prisma'], MIGRATE_TIMEOUT_MS);
+    }
+    dbStatus.migrations = 'ok';
+  } catch (err) {
+    // A failed `migrate deploy` is not a transient hiccup — the schema the
+    // Prisma Client was generated against does not match the live database, so
+    // essentially every query 500s while the process itself looks perfectly
+    // healthy.
+    const detail = describe(err);
+    dbStatus.migrations = 'failed';
+    dbStatus.detail = /P3009/.test(detail)
+      ? 'P3009: a previous migration is recorded as failed, so no further migrations will be applied.'
+      : /P1001|ECONNREFUSED|ETIMEDOUT/.test(detail)
+        ? 'Cannot reach the database server - check DATABASE_URL in backend.env and that the db container is up.'
+        : `migrate deploy failed - the live schema does not match prisma/schema.prisma. ${detail.slice(0, 400)}`;
+
+    logger.error(
+      { err },
+      `DATABASE SCHEMA IS NOT USABLE — ${dbStatus.detail} ` +
+      'The API will return 500s on database-backed routes until this is fixed. ' +
+      'Repair it without losing data by running, from the backend folder: ' +
+      'node src/scripts/db-repair.js  (see /health for current status)'
+    );
   }
 
+  // Seeding runs even when migrations failed: if the schema happens to be
+  // usable it gets the admin account in place, and if it is not, the error it
+  // logs is a second independent confirmation of the schema problem.
+  try {
+    logger.info('Seeding admin credentials...');
+    await run(nodeBin, ['src/scripts/seed-admin.js'], SEED_TIMEOUT_MS);
+    dbStatus.adminSeed = 'ok';
+  } catch (err) {
+    dbStatus.adminSeed = 'failed';
+    logger.error({ err }, 'Admin seeding failed — no admin account may exist yet. Check ADMIN_EMAIL/ADMIN_PASSWORD in .env.');
+  }
+
+  try {
+    logger.info('Seeding countries & cities structure...');
+    await run(nodeBin, ['src/scripts/seed-countries.js'], SEED_TIMEOUT_MS);
+  } catch (err) {
+    logger.warn({ err }, 'Country/city seeding encountered warnings during boot.');
+  }
+
+  try {
+    logger.info('Seeding email marketing templates...');
+    await run(nodeBin, ['src/scripts/seed-templates.js'], SEED_TIMEOUT_MS);
+  } catch (err) {
+    logger.warn({ err }, 'Email template seeding encountered warnings during boot.');
+  }
+
+  // NOTE: Demo/sample data is NEVER auto-seeded on startup (production or
+  // otherwise). It ships fake vendors/couples/bookings and must never land in
+  // a real database. Seed it manually only when needed for local dev:
+  //   ALLOW_DEMO_SEED=true node src/scripts/seed-demo.js
+}
+
+async function startServer() {
+  // Listen first. Nothing below may delay the port opening: a port that never
+  // opens is the one failure mode that leaves no diagnosis behind.
   const server = app.listen(env.PORT, '0.0.0.0', () => {
     logger.info(`WedEazzy API listening on http://localhost:${env.PORT} [${env.NODE_ENV}]`);
+  });
+
+  server.on('error', (err) => {
+    // EADDRINUSE and EACCES otherwise surface as an unhandled 'error' event and
+    // kill the process with a bare stack trace.
+    logger.error({ err }, `Could not bind port ${env.PORT}`);
+    process.exit(1);
   });
 
   // Graceful shutdown
@@ -629,6 +665,29 @@ async function startServer() {
       setTimeout(() => process.exit(1), 8000).unref();
     });
   });
+
+  // Database setup in production, in the background. /health reports progress.
+  if (env.NODE_ENV === 'production') {
+    runProductionBootstrap()
+      .then(() => { dbStatus.boot = 'ok'; })
+      .catch((err) => {
+        dbStatus.boot = 'failed';
+        dbStatus.detail = dbStatus.detail || `Boot sequence threw: ${err.message}`;
+        logger.error({ err }, 'Failed to complete production database setup');
+      });
+  }
+
+  // Boot Baileys lazily so the server still starts if WA fails
+  const { initBaileys } = require('./services/baileys.client');
+  initBaileys().catch((e) => logger.error({ err: e }, 'Baileys init failed (server keeps running)'));
+
+  // Boot background cron scheduler
+  const { initCron } = require('./config/cron');
+  try {
+    initCron();
+  } catch (e) {
+    logger.error({ err: e }, 'Cron initialization failed');
+  }
 }
 
 // Start the server unless we are running in the test environment (e.g. Jest)
