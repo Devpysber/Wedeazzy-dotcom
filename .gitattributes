@@ -1,0 +1,10 @@
+# These files are executed by bash on Linux (GitHub runners and the VPS).
+# A CRLF checkout breaks them in ways that are hard to read in a CI log: the
+# heredoc terminator becomes "REMOTE\r" and never matches, and every command
+# gains a trailing \r. Store and check them out with LF regardless of platform.
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.sh    text eol=lf
+Dockerfile      text eol=lf
+Dockerfile.*    text eol=lf
+.env.example    text eol=lf
