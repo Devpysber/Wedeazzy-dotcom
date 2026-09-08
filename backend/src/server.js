@@ -270,6 +270,19 @@ if (env.ADMIN_PANEL_PATH !== 'admin-panel') {
     extensions: ['html'],
     setHeaders(res) { res.setHeader('Cache-Control', 'no-cache'); },
   }));
+  // The login page itself stays at the well-known path: the site footer links
+  // to it, and it is a public form wherever it sits. Its assets come with it,
+  // since a page whose stylesheet 404s is not a page. Everything else under
+  // /admin-panel — dashboard.html included — still answers 404, so the panel's
+  // real location is still only handed out by /api/admin-panel-path, and only
+  // after an administrator has authenticated.
+  app.get(['/admin-panel', '/admin-panel/', '/admin-panel/login.html'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.sendFile(path.join(ADMIN_PANEL_DIR, 'login.html'));
+  });
+  app.use('/admin-panel/assets', express.static(path.join(ADMIN_PANEL_DIR, 'assets'), {
+    setHeaders(res) { res.setHeader('Cache-Control', 'no-cache'); },
+  }));
   app.use('/admin-panel', (req, res) => {
     return res.status(404).sendFile(path.join(STATIC_ROOT, 'pages', '404.html'));
   });

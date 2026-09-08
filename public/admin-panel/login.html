@@ -663,10 +663,12 @@
             showToast("OTP verified! Redirecting to Dashboard...", "success");
             
             // Redirect cleanly
-            setTimeout(() => {
-              const target = sessionStorage.getItem("auth_redirect_target") || "dashboard.html";
+            setTimeout(async () => {
+              const saved = sessionStorage.getItem("auth_redirect_target");
               sessionStorage.removeItem("auth_redirect_target");
-              window.location.href = target;
+              // panelHome() resolves the panel's real path, which differs from
+              // this page's when ADMIN_PANEL_PATH is set in production.
+              window.location.href = saved || await window.WedEazzyAuth.panelHome();
             }, 600);
           } else {
             showToast(response.error, "danger");

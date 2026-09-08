@@ -44,6 +44,24 @@ const WedEazzyAuth = {
     return sessionStorage.getItem("wedeazzy_admin_token") || localStorage.getItem("wedeazzy_admin_token") || sessionStorage.getItem("wedeazzy_token") || localStorage.getItem("wedeazzy_token");
   },
 
+  // Where the panel's dashboard lives. In production the panel is mounted under
+  // a private path and /admin-panel/ serves only the login page, so a relative
+  // "dashboard.html" would 404. The API hands the real segment to authenticated
+  // admins; the relative page stays correct when the panel is at its default
+  // path, and is the fallback whenever the call cannot be made.
+  async panelHome() {
+    try {
+      const response = await this.apiFetch(`${API_BASE}/api/admin-panel-path`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.path) return `/${data.path}/dashboard.html`;
+      }
+    } catch (e) {
+      // Network or parse failure — fall through to the relative page.
+    }
+    return "dashboard.html";
+  },
+
   // Guard dashboard page â€” redirect to login if not authenticated
   guardRoute() {
     if (!this.isAuthenticated()) {
@@ -61,7 +79,7 @@ const WedEazzyAuth = {
   // Guard login page (prevent re-login when session is valid)
   guardLoginPage() {
     if (this.isAuthenticated()) {
-      window.location.replace("dashboard.html");
+      this.panelHome().then((target) => window.location.replace(target));
     }
   },
 
