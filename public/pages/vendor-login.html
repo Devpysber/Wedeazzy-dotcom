@@ -522,7 +522,9 @@
           return;
         }
         showToast("Login successful! Opening your vendor dashboard…", "success");
-        setTimeout(function () { window.location.href = "bdashboard.html"; }, 800);
+        // ?next=grow|plans comes from the /grow marketing page's plan buttons
+        var nextTab = { grow: "#grow-business", plans: "#subscriptions" }[new URLSearchParams(window.location.search).get("next")] || "";
+        setTimeout(function () { window.location.href = "bdashboard.html" + nextTab; }, 800);
       }
 
       // Reads a JSON body defensively: a 502/504 from the host, or Passenger

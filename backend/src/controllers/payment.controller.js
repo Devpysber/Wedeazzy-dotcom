@@ -557,7 +557,10 @@ async function handleWebhook(req, res, next) {
       });
 
       if (!txn) {
-        logger.warn({ orderId }, 'Webhook: no matching initiated transaction found');
+        // Not a dashboard purchase - maybe a guest order from the /grow page
+        const handled = await require('./guestCheckout.controller').handleWebhookPaid(orderId, paymentId)
+          .catch((err) => { logger.error({ err, orderId }, 'Webhook: guest order completion failed'); return true; });
+        if (!handled) logger.warn({ orderId }, 'Webhook: no matching initiated transaction found');
         return res.json({ success: true });
       }
 
@@ -572,6 +575,7 @@ async function handleWebhook(req, res, next) {
           where: { meta: { path: '$.razorpayOrderId', equals: orderId } }
         });
         if (txn) await markFailed(txn.id, 'webhook-payment-failed');
+        else await require('./guestCheckout.controller').handleWebhookFailed(orderId).catch(() => {});
       }
       return res.json({ success: true });
     }
@@ -777,6 +781,8 @@ async function reconcileStuckTransactions() {
 }
 
 module.exports = {
+  razorpayRequest,
+  verifyRazorpaySignature,
   initiatePayment,
   verifyPayment,
   handleWebhook,

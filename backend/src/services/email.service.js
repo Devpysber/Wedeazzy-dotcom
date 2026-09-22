@@ -382,6 +382,43 @@ module.exports = {
   },
 
   /**
+   * Payment receipt for a plan bought from the public /grow page by someone
+   * without a vendor account yet. `listing` = { state, actionUrl, actionLabel,
+   * vendorName } from guestCheckout.controller's findListing().
+   */
+  async sendGuestOrderReceiptEmail(to, order, listing) {
+    const amount = (order.amount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const duration = order.planDays ? (order.planDays === 90 ? '3 months' : `${order.planDays} days`) : '1 month';
+    const paidAt = (order.paidAt || new Date()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
+    const nextStep = {
+      account:   'Your business already has a WedEazzy account. Sign in to your dashboard to follow your campaign.',
+      claimed:   'Your listing is already claimed on WedEazzy. Sign in to your dashboard to follow your campaign.',
+      unclaimed: `We found your listing${listing.vendorName ? ` "<strong>${esc(listing.vendorName)}</strong>"` : ''} on WedEazzy. Claim it so your campaign enquiries reach you and you can manage your profile.`,
+      new:       'Your business is not listed on WedEazzy yet. Register it (free) so couples can find your profile while your campaign runs.'
+    }[listing.state] || '';
+    const row = (k, v) => `<tr style="border-bottom:1px solid #E8DFD4;"><td style="padding:10px; font-weight:bold;">${k}</td><td style="padding:10px;">${v}</td></tr>`;
+    const html = renderHtmlFrame('Payment Received', 'Payment received. Thank you!', `
+      <p>Hi ${esc(order.name)},</p>
+      <p>We have received your payment for <strong>${esc(order.planLabel)}</strong> for <strong>${esc(order.businessName)}</strong>. The WedEazzy team will now set up your campaign. You'll hear from us within 24 hours on ${esc(order.phone)}.</p>
+      <table style="width:100%; border-collapse:collapse; margin:24px 0; font-size:14px;">
+        ${row('Plan', esc(order.planLabel))}
+        ${row('Duration', esc(duration))}
+        ${row('Business', esc(order.businessName) + (order.city ? `, ${esc(order.city)}` : ''))}
+        ${row('Order ID', `<span style="font-family:monospace;">${esc(order.razorpayOrderId)}</span>`)}
+        ${row('Payment ID', `<span style="font-family:monospace;">${esc(order.razorpayPaymentId || '-')}</span>`)}
+        ${row('Date &amp; Time', esc(paidAt))}
+        <tr><td style="padding:10px; font-weight:bold; color:#1B1B1F;">Total Paid (incl. taxes)</td><td style="padding:10px; color:#C8102E; font-weight:bold; font-size:16px;">${esc(order.currency)} ${amount}</td></tr>
+      </table>
+      <p><strong>Next step:</strong> ${nextStep}</p>
+      ${listing.actionUrl ? `<div style="text-align:center; margin:26px 0;"><a href="${esc(listing.actionUrl)}" class="btn" style="color:#FFFFFF !important;">${esc(listing.actionLabel)}</a></div>` : ''}
+      <p>Questions? Reply to this email or WhatsApp us at +91 74989 87620.</p>
+      <p>Best regards,<br>The WedEazzy Team</p>
+    `);
+    const text = `Payment received for ${order.planLabel} (${order.businessName}). Order ${order.razorpayOrderId}, payment ${order.razorpayPaymentId || '-'}, amount ${order.currency} ${amount}. The WedEazzy team will contact you within 24 hours.${listing.actionUrl ? ` Next step: ${listing.actionLabel} - ${listing.actionUrl}` : ''}`;
+    return sendMail({ to, subject: `Payment received: ${order.planLabel} - WedEazzy.com`, html, text });
+  },
+
+  /**
    * Send Admin Alert Notification.
    */
   async sendAdminNotification(to, subject, htmlContent) {

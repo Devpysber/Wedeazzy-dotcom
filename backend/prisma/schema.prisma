@@ -382,6 +382,38 @@ model Transaction {
 }
 
 // ---------- ADS (Phase 4 + Grow Business Module) ----------
+// Plan bought from the public /grow marketing page before the buyer has a
+// vendor account (no User row to hang a Transaction on). The WedEazzy team
+// links it to the listing and activates it manually.
+model GuestOrder {
+  id                String    @id @default(cuid())
+  razorpayOrderId   String    @unique
+  razorpayPaymentId String?   @unique
+  status            String    @default("created")          // created | paid | failed
+  planType          String                                   // grow | listing
+  planKey           String                                   // whatsapp_leads | more_leads | website_sales | Premium | Featured
+  planLabel         String
+  planDays          Int?
+  countryCode       String    @default("IN")
+  currency          String    @default("INR")
+  amount            Int                                      // minor units (paise/cents), tax included
+  name              String
+  email             String
+  phone             String
+  businessName      String
+  city              String?
+  matchedVendorId   String?                                  // listing picked in the form, else auto-matched after payment
+  listingState      String?                                  // account | claimed | unclaimed | new
+  emailSentAt       DateTime?
+  paidAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([email])
+  @@index([phone])
+  @@index([status, createdAt])
+}
+
 model AdCampaign {
   id             String           @id @default(cuid())
   vendorId       String

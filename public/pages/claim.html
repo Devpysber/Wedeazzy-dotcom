@@ -726,6 +726,21 @@
       el('tabRegister').click();
     }
   } catch (_) {}
+
+  // Prefill from the /grow checkout (kept in sessionStorage so contact
+  // details never go into the URL). Claim mode also runs the search.
+  try {
+    const pre = JSON.parse(sessionStorage.getItem('wedeazzy_claim_prefill') || 'null');
+    if (pre) {
+      sessionStorage.removeItem('wedeazzy_claim_prefill');
+      const set = (id, v) => { if (v && el(id) && !el(id).value) el(id).value = v; };
+      set('rBizName', pre.businessName); set('rPhone', pre.phone); set('rEmail', pre.email);
+      set('fOwnerName', pre.name); set('fClaimEmail', pre.email); set('fFullPhone', pre.phone);
+      set('fBiz', pre.vendorName || pre.businessName);
+      set('fCity', pre.city);
+      if (pre.mode === 'claim' && el('fBiz').value) el('searchForm').requestSubmit();
+    }
+  } catch (_) {}
 })();
 </script>
 

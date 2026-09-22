@@ -312,6 +312,12 @@ app.get('/api/admin-panel-path', (req, res, next) => {
   });
 });
 
+// Vendor acquisition landing page used in marketing campaigns (Grow Business plans)
+app.get(['/grow', '/for-vendors', '/vendor-grow', '/vendor-landing', '/vendor-growth', '/join-vendor'], (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  return res.sendFile(path.join(STATIC_ROOT, 'pages', 'grow.html'));
+});
+
 app.use(express.static(STATIC_ROOT, {
   index: 'index.html',
   extensions: ['html'],

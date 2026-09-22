@@ -302,8 +302,9 @@ async function boot() {
       }
     });
 
-    // Render Tab Viewport
-    switchTab('dashboard');
+    // Render Tab Viewport (#grow-business / #subscriptions deep links from the /grow marketing page)
+    const deepLinkTab = { '#grow-business': 'grow-business', '#subscriptions': 'subscriptions' }[location.hash];
+    switchTab(deepLinkTab || 'dashboard');
     triggerToast('Welcome back, session authorized!');
     const analyticsBadge = document.getElementById('analyticsBadge');
     if (analyticsBadge) analyticsBadge.style.display = 'inline-block';
