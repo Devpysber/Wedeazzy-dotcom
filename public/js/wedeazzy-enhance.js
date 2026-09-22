@@ -49,32 +49,14 @@
      bottom-right, which would stack directly on top of them, so the launcher
      is offset upward via Tawk's documented customStyle API.
      ============================================================ */
+  window.openTawkChat = function (e) {
+    if (e && e.preventDefault) e.preventDefault();
+    return false;
+  };
+
   function initTawk() {
-    if (window.Tawk_API) return;             // already embedded by a page
-    if (document.getElementById('wedeazzy-tawk')) return;
-
-    window.Tawk_API = window.Tawk_API || {};
-    window.Tawk_LoadStart = new Date();
-
-    // Offsets clear the existing bottom-right widgets on each breakpoint.
-    window.Tawk_API.customStyle = {
-      visibility: {
-        desktop: { position: 'br', xOffset: 24, yOffset: 96 },
-        mobile:  { position: 'br', xOffset: 12, yOffset: 84 },
-      },
-    };
-
-    var s1 = document.createElement('script');
-    var s0 = document.getElementsByTagName('script')[0];
-    s1.id = 'wedeazzy-tawk';
-    s1.async = true;
-    s1.src = 'https://embed.tawk.to/687a4021f5f188191405d82d/1j0eol1d0';
-    s1.charset = 'UTF-8';
-    s1.setAttribute('crossorigin', '*');
-    // A blocked/failed third-party load must stay silent rather than throwing.
-    s1.onerror = function () { console.warn('[wedeazzy-enhance] Tawk.to failed to load'); };
-    if (s0 && s0.parentNode) s0.parentNode.insertBefore(s1, s0);
-    else document.head.appendChild(s1);
+    // Completely removed Tawk.to chatbot section as requested.
+    return;
   }
 
   /* ============================================================

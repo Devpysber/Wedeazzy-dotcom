@@ -103,7 +103,18 @@ if (env.NODE_ENV === 'production' && canonicalHost) {
 // Allowlisted third parties are the ones the pages actually load: jsDelivr and
 // cdnjs (libraries, icon CSS), Google Fonts, Razorpay Checkout, Tawk.to chat,
 // and remote images (Unsplash covers, the GitHub-hosted logo fallback).
-const scriptHosts = ['https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://checkout.razorpay.com', 'https://embed.tawk.to', 'https://*.tawk.to', 'https://www.google.com'];
+const scriptHosts = [
+  'https://cdn.jsdelivr.net',
+  'https://cdnjs.cloudflare.com',
+  'https://checkout.razorpay.com',
+  'https://embed.tawk.to',
+  'https://*.tawk.to',
+  'https://www.google.com',
+  'https://www.googletagmanager.com',
+  'https://*.googletagmanager.com',
+  'https://www.google-analytics.com',
+  'https://*.google-analytics.com'
+];
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: false,
@@ -117,7 +128,7 @@ app.use(helmet({
       'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
       'img-src': ["'self'", 'data:', 'blob:', 'https:'],
       'media-src': ["'self'", 'data:', 'blob:', 'https:'],
-      'connect-src': ["'self'", 'https://checkout.razorpay.com', 'https://api.razorpay.com', 'https://*.tawk.to', 'wss://*.tawk.to'],
+      'connect-src': ["'self'", 'https://checkout.razorpay.com', 'https://api.razorpay.com', 'https://*.tawk.to', 'wss://*.tawk.to', 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://www.googletagmanager.com', 'https://*.googletagmanager.com'],
       'frame-src': ["'self'", 'https://checkout.razorpay.com', 'https://api.razorpay.com', 'https://www.google.com', 'https://*.tawk.to'],
       'worker-src': ["'self'", 'blob:'],
       'object-src': ["'none'"],
