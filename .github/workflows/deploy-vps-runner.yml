@@ -1,0 +1,133 @@
+# Deploy from a self-hosted runner that lives on the VPS itself.
+#
+# Why this exists: GitHub-hosted runners connect INTO the VPS over SSH, and
+# that inbound connection is what keeps failing - the hPanel firewall and
+# fail2ban both drop packets from GitHub's rotating IP range while the site
+# itself stays up. A runner installed on the VPS dials OUT to GitHub instead,
+# so nothing has to be reachable from the internet and no deploy key is needed.
+#
+# One-time setup: see DEPLOY-SELF-HOSTED-RUNNER.md in the repo root.
+# The runner must be registered with the label `wedeazzy-vps`.
+#
+# The old SSH workflow (deploy.yml) is kept as a manual fallback.
+name: Deploy to VPS (self-hosted runner)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Shared with deploy.yml so a manual SSH deploy and this one can never
+  # rebuild the same container at the same time.
+  group: vps-deploy
+  cancel-in-progress: false
+
+jobs:
+  # Same cheap checks as the SSH workflow, on a GitHub-hosted runner: they need
+  # no access to the server, and a syntax error should never reach the VPS.
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Reject unresolved merge conflict markers
+        run: |
+          if git grep -In -e '^<<<<<<< ' -e '^>>>>>>> ' -e '^=======$' -- . ; then
+            echo "::error::Merge conflict markers are committed - see the lines above."
+            exit 1
+          fi
+          echo "No conflict markers."
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Parse every backend source file
+        run: |
+          failed=0
+          while IFS= read -r f; do
+            node --check "$f" || { echo "::error file=$f::does not parse"; failed=1; }
+          done < <(find backend/src -name '*.js' -not -path '*/node_modules/*')
+          [ "$failed" -eq 0 ]
+
+  deploy:
+    needs: verify
+    runs-on: [self-hosted, wedeazzy-vps]
+    timeout-minutes: 25
+    env:
+      APP_DIR: /opt/wedeazzy-com
+      HEALTH_URL: ${{ secrets.HEALTH_URL || 'https://wedeazzy.com/health' }}
+    steps:
+      # No actions/checkout: the deploy target is the working copy the server
+      # already runs from, and checking out here would fight with it.
+      - name: Check the runner can drive the deployment
+        run: |
+          missing=0
+          [ -d "${APP_DIR}/.git" ] || { echo "::error::${APP_DIR} is not a git working copy on this machine."; missing=1; }
+          command -v docker >/dev/null || { echo "::error::docker is not on PATH for the runner user."; missing=1; }
+          docker compose version >/dev/null 2>&1 || { echo "::error::'docker compose' is unavailable to the runner user (add it to the docker group)."; missing=1; }
+          [ "$missing" -eq 0 ] || exit 1
+          echo "Deploying in ${APP_DIR} as $(whoami) on $(hostname)."
+
+      - name: Pull and rebuild
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          cd "${APP_DIR}"
+          git fetch --prune origin
+          git reset --hard origin/main
+          docker compose -f docker-compose.prod.yml up -d --build app
+
+      - name: Verify the app is healthy on the VPS
+        timeout-minutes: 9
+        run: |
+          set -uo pipefail
+          cd "${APP_DIR}"
+          # 90 x 5s: migrations run in the background after the port opens, and
+          # /health reports 503 with `"migrations":"pending"` until they finish.
+          for i in $(seq 1 90); do
+            body=$(curl -sS --max-time 10 http://127.0.0.1:4000/health 2>/dev/null || true)
+            echo "Attempt $i: ${body:-<no response - port closed, app is not running>}"
+            case "$body" in
+              *'"ok":true'*) echo "App is healthy on the VPS loopback."; exit 0 ;;
+            esac
+            sleep 5
+          done
+          echo "App never became healthy on 127.0.0.1:4000/health."
+          echo "=== Container status ==="
+          docker compose -f docker-compose.prod.yml ps
+          echo "=== Restart counts ==="
+          docker inspect --format '{{.Name}} restarts={{.RestartCount}} state={{.State.Status}} exit={{.State.ExitCode}}' \
+            $(docker compose -f docker-compose.prod.yml ps -q) 2>/dev/null || true
+          echo "=== App logs (tail 150) ==="
+          docker compose -f docker-compose.prod.yml logs --tail=150 --no-color app
+          exit 1
+
+      - name: Verify the public endpoint is healthy
+        timeout-minutes: 5
+        run: |
+          for i in $(seq 1 30); do
+            status=$(curl -s -k -o /tmp/health_response.txt \
+                          -w '%{http_code}' --max-time 15 "${HEALTH_URL}" || echo 000)
+            body=$(cat /tmp/health_response.txt 2>/dev/null || true)
+            echo "Attempt $i: HTTP ${status} | ${body:-<no body>}"
+            if [ "$status" = "200" ] && printf '%s' "$body" | grep -q '"ok":true'; then
+              echo "Public endpoint is healthy."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::${HEALTH_URL} never returned a healthy response."
+          echo "The app answered on the loopback, so look at Nginx, TLS or DNS."
+          exit 1
+
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          cd "${APP_DIR}" || exit 0
+          echo "=== git HEAD ==="; git log --oneline -1 || true
+          echo "=== Containers ==="; docker compose -f docker-compose.prod.yml ps || true
+          echo "=== App logs (tail 200) ==="
+          docker compose -f docker-compose.prod.yml logs --tail=200 --no-color app || true

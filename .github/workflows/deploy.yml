@@ -25,8 +25,10 @@
 name: Deploy to VPS
 
 on:
-  push:
-    branches: [main]
+  # Manual only. Pushes deploy through deploy-vps-runner.yml, which runs on a
+  # runner installed on the VPS: GitHub-hosted runners cannot open an inbound
+  # SSH connection to this server (see DEPLOY-SELF-HOSTED-RUNNER.md). Kept as a
+  # fallback for when the self-hosted runner is offline.
   workflow_dispatch:
 
 concurrency:
