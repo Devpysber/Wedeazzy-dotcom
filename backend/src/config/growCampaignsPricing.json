@@ -1,7 +1,7 @@
 {
   "whatsapp_leads": {
     "plans": [
-      { "days": 10, "label": "10 Days", "price": 4999 },
+      { "days": 10, "label": "10 Days", "price": 1 },
       { "days": 20, "label": "20 Days", "price": 8999 },
       { "days": 30, "label": "30 Days", "price": 13999, "recommended": true, "original": 15999 },
       { "days": 90, "label": "3 Months", "price": 34999, "original": 41997 },
@@ -30,7 +30,7 @@
     "IN": {
       "whatsapp_leads": {
         "plans": [
-          { "days": 10, "label": "10 Days", "price": 4999 },
+          { "days": 10, "label": "10 Days", "price": 1 },
           { "days": 20, "label": "20 Days", "price": 8999 },
           { "days": 30, "label": "30 Days", "price": 13999, "recommended": true, "original": 15999 },
           { "days": 90, "label": "3 Months", "price": 34999, "original": 41997 },
