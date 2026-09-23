@@ -1271,6 +1271,10 @@
             <a href="#" class="btn btn-out btn-block" data-buy="website_sales">Choose Plan</a>
           </article>
         </div>
+        <div class="custom rv" id="testPlanRow" hidden style="border-color:var(--rose)">
+          <span><b>Test payment</b> - 1 unit of currency, to check the live payment flow. Not shown to visitors.</span>
+          <a href="#" class="btn btn-rose btn-sm" data-buy-test="1">Pay 1 and test</a>
+        </div>
         <div class="custom rv">
           <span><b>Multiple cities or branches?</b> Custom campaigns from <b id="customFrom">₹20,000</b>.</span>
           <a class="btn btn-out btn-sm" href="https://wa.me/917498987620?text=Hi%20WedEazzy!%20I%27m%20a%20wedding%20vendor%20and%20want%20to%20know%20about%20a%20custom%20Grow%20Business%20campaign." target="_blank" rel="noopener" data-track="custom_wa"><svg style="color:#25D366"><use href="#i-wa"/></svg>Talk to our team</a>
@@ -1670,7 +1674,9 @@
   function openCheckout(planType, planKey) {
     co.planType = planType; co.planKey = planKey; co.days = planType === 'grow' ? state.days : 30;
     var summary;
-    if (planType === 'grow') {
+    if (planType === 'test') {
+      summary = { title: 'Test payment', sub: 'Checks the live payment flow', price: money(1), note: 'Test only' };
+    } else if (planType === 'grow') {
       var p = planFor(planKey, state.days);
       summary = { title: LABELS[planKey], sub: (p.days === 90 ? '3 months' : p.days + ' days') + ' · fully managed campaign', price: money(p.price), note: 'Price includes taxes' };
     } else {
@@ -1699,6 +1705,20 @@
   $$('[data-buy]').forEach(function (a) {
     a.addEventListener('click', function (e) { e.preventDefault(); openCheckout('grow', a.getAttribute('data-buy')); });
   });
+  // ?test=<token> reveals a 1-unit payment for checking the live gateway
+  try {
+    var testToken = new URLSearchParams(location.search).get('test');
+    if (testToken) {
+      var row = $('#testPlanRow');
+      row.hidden = false;
+      row.classList.add('in');
+      $('[data-buy-test]').addEventListener('click', function (e) {
+        e.preventDefault();
+        co.testToken = testToken;
+        openCheckout('test', 'test');
+      });
+    }
+  } catch (_) {}
   $$('[data-listing-buy]').forEach(function (a) {
     a.addEventListener('click', function (e) { e.preventDefault(); openCheckout('listing', a.getAttribute('data-listing-buy')); });
   });
@@ -1740,7 +1760,7 @@
     co.buyer = { name: $('#coName').value.trim(), businessName: co.vendor ? co.vendor.businessName : biz.input.value.trim(), city: co.vendor ? (co.vendor.city || '') : $('#coCity').value.trim(), email: $('#coEmail').value.trim(), phone: $('#coPhone').value.trim() };
     setErr(''); setBusy(true, 'Opening secure payment…');
     Promise.all([
-      post('/api/public/checkout/order', Object.assign({ planType: co.planType, planKey: co.planKey, days: co.days, countryCode: state.country, vendorId: co.vendor ? co.vendor.id : null }, co.buyer)),
+      post('/api/public/checkout/order', Object.assign({ planType: co.planType, planKey: co.planKey, days: co.days, countryCode: state.country, vendorId: co.vendor ? co.vendor.id : null, testToken: co.testToken || null }, co.buyer)),
       loadRazorpay()
     ]).then(function (res) {
       var o = res[0];

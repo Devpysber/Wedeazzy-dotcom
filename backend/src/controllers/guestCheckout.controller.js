@@ -45,7 +45,18 @@ function durationLabel(days) {
  * campaign.controller.js); listing plans add 18% GST like initiatePayment.
  * Returns { amount (minor units), planLabel, planDays }.
  */
-function resolvePrice(planType, planKey, days, countryCode) {
+function resolvePrice(planType, planKey, days, countryCode, testToken) {
+  // Smallest-possible live payment (1 rupee / 1 unit) used to verify the real
+  // gateway end to end. Only works while TEST_CHECKOUT_TOKEN is set on the
+  // server and the caller sends the matching token, so it is never reachable
+  // by an ordinary visitor. Unset the variable to switch it off.
+  if (planType === 'test') {
+    const token = process.env.TEST_CHECKOUT_TOKEN;
+    if (!token || String(testToken || '') !== token) {
+      throw new HttpError(403, 'Test checkout is not available.', 'ERR_TEST_DISABLED');
+    }
+    return { amount: 100, planLabel: 'Test payment (1 unit)', planDays: 0 };
+  }
   if (planType === 'grow') {
     const pkg = (getGrowCampaignsPricing(countryCode) || {})[planKey];
     const plan = pkg && Array.isArray(pkg.plans) && pkg.plans.find((p) => !p.custom && p.days === days);
@@ -219,7 +230,7 @@ async function createOrder(req, res, next) {
     } else if (buyer.city.length < 2) {
       throw new HttpError(400, 'Please enter the city your business is in.', 'ERR_INPUT');
     }
-    const { amount, planLabel, planDays } = resolvePrice(planType, planKey, days, countryCode);
+    const { amount, planLabel, planDays } = resolvePrice(planType, planKey, days, countryCode, body.testToken);
 
     let rzpOrder;
     try {
