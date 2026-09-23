@@ -302,8 +302,17 @@ async function boot() {
       }
     });
 
-    // Render Tab Viewport (#grow-business / #subscriptions deep links from the /grow marketing page)
-    const deepLinkTab = { '#grow-business': 'grow-business', '#subscriptions': 'subscriptions' }[location.hash];
+    // Render Tab Viewport (#grow-business / #subscriptions deep links from the
+    // /grow marketing page). A Google sign-in cannot carry the hash through the
+    // OAuth callback, so vendor-login parks the same intent in sessionStorage.
+    let deepLinkTab = { '#grow-business': 'grow-business', '#subscriptions': 'subscriptions' }[location.hash];
+    if (!deepLinkTab) {
+      try {
+        const parked = sessionStorage.getItem('wedeazzy_next_tab');
+        if (parked) sessionStorage.removeItem('wedeazzy_next_tab');
+        deepLinkTab = { grow: 'grow-business', plans: 'subscriptions' }[parked];
+      } catch (_) {}
+    }
     switchTab(deepLinkTab || 'dashboard');
     triggerToast('Welcome back, session authorized!');
     const analyticsBadge = document.getElementById('analyticsBadge');
