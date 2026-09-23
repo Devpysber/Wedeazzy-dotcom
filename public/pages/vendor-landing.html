@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-75KZ0FWZ38"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-75KZ0FWZ38');
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#E52B38" />
+<title>WedEazzy for Vendors | More Visibility. More Enquiries. Real Growth.</title>
+<meta name="description" content="Get discovered by couples looking for wedding services. Choose a plan, and WedEazzy handles your profile setup, marketing, and enquiry delivery." />
+<link rel="canonical" href="https://wedeazzy.com/pages/vendor-landing.html" />
+<link rel="icon" type="image/png" href="../assets/images/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500;1,700&family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<style>
+  :root {
+    --red: #E52B38;
+    --red-hover: #CC1F2C;
+    --red-light: #FDE8EA;
+    --red-subtle: #FFF0F2;
+    --gold: #C5A059;
+    --bg-page: #FAF7F4;
+    --white: #FFFFFF;
+    --text-dark: #111827;
+    --text-muted: #64748B;
+    --text-light: #94A3B8;
+    --border-color: #EAE5DF;
+    --card-shadow: 0 10px 30px rgba(17, 24, 39, 0.04);
+    --card-shadow-hover: 0 18px 40px rgba(229, 43, 56, 0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background-color: var(--bg-page);
+    color: var(--text-dark);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* --- HANDWRITTEN ANNOTATION FONT --- */
+  .handwritten {
+    font-family: 'Caveat', cursive;
+    color: #475569;
+    font-size: 22px;
+    line-height: 1.1;
+  }
+
+  /* --- HEADER / NAVBAR --- */
+  .wz-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgba(250, 247, 244, 0.92);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 0;
+  }
+  .wz-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .wz-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+  .wz-logo img { height: 38px; }
+  .wz-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    list-style: none;
+  }
+  .wz-nav-links a {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .wz-nav-links a:hover { color: var(--red); }
+  .wz-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .btn-login-ghost {
+    color: var(--text-dark);
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 99px;
+    transition: background 0.2s;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-login-ghost:hover { background: rgba(0,0,0,0.04); }
+
+  .btn-red-pill {
+    background: var(--red);
+    color: var(--white) !important;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 22px;
+    border-radius: 99px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(229, 43, 56, 0.3);
+    transition: all 0.2s;
+  }
+  .btn-red-pill:hover {
+    background: var(--red-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(229, 43, 56, 0.4);
+  }
+
+  .btn-outline-pill {
+    background: var(--white);
+    color: var(--text-dark);
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 22px;
+    border-radius: 99px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1.5px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-outline-pill:hover {
+    border-color: var(--red);
+    color: var(--red);
+    transform: translateY(-1px);
+  }
+
+  /* --- SECTION 1: HERO --- */
+  .hero-section {
+    padding: 60px 0 80px;
+    position: relative;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .eyebrow-text {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+    display: block;
+  }
+  .hero-heading {
+    font-size: clamp(36px, 4.2vw, 54px);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--text-dark);
+    letter-spacing: -1px;
+    margin-bottom: 20px;
+  }
+  .hero-heading .red-accent { color: var(--red); }
+  .hero-subtext {
+    font-size: 16.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 28px;
+    max-width: 520px;
+  }
+
+  .hero-usps-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+  }
+  .hero-usp-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+  .hero-usp-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #E2E8F0;
+    color: var(--text-muted);
+    display: grid; place-items: center;
+    font-size: 10px;
+  }
+
+  /* --- HERO MOCKUP VISUAL --- */
+  .hero-visual-wrapper {
+    position: relative;
+  }
+  .dashboard-mockup-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
+  }
+  .dash-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .dash-user-welcome {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-dark);
+  }
+  .dash-date-filter {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: var(--bg-page);
+  }
+
+  .dash-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .dash-metric-box {
+    background: #F8FAFC;
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid #F1F5F9;
+  }
+  .dash-m-title { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+  .dash-m-val { font-size: 18px; font-weight: 800; color: var(--text-dark); margin: 2px 0; }
+  .dash-m-badge { font-size: 10px; font-weight: 800; color: #10B981; background: #ECFDF5; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+
+  /* OVERLAPPING FLOATING CARD */
+  .floating-vendor-card {
+    position: absolute;
+    bottom: -30px;
+    right: -20px;
+    width: 200px;
+    background: var(--white);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 16px 40px rgba(17, 24, 39, 0.12);
+    border: 1px solid var(--border-color);
+  }
+  .fcard-img {
+    width: 100%;
+    height: 90px;
+    border-radius: 10px;
+    object-fit: cover;
+    margin-bottom: 10px;
+  }
+  .fcard-title { font-size: 13px; font-weight: 800; color: var(--text-dark); }
+  .fcard-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+  .fcard-btn {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    width: 100%;
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .annotation-top-right {
+    position: absolute;
+    top: -24px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* --- SECTION 2: TWO STEPS PROCESS --- */
+  .section-padding { padding: 80px 0; }
+  .sec-header-center {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 50px;
+  }
+  .sec-header-center h2 {
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 800;
+    color: var(--text-dark);
+    letter-spacing: -0.5px;
+  }
+
+  .two-steps-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .step-card {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 32px 24px;
+    flex: 1;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .step-circle-num {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: #F1F5F9;
+    color: var(--text-dark);
+    font-size: 18px;
+    font-weight: 800;
+    display: grid; place-items: center;
+    margin: 0 auto 16px;
+  }
+  .step-circle-gold {
+    background: var(--gold);
+    color: #fff;
+  }
+  .step-card h4 { font-size: 18px; font-weight: 800; color: var(--text-dark); margin-bottom: 8px; }
+  .step-card p { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+  .step-arrow-divider { font-size: 20px; color: #CBD5E1; }
+
+  /* --- SECTION 3: THE OPPORTUNITY (BE WHERE COUPLES ARE LOOKING) --- */
+  .opp-grid {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .opp-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .opp-stat-card {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .opp-icon-circle {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: var(--red-light);
+    color: var(--red);
+    display: grid; place-items: center;
+    margin: 0 auto 12px;
+    font-size: 16px;
+  }
+  .opp-stat-num { font-size: 24px; font-weight: 800; color: var(--text-dark); margin-bottom: 4px; }
+  .opp-stat-desc { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+
+  /* --- SECTION 4: PROFESSIONAL PRESENCE (JASMINE STUDIO MOCKUP) --- */
+  .presence-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .profile-preview-card {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 28px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 50px rgba(17, 24, 39, 0.08);
+    position: relative;
+  }
+  .prof-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .prof-avatar {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    background: #E2E8F0;
+    color: var(--text-dark);
+    font-weight: 800;
+    display: grid; place-items: center;
+    font-size: 18px;
+  }
+  .prof-title { font-size: 18px; font-weight: 800; color: var(--text-dark); }
+  .prof-verified {
+    background: #10B981; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 99px;
+  }
+  .prof-sub { font-size: 13px; color: var(--text-muted); }
+  
+  .prof-tabs {
+    display: flex;
+    gap: 20px;
+    border-bottom: 1px solid #F1F5F9;
+    margin-bottom: 16px;
+  }
+  .prof-tab {
+    padding-bottom: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+  .prof-tab.active {
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+  }
+
+  .prof-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .prof-gallery-img {
+    width: 100%;
+    height: 90px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .floating-views-tag {
+    position: absolute;
+    top: 40px;
+    left: -24px;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    padding: 10px 14px;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .floating-enq-tag {
+    position: absolute;
+    bottom: 40px;
+    left: -24px;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    padding: 10px 14px;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .checklist-group {
+    list-style: none;
+    margin: 24px 0 32px;
+  }
+  .checklist-item {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dark);
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .check-icon-circle {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--red-light);
+    color: var(--red);
+    display: grid; place-items: center;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  /* --- SECTION 5: SEE THE IMPACT (GROWTH CHART) --- */
+  .impact-card-wrapper {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 36px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+  }
+  .impact-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 36px;
+    align-items: center;
+  }
+  .impact-stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .impact-stat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  .impact-stat-item:last-child { border-bottom: none; }
+  .impact-label { font-size: 15px; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
+  .impact-val { font-size: 22px; font-weight: 800; color: var(--text-dark); }
+  .green-pill {
+    background: #ECFDF5; color: #10B981; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 99px;
+  }
+
+  /* --- SECTION 6: PLATFORM YOU CAN TRUST (4 CARDS) --- */
+  .trust-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  .trust-card {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 28px 20px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .trust-icon-box {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    background: #FAF5EE;
+    color: var(--gold);
+    display: grid; place-items: center;
+    margin: 0 auto 16px;
+    font-size: 20px;
+  }
+  .trust-card h4 { font-size: 16px; font-weight: 800; color: var(--text-dark); margin-bottom: 6px; }
+  .trust-card p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+  /* --- SECTION 7: TESTIMONIAL & SOCIAL PROOF --- */
+  .testimonial-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 28px;
+  }
+  .testi-card {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 36px;
+    box-shadow: var(--card-shadow);
+  }
+  .testi-quote {
+    font-size: 16px;
+    color: var(--text-dark);
+    line-height: 1.65;
+    margin-bottom: 24px;
+    font-weight: 500;
+  }
+  .testi-author-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .testi-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .testi-name { font-size: 15px; font-weight: 800; color: var(--text-dark); }
+  .testi-biz { font-size: 13px; color: var(--text-muted); }
+  .testi-stars { color: #F59E0B; font-size: 12px; margin-top: 2px; }
+
+  .stat-highlight-card {
+    background: var(--red-subtle);
+    border: 1px solid rgba(229, 43, 56, 0.15);
+    border-radius: 24px;
+    padding: 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .big-stat-number {
+    font-size: 64px;
+    font-weight: 900;
+    color: var(--red);
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .stat-highlight-desc {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+
+  /* --- SECTION 8: PRICING PLANS --- */
+  .pricing-toggle-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+  .toggle-btn-pill {
+    background: var(--red);
+    color: #fff;
+    padding: 6px 16px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .toggle-btn-outline {
+    background: transparent;
+    color: var(--text-muted);
+    padding: 6px 16px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+  }
+  .save-badge {
+    background: #FEF3C7;
+    color: #B45309;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+
+  .pricing-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+  .plan-card {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 36px 28px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s;
+  }
+  .plan-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); }
+  .plan-card.popular { border: 2px solid var(--red); }
+  .popular-top-badge {
+    position: absolute;
+    top: -14px;
+    right: 28px;
+    background: var(--red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 14px;
+    border-radius: 99px;
+  }
+  .plan-title { font-size: 22px; font-weight: 800; color: var(--text-dark); margin-bottom: 4px; }
+  .plan-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; min-height: 38px; }
+  .plan-price-num { font-size: 38px; font-weight: 900; color: var(--text-dark); margin-bottom: 4px; display: flex; align-items: baseline; gap: 4px; }
+  .plan-price-num small { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+  
+  .plan-checklist { list-style: none; margin: 24px 0 32px; flex: 1; }
+  .plan-checklist li { font-size: 14px; color: var(--text-dark); padding: 8px 0; display: flex; align-items: center; gap: 10px; }
+  .plan-checklist li i { color: var(--red); font-size: 12px; }
+
+  /* --- SECTION 9: DARK FOOTER CTA BANNER --- */
+  .dark-cta-section {
+    background: #0F172A;
+    color: var(--white);
+    border-radius: 28px;
+    padding: 60px 48px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 60px;
+  }
+  .dark-cta-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .dark-cta-title {
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 800;
+    line-height: 1.12;
+    margin-bottom: 16px;
+    color: var(--white);
+  }
+
+  /* --- FOOTER --- */
+  .wz-footer {
+    border-top: 1px solid var(--border-color);
+    padding: 40px 0;
+    background: var(--bg-page);
+  }
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+  .footer-links a { color: var(--text-muted); font-size: 13.5px; text-decoration: none; font-weight: 600; }
+  .footer-links a:hover { color: var(--red); }
+  .social-icons { display: flex; gap: 16px; color: var(--text-muted); font-size: 16px; }
+
+  /* --- MODAL OVERLAYS --- */
+  .modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(17, 24, 39, 0.75);
+    backdrop-filter: blur(6px);
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-content-card {
+    background: var(--white);
+    border-radius: 24px;
+    max-width: 500px;
+    width: 100%;
+    padding: 32px;
+    position: relative;
+  }
+  .modal-close-btn {
+    position: absolute; top: 18px; right: 20px; font-size: 22px; cursor: pointer; border: none; background: none; color: var(--text-muted);
+  }
+
+  @media (max-width: 992px) {
+    .hero-grid, .opp-grid, .presence-grid, .impact-grid, .testimonial-grid, .dark-cta-grid { grid-template-columns: 1fr; }
+    .two-steps-flow, .opp-stats-row, .trust-cards-grid, .pricing-cards-grid { grid-template-columns: 1fr; flex-direction: column; }
+    .step-arrow-divider { display: none; }
+    .wz-nav-links { display: none; }
+    .dark-cta-section { padding: 40px 24px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="wz-navbar">
+    <div class="container wz-nav-inner">
+      <a href="/pages/vendor-landing.html" class="wz-logo">
+        <img src="../assets/images/logo.png" alt="WedEazzy Logo" />
+      </a>
+
+      <ul class="wz-nav-links">
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#plans">Plans</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+
+      <div class="wz-nav-right">
+        <button class="btn-login-ghost" onclick="openClaimSearchModal()">Login</button>
+        <a href="#plans" class="btn-red-pill">Become a Vendor <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero-section">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow-text">FOR WEDDING PROFESSIONALS</span>
+        <h1 class="hero-heading">
+          More Visibility.<br/>
+          More Enquiries.<br/>
+          <span class="red-accent">Real Growth.</span>
+        </h1>
+        <p class="hero-subtext">
+          Get discovered by couples looking for wedding services. We handle the platform, so you can focus on what you do best.
+        </p>
+
+        <div>
+          <a href="#plans" class="btn-red-pill" style="padding:14px 32px; font-size:16px;">
+            Choose Your Plan <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+
+        <div class="hero-usps-row">
+          <div class="hero-usp-item">
+            <span class="hero-usp-icon"><i class="fa-solid fa-check"></i></span> Direct enquiries
+          </div>
+          <div class="hero-usp-item">
+            <span class="hero-usp-icon"><i class="fa-solid fa-check"></i></span> No booking commission
+          </div>
+          <div class="hero-usp-item">
+            <span class="hero-usp-icon"><i class="fa-solid fa-check"></i></span> We handle the setup
+          </div>
+        </div>
+      </div>
+
+      <!-- HERO VISUAL MOCKUP -->
+      <div class="hero-visual-wrapper">
+        <div class="annotation-top-right">
+          <span class="handwritten">Turn Views into Enquiries</span>
+          <i class="fa-solid fa-arrow-trend-up" style="color:var(--red)"></i>
+        </div>
+
+        <div class="dashboard-mockup-card">
+          <div class="dash-header-bar">
+            <div>
+              <p style="font-size:11px; color:var(--text-muted); font-weight:700;">Good morning,</p>
+              <h4 class="dash-user-welcome">Your business is growing! 👏</h4>
+            </div>
+            <div class="dash-date-filter">Last 30 days <i class="fa-solid fa-chevron-down"></i></div>
+          </div>
+
+          <div class="dash-metrics-grid">
+            <div class="dash-metric-box">
+              <div class="dash-m-title">Profile Views</div>
+              <div class="dash-m-val">1,248</div>
+              <span class="dash-m-badge">↑ 12%</span>
+            </div>
+            <div class="dash-metric-box">
+              <div class="dash-m-title">Enquiries</div>
+              <div class="dash-m-val">86</div>
+              <span class="dash-m-badge">↑ 21%</span>
+            </div>
+            <div class="dash-metric-box">
+              <div class="dash-m-title">Profile Clicks</div>
+              <div class="dash-m-val">412</div>
+              <span class="dash-m-badge">↑ 18%</span>
+            </div>
+          </div>
+
+          <div style="height:140px;">
+            <canvas id="heroChartCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- FLOATING OVERLAY CARD -->
+        <div class="floating-vendor-card">
+          <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=300&q=80" alt="Vendor Mockup" class="fcard-img" />
+          <div class="fcard-title">The Concept Story</div>
+          <div class="fcard-sub">Wedding Photography • Mumbai</div>
+          <button class="fcard-btn">Enquire Now</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: TWO STEPS PROCESS -->
+  <section id="how-it-works" class="section-padding">
+    <div class="container">
+      <div class="sec-header-center">
+        <span class="eyebrow-text">SIMPLE BY DESIGN</span>
+        <h2>Two Steps. We Handle the Rest.</h2>
+      </div>
+
+      <div class="two-steps-flow">
+        <div class="step-card">
+          <div class="step-circle-num">01</div>
+          <h4>Choose a Plan</h4>
+          <p>Select the plan that fits your business.</p>
+        </div>
+
+        <div class="step-arrow-divider"><i class="fa-solid fa-arrow-right"></i></div>
+
+        <div class="step-card">
+          <div class="step-circle-num">02</div>
+          <h4>Purchase</h4>
+          <p>Complete your payment securely.</p>
+        </div>
+
+        <div class="step-arrow-divider"><i class="fa-solid fa-arrow-right"></i></div>
+
+        <div class="step-card">
+          <div class="step-circle-num step-circle-gold"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <h4>We Handle the Rest</h4>
+          <p>Our team sets up your profile and gets you live on WedEazzy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: THE OPPORTUNITY -->
+  <section class="section-padding" style="background:#FFFFFF; border-y:1px solid var(--border-color)">
+    <div class="container opp-grid">
+      <div>
+        <span class="eyebrow-text">THE OPPORTUNITY</span>
+        <h2 style="font-size:36px; font-weight:800; margin-bottom:16px;">Be where couples are looking.</h2>
+        <p style="font-size:16px; color:var(--text-muted); margin-bottom:24px;">
+          Thousands of couples search for wedding services every day. Make sure they find you.
+        </p>
+        <button onclick="scrollToPlans()" class="btn-red-pill">Get Started <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+
+      <div class="opp-stats-row">
+        <div class="opp-stat-card">
+          <div class="opp-icon-circle"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <div class="opp-stat-num">10K+</div>
+          <div class="opp-stat-desc">Couples search for services every month</div>
+        </div>
+
+        <div class="opp-stat-card">
+          <div class="opp-icon-circle"><i class="fa-solid fa-bullhorn"></i></div>
+          <div class="opp-stat-num">3.5x</div>
+          <div class="opp-stat-desc">More profile views for listed vendors</div>
+        </div>
+
+        <div class="opp-stat-card">
+          <div class="opp-icon-circle"><i class="fa-solid fa-paper-plane"></i></div>
+          <div class="opp-stat-num">Authentic</div>
+          <div class="opp-stat-desc">Enquiries from interested couples</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: PROFESSIONAL PRESENCE -->
+  <section class="section-padding">
+    <div class="container presence-grid">
+      <div class="profile-preview-card">
+        <span class="floating-views-tag">+240 Profile Views this month</span>
+        
+        <div class="prof-header">
+          <div class="prof-avatar">JS</div>
+          <div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="prof-title">Jasmine Studio</span>
+              <span class="prof-verified">✓ Verified</span>
+            </div>
+            <div class="prof-sub">Wedding Photography • Mumbai • ★ 4.9 (232 reviews)</div>
+          </div>
+        </div>
+
+        <div class="prof-tabs">
+          <span class="prof-tab active">Portfolio</span>
+          <span class="prof-tab">Services</span>
+          <span class="prof-tab">Reviews</span>
+          <span class="prof-tab">About</span>
+        </div>
+
+        <div class="prof-gallery-grid">
+          <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=300&q=80" class="prof-gallery-img" />
+          <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=300&q=80" class="prof-gallery-img" />
+          <img src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=300&q=80" class="prof-gallery-img" />
+        </div>
+
+        <button class="btn-red-pill" style="width:100%; justify-content:center;">Enquire Now</button>
+        <span class="floating-enq-tag">+86 Enquiries this month</span>
+      </div>
+
+      <div>
+        <span class="eyebrow-text">YOUR BUSINESS. YOUR PROFILE.</span>
+        <h2 style="font-size:36px; font-weight:800; margin-bottom:16px;">A Professional Presence That Builds Trust.</h2>
+        <p style="font-size:16px; color:var(--text-muted);">
+          Showcase your work, services, reviews and business details — all in one place.
+        </p>
+
+        <ul class="checklist-group">
+          <li class="checklist-item"><span class="check-icon-circle">✓</span> Beautiful portfolio showcase</li>
+          <li class="checklist-item"><span class="check-icon-circle">✓</span> Service listings with custom details</li>
+          <li class="checklist-item"><span class="check-icon-circle">✓</span> Genuine customer reviews</li>
+          <li class="checklist-item"><span class="check-icon-circle">✓</span> Verified business badge</li>
+          <li class="checklist-item"><span class="check-icon-circle">✓</span> Direct enquiries from interested couples</li>
+        </ul>
+
+        <button class="btn-outline-pill" onclick="openClaimSearchModal()">See a Live Example <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: SEE THE IMPACT -->
+  <section class="section-padding" style="background:#FFFFFF; border-y:1px solid var(--border-color)">
+    <div class="container">
+      <div style="margin-bottom:36px;">
+        <span class="eyebrow-text">TRACK YOUR GROWTH</span>
+        <h2 style="font-size:36px; font-weight:800;">See the Impact.</h2>
+        <p style="font-size:16px; color:var(--text-muted)">Get real insights into how your business is performing on WedEazzy.</p>
+      </div>
+
+      <div class="impact-card-wrapper">
+        <div class="impact-grid">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+              <div style="display:flex; gap:16px; font-size:12px; font-weight:700;">
+                <span style="color:var(--red)">● Profile Views</span>
+                <span style="color:var(--text-dark)">● Enquiries</span>
+                <span style="color:var(--gold)">● Profile Clicks</span>
+              </div>
+              <span style="font-size:12px; font-weight:700; color:var(--text-muted)">Last 6 months <i class="fa-solid fa-chevron-down"></i></span>
+            </div>
+            <div style="height:220px;">
+              <canvas id="impactChartCanvas"></canvas>
+            </div>
+          </div>
+
+          <div class="impact-stats-list">
+            <div class="impact-stat-item">
+              <div>
+                <div class="impact-label"><span style="color:var(--red)">●</span> 2,480 Profile Views</div>
+              </div>
+              <span class="green-pill">↑ 32%</span>
+            </div>
+
+            <div class="impact-stat-item">
+              <div>
+                <div class="impact-label"><span style="color:var(--text-dark)">●</span> 186 Enquiries</div>
+              </div>
+              <span class="green-pill">↑ 45%</span>
+            </div>
+
+            <div class="impact-stat-item">
+              <div>
+                <div class="impact-label"><span style="color:var(--gold)">●</span> 912 Profile Clicks</div>
+              </div>
+              <span class="green-pill">↑ 24%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6: PLATFORM YOU CAN TRUST -->
+  <section class="section-padding">
+    <div class="container">
+      <div class="sec-header-center">
+        <span class="eyebrow-text">BUILT FOR YOUR SUCCESS</span>
+        <h2>A Platform You Can Trust.</h2>
+      </div>
+
+      <div class="trust-cards-grid">
+        <div class="trust-card">
+          <div class="trust-icon-box"><i class="fa-solid fa-shield-halved"></i></div>
+          <h4>Secure Payments</h4>
+          <p>Your information is safe with us.</p>
+        </div>
+
+        <div class="trust-card">
+          <div class="trust-icon-box"><i class="fa-solid fa-file-invoice"></i></div>
+          <h4>Transparent Plans</h4>
+          <p>No hidden charges.</p>
+        </div>
+
+        <div class="trust-card">
+          <div class="trust-icon-box"><i class="fa-solid fa-percent"></i></div>
+          <h4>No Booking Commission</h4>
+          <p>You keep 100% of your earnings.</p>
+        </div>
+
+        <div class="trust-card">
+          <div class="trust-icon-box"><i class="fa-solid fa-headset"></i></div>
+          <h4>Dedicated Support</h4>
+          <p>We're here when you need us.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 7: TESTIMONIALS -->
+  <section class="section-padding" style="background:#FFFFFF; border-y:1px solid var(--border-color)">
+    <div class="container">
+      <div style="margin-bottom:36px;">
+        <span class="eyebrow-text">WHAT VENDORS SAY</span>
+        <h2 style="font-size:36px; font-weight:800;">Trusted by Wedding Professionals.</h2>
+      </div>
+
+      <div class="testimonial-grid">
+        <div class="testi-card">
+          <p class="testi-quote">
+            "WedEazzy helped us get consistent enquiries without any hassle. The setup was handled by their team and we saw leads within days."
+          </p>
+          
+          <div class="testi-author-row">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" class="testi-avatar" />
+            <div>
+              <div class="testi-name">Rohan Mehta</div>
+              <div class="testi-biz">The Wedding Frame • Mumbai</div>
+              <div class="testi-stars">★★★★★</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-highlight-card">
+          <div class="big-stat-number">92%</div>
+          <div class="stat-highlight-desc">of our vendors receive their first enquiry within 30 days.</div>
+          <p style="font-size:13px; color:var(--text-muted);">A growing community of wedding professionals across India.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 8: PRICING PLANS -->
+  <section id="plans" class="section-padding">
+    <div class="container">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:36px;">
+        <div>
+          <span class="eyebrow-text">PLANS</span>
+          <h2 style="font-size:36px; font-weight:800;">Choose Your Plan.</h2>
+          <p style="font-size:15px; color:var(--text-muted);">Start with the option that fits your business.</p>
+        </div>
+
+        <div class="pricing-toggle-wrap">
+          <button class="toggle-btn-pill">Monthly</button>
+          <button class="toggle-btn-outline">Yearly</button>
+          <span class="save-badge">Save 20%</span>
+        </div>
+      </div>
+
+      <div class="pricing-cards-grid">
+        <!-- STARTER / FREE -->
+        <div class="plan-card">
+          <div class="plan-title">Starter</div>
+          <div class="plan-sub">For businesses getting started.</div>
+          <div class="plan-price-num">Free</div>
+
+          <ul class="plan-checklist">
+            <li><i class="fa-solid fa-check"></i> Business profile</li>
+            <li><i class="fa-solid fa-check"></i> Contact details</li>
+            <li><i class="fa-solid fa-check"></i> Basic portfolio</li>
+            <li><i class="fa-solid fa-check"></i> Get discovered</li>
+          </ul>
+
+          <button onclick="openRegisterModal('Free')" class="btn-outline-pill" style="width:100%; justify-content:center;">Get Started</button>
+        </div>
+
+        <!-- GROW -->
+        <div class="plan-card popular">
+          <span class="popular-top-badge">Most Popular</span>
+          <div class="plan-title">Grow</div>
+          <div class="plan-sub">For growing businesses.</div>
+          <div class="plan-price-num">₹499 <small>/ month</small></div>
+
+          <ul class="plan-checklist">
+            <li><i class="fa-solid fa-check"></i> Everything in Starter</li>
+            <li><i class="fa-solid fa-check"></i> Enhanced profile</li>
+            <li><i class="fa-solid fa-check"></i> Priority visibility</li>
+            <li><i class="fa-solid fa-check"></i> Enquiry access</li>
+            <li><i class="fa-solid fa-check"></i> Basic insights</li>
+          </ul>
+
+          <button onclick="purchasePlan('Premium', 499)" class="btn-red-pill" style="width:100%; justify-content:center;">Choose Plan</button>
+        </div>
+
+        <!-- FEATURED -->
+        <div class="plan-card">
+          <div class="plan-title">Featured</div>
+          <div class="plan-sub">For maximum exposure.</div>
+          <div class="plan-price-num">₹999 <small>/ month</small></div>
+
+          <ul class="plan-checklist">
+            <li><i class="fa-solid fa-check"></i> Everything in Grow</li>
+            <li><i class="fa-solid fa-check"></i> Featured placement</li>
+            <li><i class="fa-solid fa-check"></i> Premium profile</li>
+            <li><i class="fa-solid fa-check"></i> Advanced insights</li>
+            <li><i class="fa-solid fa-check"></i> Promotional opportunities</li>
+          </ul>
+
+          <button onclick="purchasePlan('Featured', 999)" class="btn-outline-pill" style="width:100%; justify-content:center;">Choose Plan</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 9: DARK FOOTER CTA BANNER -->
+  <section class="container">
+    <div class="dark-cta-section">
+      <div class="dark-cta-grid">
+        <div>
+          <span style="font-size:12px; font-weight:800; color:var(--gold); letter-spacing:1px; text-transform:uppercase;">READY TO GROW?</span>
+          <h2 class="dark-cta-title">Your Next Customer Is Looking.</h2>
+          <p style="font-size:16px; color:#94A3B8; margin-bottom:28px;">Choose your plan. Purchase it. We'll handle the rest.</p>
+          <a href="#plans" class="btn-red-pill" style="padding:14px 32px; font-size:16px;">Get Started Today <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+
+        <div style="text-align:right;">
+          <span class="handwritten" style="color:#CBD5E1; font-size:26px;">More enquiries. Bigger opportunities.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="wz-footer">
+    <div class="container footer-inner">
+      <div>
+        <a href="/pages/vendor-landing.html" class="wz-logo">
+          <img src="../assets/images/logo.png" alt="WedEazzy Logo" />
+        </a>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">For Wedding Professionals</p>
+      </div>
+
+      <ul class="footer-links">
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#plans">Plans</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="/pages/privacy.html">Contact</a></li>
+      </ul>
+
+      <div class="social-icons">
+        <i class="fa-brands fa-pinterest"></i>
+        <i class="fa-brands fa-facebook"></i>
+        <i class="fa-brands fa-linkedin"></i>
+        <i class="fa-brands fa-youtube"></i>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODALS -->
+  <div id="searchModal" class="modal-backdrop">
+    <div class="modal-content-card">
+      <button class="modal-close-btn" onclick="closeModal('searchModal')">&times;</button>
+      <h3 style="font-size:20px; font-weight:800; margin-bottom:8px;">Search Your Business</h3>
+      <input type="text" placeholder="Type business name..." style="width:100%; padding:12px; border-radius:10px; border:1px solid var(--border-color); font-size:15px; margin-bottom:16px;" onkeyup="liveSearch(this.value)" />
+      <div id="modalSearchOut" style="max-height:220px; overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <div id="regModal" class="modal-backdrop">
+    <div class="modal-content-card">
+      <button class="modal-close-btn" onclick="closeModal('regModal')">&times;</button>
+      <h3 style="font-size:20px; font-weight:800; margin-bottom:8px;">Register Your Vendor Business</h3>
+      <form onsubmit="handleRegistration(event)">
+        <input type="text" id="regName" placeholder="Business / Owner Name" required style="width:100%; padding:12px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:12px;" />
+        <input type="tel" id="regPhone" placeholder="Mobile / WhatsApp Number" required style="width:100%; padding:12px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:12px;" />
+        <select id="regCategory" style="width:100%; padding:12px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:16px;">
+          <option value="Photographer">Photographer</option>
+          <option value="Venue">Venue</option>
+          <option value="Makeup Artist">Makeup Artist</option>
+          <option value="Decorator">Decorator</option>
+          <option value="Caterer">Caterer</option>
+        </select>
+        <button type="submit" class="btn-red-pill" style="width:100%; justify-content:center;">Register & Continue</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // INITIALIZE CHARTS
+    function initCharts() {
+      // Hero Chart
+      const hCtx = document.getElementById('heroChartCanvas').getContext('2d');
+      new Chart(hCtx, {
+        type: 'line',
+        data: {
+          labels: ['May 1', 'May 8', 'May 15', 'May 22', 'May 29', 'Jun 5'],
+          datasets: [{
+            data: [120, 240, 380, 520, 840, 1248],
+            borderColor: '#E52B38',
+            borderWidth: 3,
+            fill: true,
+            backgroundColor: 'rgba(229, 43, 56, 0.08)',
+            tension: 0.4,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { display: false }, y: { display: false } }
+        }
+      });
+
+      // Impact Chart
+      const iCtx = document.getElementById('impactChartCanvas').getContext('2d');
+      new Chart(iCtx, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          datasets: [
+            {
+              label: 'Profile Views',
+              data: [800, 1100, 1400, 1800, 2100, 2480],
+              borderColor: '#E52B38',
+              backgroundColor: 'rgba(229, 43, 56, 0.06)',
+              fill: true,
+              tension: 0.4
+            },
+            {
+              label: 'Enquiries',
+              data: [40, 65, 90, 120, 150, 186],
+              borderColor: '#111827',
+              fill: false,
+              tension: 0.4
+            },
+            {
+              label: 'Profile Clicks',
+              data: [300, 420, 550, 680, 800, 912],
+              borderColor: '#C5A059',
+              fill: false,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#F1F5F9' } }
+          }
+        }
+      });
+    }
+    window.addEventListener('DOMContentLoaded', initCharts);
+
+    function scrollToPlans() {
+      document.getElementById('plans').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function openClaimSearchModal() {
+      document.getElementById('searchModal').style.display = 'flex';
+    }
+    function openRegisterModal() {
+      document.getElementById('regModal').style.display = 'flex';
+    }
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    async function purchasePlan(planName, price) {
+      const token = localStorage.getItem('vendorToken') || localStorage.getItem('token');
+      if (!token) {
+        openRegisterModal();
+        return;
+      }
+      try {
+        const res = await fetch('/api/payment/initiate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ planName })
+        });
+        const data = await res.json();
+        if (!data.ok) { alert(data.message || 'Payment initiation failed'); return; }
+
+        const rzp = new Razorpay({
+          key: data.keyId,
+          amount: data.amountPaise,
+          currency: 'INR',
+          name: 'WedEazzy Platform',
+          description: `${planName} Plan Subscription`,
+          order_id: data.orderId,
+          handler: async function (resp) {
+            const vRes = await fetch('/api/payment/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                razorpay_order_id: resp.razorpay_order_id,
+                razorpay_payment_id: resp.razorpay_payment_id,
+                razorpay_signature: resp.razorpay_signature,
+                planName
+              })
+            });
+            const vData = await vRes.json();
+            if (vData.ok) {
+              alert('Plan Activated Successfully!');
+              window.location.href = '/pages/bdashboard.html';
+            }
+          }
+        });
+        rzp.open();
+      } catch (err) {
+        alert('Payment system error.');
+      }
+    }
+
+    function handleRegistration(e) {
+      e.preventDefault();
+      const n = document.getElementById('regName').value;
+      const p = document.getElementById('regPhone').value;
+      const c = document.getElementById('regCategory').value;
+      window.location.href = `/pages/claim.html?mode=register&name=${encodeURIComponent(n)}&phone=${encodeURIComponent(p)}&category=${encodeURIComponent(c)}`;
+    }
+
+    async function liveSearch(q) {
+      const out = document.getElementById('modalSearchOut');
+      if (q.length < 2) return;
+      try {
+        const res = await fetch(`/api/public/vendors?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        const list = data.vendors || data.data || [];
+        out.innerHTML = list.map(v => `
+          <div style="padding:10px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong style="font-size:14px;">${v.businessName || v.name}</strong>
+              <div style="font-size:12px; color:#666;">${v.category || ''} • ${v.city || ''}</div>
+            </div>
+            <a href="/pages/claim.html?claimId=${v.id}" class="btn-outline-pill" style="font-size:11px; padding:4px 10px;">Claim</a>
+          </div>
+        `).join('');
+      } catch(e) {}
+    }
+  </script>
+</body>
+</html>

@@ -52,6 +52,8 @@ const verifyLimiter = rateLimit({
   message: checkoutMessage,
 });
 router.post('/checkout/verify', verifyLimiter, guestCheckout.verifyOrder);
+router.post('/checkout/test-pay', verifyLimiter, guestCheckout.testPayment);
+router.post('/checkout/check-availability', guestCheckout.checkAvailability);
 
 // NOTE: The former GET /diagnose-db endpoint was removed. It could run
 // migrations and admin seeding over HTTP and was reachable without admin auth

@@ -48,6 +48,18 @@ async function signup(req, res, next) {
   } catch (e) { next(e); }
 }
 
+async function tryLinkPendingOrders(userId, vendorData) {
+  if (!userId || !vendorData) return;
+  const vendorId = Array.isArray(vendorData) ? (vendorData[0] && vendorData[0].id) : vendorData.id;
+  if (!vendorId) return;
+  try {
+    const { linkPendingGuestOrders } = require('./guestCheckout.controller');
+    await linkPendingGuestOrders(vendorId, userId);
+  } catch (err) {
+    logger.error({ err, vendorId, userId }, 'Failed to link pending guest orders on authentication');
+  }
+}
+
 /**
  * Password-based Authenticated Login (Only Admins, Vendors, Venues, Business portal dashboard users)
  */
@@ -60,6 +72,10 @@ async function login(req, res, next) {
     // Save login timestamp inside cookie session
     if (req.session) {
       req.session.loginAt = Date.now();
+    }
+
+    if (r && r.user && r.user.vendor) {
+      await tryLinkPendingOrders(r.user.id, r.user.vendor);
     }
 
     // Auth attempts weren't logged anywhere previously — no way to detect
@@ -91,6 +107,9 @@ async function verifyEmailOtp(req, res, next) {
   try {
     const { email, code } = req.body || {};
     const r = await service.verifyEmailOtp({ email, code });
+    if (r && r.user && r.user.vendor) {
+      await tryLinkPendingOrders(r.user.id, r.user.vendor);
+    }
     res.json(r);
   } catch (e) { next(e); }
 }
@@ -144,6 +163,10 @@ async function verifyOtpLogin(req, res, next) {
     // Save login timestamp inside cookie session
     if (req.session) {
       req.session.loginAt = Date.now();
+    }
+    
+    if (r && r.userData && r.userData.vendor) {
+      await tryLinkPendingOrders(r.userData.id, r.userData.vendor);
     }
     
     res.json(r);
@@ -207,6 +230,10 @@ async function googleOneTap(req, res, next) {
     // Save to cookie session
     if (req.session) {
       req.session.loginAt = Date.now();
+    }
+    
+    if (user && user.vendor) {
+      await tryLinkPendingOrders(user.id, user.vendor);
     }
     
     res.json({

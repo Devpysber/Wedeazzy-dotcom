@@ -382,40 +382,134 @@ module.exports = {
   },
 
   /**
+   * Payment receipt and tax invoice for a plan bought from the public /grow page.
+   * Includes complete billing details, welcome message, and clear onboarding instructions.
+   */
+  async sendGuestOrderInvoiceEmail(to, order, listing) {
+    const totalAmount = order.amount / 100;
+    const amountStr = totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const baseAmount = (totalAmount / 1.18).toFixed(2);
+    const gstAmount = (totalAmount - parseFloat(baseAmount)).toFixed(2);
+    const duration = order.planDays ? (order.planDays === 90 ? '3 months' : `${order.planDays} days`) : '30 days';
+    const paidAt = (order.paidAt || new Date()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
+    const invoiceNo = `INV-${String(order.id || '').slice(-8).toUpperCase()}`;
+
+    const setupInstructions = {
+      account: {
+        title: 'Sign In to Your Dashboard',
+        desc: 'Your business already has a registered WedEazzy account. Sign in anytime to manage your listing and track incoming leads.',
+        cta: 'Sign In to Vendor Dashboard',
+        url: `${env.PUBLIC_BASE_URL || ''}/pages/vendor-login.html?next=grow&email=${encodeURIComponent(order.email)}&business=${encodeURIComponent(order.businessName)}`
+      },
+      claimed: {
+        title: 'Sign In to Your Claimed Listing',
+        desc: `Your listing for "${esc(listing.vendorName || order.businessName)}" is managed by an existing account. Sign in to view your activated campaign.`,
+        cta: 'Sign In to Vendor Dashboard',
+        url: `${env.PUBLIC_BASE_URL || ''}/pages/vendor-login.html?next=grow&email=${encodeURIComponent(order.email)}&business=${encodeURIComponent(listing.vendorName || order.businessName)}`
+      },
+      unclaimed: {
+        title: 'Claim Your Existing Listing',
+        desc: `We found your listing for "${esc(listing.vendorName || order.businessName)}" on WedEazzy! To claim it and take direct control of your incoming leads, verify your registered phone number.`,
+        cta: 'Claim Your Listing Now',
+        url: `${env.PUBLIC_BASE_URL || ''}/pages/claim.html`
+      },
+      new: {
+        title: 'Complete Your Free Business Listing',
+        desc: `Your business "${esc(order.businessName)}" is not listed on WedEazzy yet. Set up your free profile so couples can discover your services while your campaign runs.`,
+        cta: 'Register Your Business Free',
+        url: `${env.PUBLIC_BASE_URL || ''}/pages/claim.html?mode=register`
+      }
+    }[listing.state] || {
+      title: 'Complete Listing Setup',
+      desc: 'Our vendor success team will reach out within 24 hours to help you optimize your profile and set up your campaign.',
+      cta: 'Open WedEazzy Platform',
+      url: `${env.PUBLIC_BASE_URL || ''}/grow`
+    };
+
+    const row = (k, v, isBold = false) => `
+      <tr style="border-bottom:1px solid #E8DFD4;">
+        <td style="padding:10px 12px; font-weight:${isBold ? '700' : '500'}; color:#54474A;">${k}</td>
+        <td style="padding:10px 12px; font-weight:${isBold ? '700' : '400'}; color:#1B1B1F; text-align:right;">${v}</td>
+      </tr>`;
+
+    const html = renderHtmlFrame('Tax Invoice & Welcome Confirmation', 'Tax Invoice & Welcome to WedEazzy!', `
+      <div style="margin-bottom: 24px;">
+        <p style="font-size: 16px; font-weight: 600; color: #1B1B1F; margin: 0 0 10px;">Dear ${esc(order.name)},</p>
+        <p style="margin: 0 0 14px; font-size: 14.5px; line-height: 1.6; color: #54474A;">
+          Welcome to the <strong>WedEazzy</strong> partner community! Thank you for purchasing <strong>${esc(order.planLabel)}</strong> for <strong>${esc(order.businessName)}</strong>.
+          Your payment has been successfully verified, and your marketing package is confirmed.
+        </p>
+      </div>
+
+      <!-- INVOICE CARD -->
+      <div style="background: #FAF7F5; border: 1.5px solid #EADFD7; border-radius: 12px; padding: 20px; margin-bottom: 28px;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #C9A33A; padding-bottom: 12px; margin-bottom: 14px;">
+          <div>
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: #8C7D80; text-transform: uppercase;">TAX INVOICE / RECEIPT</span>
+            <div style="font-size: 17px; font-weight: 800; color: #1B1B1F; margin-top: 2px;">${esc(invoiceNo)}</div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: #8C7D80; text-transform: uppercase;">DATE &amp; TIME</span>
+            <div style="font-size: 13.5px; font-weight: 600; color: #1B1B1F; margin-top: 2px;">${esc(paidAt)}</div>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; margin-bottom: 14px;">
+          ${row('Customer Name', esc(order.name))}
+          ${row('Business Name', esc(order.businessName) + (order.city ? `, ${esc(order.city)}` : ''))}
+          ${row('Contact Phone', esc(order.phone))}
+          ${row('Email Address', esc(order.email))}
+          ${row('Service / Package', esc(order.planLabel))}
+          ${row('Campaign Duration', esc(duration))}
+          ${row('Razorpay Order ID', `<span style="font-family:monospace; font-size:12px;">${esc(order.razorpayOrderId)}</span>`)}
+          ${row('Razorpay Payment ID', `<span style="font-family:monospace; font-size:12px;">${esc(order.razorpayPaymentId || '-')}</span>`)}
+          ${row('Net Amount', `${esc(order.currency)} ${baseAmount}`)}
+          ${row('Estimated GST / Taxes', `${esc(order.currency)} ${gstAmount}`)}
+          <tr style="background:#FFF0F2;">
+            <td style="padding:12px; font-weight:800; color:#1B1B1F; font-size:15px;">TOTAL AMOUNT PAID</td>
+            <td style="padding:12px; font-weight:800; color:#B24A5B; font-size:17px; text-align:right;">${esc(order.currency)} ${amountStr}</td>
+          </tr>
+        </table>
+        <div style="font-size: 11.5px; color: #8C7D80; text-align: center;">Taxes included where applicable. WedEazzy Services Platform.</div>
+      </div>
+
+      <!-- ONBOARDING INSTRUCTIONS -->
+      <div style="background: #FFFFFF; border: 1.5px solid #E8DFD4; border-radius: 12px; padding: 22px; margin-bottom: 24px;">
+        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.12em; color: #B24A5B; text-transform: uppercase; margin-bottom: 6px;">NEXT STEPS TO COMPLETE SETUP</div>
+        <h3 style="margin: 0 0 8px; font-size: 18px; color: #1B1B1F;">${esc(setupInstructions.title)}</h3>
+        <p style="margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: #54474A;">${esc(setupInstructions.desc)}</p>
+        <div style="text-align: center;">
+          <a href="${esc(setupInstructions.url)}" class="btn" style="background:#B24A5B; color:#FFFFFF !important; display:inline-block; padding:12px 28px; border-radius:99px; font-weight:700; text-decoration:none;">
+            ${esc(setupInstructions.cta)} &rarr;
+          </a>
+        </div>
+        <p style="font-size: 12px; color: #8C7D80; text-align: center; margin: 12px 0 0;">
+          Direct link: <a href="${esc(setupInstructions.url)}" style="color:#B24A5B;">${esc(setupInstructions.url)}</a>
+        </p>
+      </div>
+
+      <p style="font-size: 13.5px; color: #54474A; line-height: 1.6;">
+        If you closed your browser after paying, don't worry! Your purchase is safely recorded in our system. You can complete your setup at any time using the link above.
+        For priority support, call or WhatsApp our vendor team directly at <strong>+91 74989 87620</strong>.
+      </p>
+
+      <p style="margin-top: 24px; font-size: 14px; color: #54474A;">
+        Warm regards,<br />
+        <strong>The WedEazzy Team</strong>
+      </p>
+    `);
+
+    const text = `TAX INVOICE & CONFIRMATION (${invoiceNo})\n\nDear ${order.name},\nThank you for purchasing ${order.planLabel} for ${order.businessName}. Total paid: ${order.currency} ${amountStr}.\n\nNext Step: ${setupInstructions.title}\n${setupInstructions.desc}\nURL: ${setupInstructions.url}\n\nSupport: +91 74989 87620`;
+
+    return sendMail({ to, subject: `Tax Invoice & Confirmation: ${order.planLabel} - WedEazzy.com`, html, text });
+  },
+
+  /**
    * Payment receipt for a plan bought from the public /grow page by someone
-   * without a vendor account yet. `listing` = { state, actionUrl, actionLabel,
-   * vendorName } from guestCheckout.controller's findListing().
+   * without a vendor account yet.
    */
   async sendGuestOrderReceiptEmail(to, order, listing) {
-    const amount = (order.amount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const duration = order.planDays ? (order.planDays === 90 ? '3 months' : `${order.planDays} days`) : '1 month';
-    const paidAt = (order.paidAt || new Date()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
-    const nextStep = {
-      account:   'Your business already has a WedEazzy account. Sign in to your dashboard to follow your campaign.',
-      claimed:   'Your listing is already claimed on WedEazzy. Sign in to your dashboard to follow your campaign.',
-      unclaimed: `We found your listing${listing.vendorName ? ` "<strong>${esc(listing.vendorName)}</strong>"` : ''} on WedEazzy. Claim it so your campaign enquiries reach you and you can manage your profile.`,
-      new:       'Your business is not listed on WedEazzy yet. Register it (free) so couples can find your profile while your campaign runs.'
-    }[listing.state] || '';
-    const row = (k, v) => `<tr style="border-bottom:1px solid #E8DFD4;"><td style="padding:10px; font-weight:bold;">${k}</td><td style="padding:10px;">${v}</td></tr>`;
-    const html = renderHtmlFrame('Payment Received', 'Payment received. Thank you!', `
-      <p>Hi ${esc(order.name)},</p>
-      <p>We have received your payment for <strong>${esc(order.planLabel)}</strong> for <strong>${esc(order.businessName)}</strong>. The WedEazzy team will now set up your campaign. You'll hear from us within 24 hours on ${esc(order.phone)}.</p>
-      <table style="width:100%; border-collapse:collapse; margin:24px 0; font-size:14px;">
-        ${row('Plan', esc(order.planLabel))}
-        ${row('Duration', esc(duration))}
-        ${row('Business', esc(order.businessName) + (order.city ? `, ${esc(order.city)}` : ''))}
-        ${row('Order ID', `<span style="font-family:monospace;">${esc(order.razorpayOrderId)}</span>`)}
-        ${row('Payment ID', `<span style="font-family:monospace;">${esc(order.razorpayPaymentId || '-')}</span>`)}
-        ${row('Date &amp; Time', esc(paidAt))}
-        <tr><td style="padding:10px; font-weight:bold; color:#1B1B1F;">Total Paid (incl. taxes)</td><td style="padding:10px; color:#C8102E; font-weight:bold; font-size:16px;">${esc(order.currency)} ${amount}</td></tr>
-      </table>
-      <p><strong>Next step:</strong> ${nextStep}</p>
-      ${listing.actionUrl ? `<div style="text-align:center; margin:26px 0;"><a href="${esc(listing.actionUrl)}" class="btn" style="color:#FFFFFF !important;">${esc(listing.actionLabel)}</a></div>` : ''}
-      <p>Questions? Reply to this email or WhatsApp us at +91 74989 87620.</p>
-      <p>Best regards,<br>The WedEazzy Team</p>
-    `);
-    const text = `Payment received for ${order.planLabel} (${order.businessName}). Order ${order.razorpayOrderId}, payment ${order.razorpayPaymentId || '-'}, amount ${order.currency} ${amount}. The WedEazzy team will contact you within 24 hours.${listing.actionUrl ? ` Next step: ${listing.actionLabel} - ${listing.actionUrl}` : ''}`;
-    return sendMail({ to, subject: `Payment received: ${order.planLabel} - WedEazzy.com`, html, text });
+    return this.sendGuestOrderInvoiceEmail(to, order, listing);
   },
 
   /**

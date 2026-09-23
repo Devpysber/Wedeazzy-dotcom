@@ -848,7 +848,30 @@
       }
       if (el.backFromOTP)      el.backFromOTP.addEventListener("click", backToCredentials);
       if (el.backFromRecovery) el.backFromRecovery.addEventListener("click", backToCredentials);
-      if (el.backFromReset)    el.backFromReset.addEventListener("click", backToCredentials);
+      // Check for prefill from guest checkout / grow page
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var qEmail = params.get("email");
+        var qBiz = params.get("business");
+        if (!qEmail) {
+          var stored = JSON.parse(sessionStorage.getItem("wedeazzy_login_prefill") || "null");
+          if (stored) {
+            qEmail = stored.email;
+            qBiz = stored.businessName;
+            sessionStorage.removeItem("wedeazzy_login_prefill");
+          }
+        }
+        if (qEmail && el.email) {
+          el.email.value = qEmail;
+          if (el.pass) {
+            setTimeout(function () { el.pass.focus(); }, 120);
+          }
+          if (qBiz && el.subTitle) {
+            el.subTitle.textContent = "Signing in to manage \"" + qBiz + "\". Enter your password to continue to your dashboard.";
+          }
+          showToast("Welcome back! Please enter your password to access your dashboard.", "info");
+        }
+      } catch (_) {}
 
       // Card starts covered by the loader mask in the markup — clear it.
       busy(false);

@@ -620,38 +620,95 @@
   /* Checkout modal */
   .co-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(17,28,53,.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
   .co-overlay[hidden] { display: none; }
-  .co-box { position: relative; width: 100%; max-width: 520px; background: #fff; border-radius: 20px; box-shadow: 0 40px 80px -30px rgba(17,28,53,.6); padding: 28px; margin: auto; animation: coIn .25s ease; }
+  .co-box { position: relative; width: 100%; max-width: 520px; background: #fff; border-radius: 20px; box-shadow: 0 40px 80px -30px rgba(17,28,53,.6); padding: 20px 24px; margin: auto; animation: coIn .25s ease; max-height: calc(100vh - 40px); overflow-y: auto; }
   @keyframes coIn { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
-  .co-x { position: absolute; top: 14px; right: 14px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid #E6E3EA; background: #fff; display: grid; place-items: center; color: var(--navy); }
+  .co-x { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #E6E3EA; background: #fff; display: grid; place-items: center; color: var(--navy); }
   .co-x svg { width: 18px; height: 18px; }
-  .co-sum { background: linear-gradient(135deg, var(--navy) 0%, #2B3E68 100%); color: #fff; border-radius: 14px; padding: 16px 18px; margin: 0 40px 22px 0; }
+  .co-sum { background: linear-gradient(135deg, var(--navy) 0%, #2B3E68 100%); color: #fff; border-radius: 14px; padding: 11px 15px; margin: 0 40px 10px 0; }
   .co-k { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.65); }
-  .co-sum-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-top: 4px; }
-  .co-sum h3 { color: #fff; font-family: var(--serif); font-size: 22px; font-weight: 600; }
-  .co-sum p { font-size: 13px; color: rgba(255,255,255,.75); }
+  .co-sum-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-top: 3px; }
+  .co-sum h3 { color: #fff; font-family: var(--serif); font-size: 19px; font-weight: 600; }
+  .co-sum p { font-size: 12px; color: rgba(255,255,255,.75); }
   .co-price { text-align: right; }
-  .co-price b { display: block; font-size: 24px; font-weight: 700; white-space: nowrap; }
-  .co-price small { font-size: 11.5px; color: rgba(255,255,255,.7); white-space: nowrap; }
-  .co-box h2 { font-size: 26px; color: var(--navy); }
-  .co-lead { font-size: 14px; color: var(--muted); margin: 6px 0 18px; }
+  .co-price b { display: block; font-size: 21px; font-weight: 700; white-space: nowrap; }
+  .co-price small { font-size: 10.5px; color: rgba(255,255,255,.7); white-space: nowrap; }
+  .co-box h2 { font-size: 22px; color: var(--navy); }
+  .co-lead { font-size: 13px; color: var(--muted); margin: 2px 0 10px; }
   .co-lead b { color: var(--ink); }
-  .co-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .co-grid label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); }
-  .co-grid input { font: inherit; font-weight: 400; font-size: 15px; color: var(--ink); border: 1px solid #DCD9E3; border-radius: 10px; padding: 12px 13px; min-height: 48px; width: 100%; background: #fff; transition: border-color .2s, box-shadow .2s; }
-  .co-grid input:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(27,42,74,.15); }
-  .co-grid input:user-invalid { border-color: var(--rose); }
-  .co-grid small { font-size: 11.5px; font-weight: 400; color: var(--muted); }
+  .co-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .co-grid > label { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  .co-grid label[hidden], .co-grid [hidden], [hidden] { display: none !important; }
+  .co-grid input:not([type="radio"]):not([type="checkbox"]) { font: inherit; font-weight: 400; font-size: 14px; color: var(--ink); border: 1px solid #DCD9E3; border-radius: 9px; padding: 9px 12px; min-height: 40px; width: 100%; background: #fff; transition: border-color .2s, box-shadow .2s; box-sizing: border-box; }
+  .co-grid input:not([type="radio"]):not([type="checkbox"]):focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(27,42,74,.15); }
+  .co-grid input:not([type="radio"]):not([type="checkbox"]):user-invalid { border-color: var(--rose); }
+  .co-grid small { font-size: 11px; font-weight: 400; color: var(--muted); }
   .co-full { grid-column: 1 / -1; }
+
+  /* Radio pill card selection for phone verification */
+  .co-radio-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+  .co-grid .co-radio-card {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 10px 16px !important;
+    background: #ffffff !important;
+    border: 1.5px solid #CBD5E1 !important;
+    border-radius: 10px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    color: #1E293B !important;
+    user-select: none !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .co-grid .co-radio-card:hover {
+    border-color: var(--navy) !important;
+    background: #F8FAFC !important;
+  }
+  .co-grid .co-radio-card:has(input:checked) {
+    border-color: var(--navy) !important;
+    background: #EEF2FF !important;
+    color: var(--navy) !important;
+    font-weight: 600 !important;
+  }
+  .co-grid .co-radio-card input[type="radio"] {
+    width: 17px !important;
+    height: 17px !important;
+    min-height: 17px !important;
+    max-width: 17px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    accent-color: var(--navy) !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+  }
+  .co-grid .co-radio-card span {
+    white-space: nowrap !important;
+    font-size: 13.5px !important;
+    line-height: 1.2 !important;
+    color: inherit !important;
+  }
   .co-bizwrap { display: grid; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); }
   .co-bizwrap > small { font-size: 11.5px; font-weight: 400; color: var(--muted); }
   .co-search { position: relative; display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; }
   .co-search[hidden] { display: none; }
   .co-ac { position: relative; }
-  .co-grid .co-ac:last-of-type input { padding-right: 13px; }
-  .co-ac-ic { position: absolute; left: 13px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: #9A9EAB; pointer-events: none; }
-  .co-grid .co-ac input { padding-left: 40px; padding-right: 40px; }
-  .co-ac-spin { position: absolute; right: 14px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; border: 2px solid #DCE1EC; border-top-color: var(--navy); animation: spin .8s linear infinite; }
-  .co-list { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 5; list-style: none; margin: 0; padding: 6px; background: #fff; border: 1px solid #DCD9E3; border-radius: 12px; box-shadow: 0 24px 50px -20px rgba(17,28,53,.45); max-height: 290px; overflow-y: auto; }
+  .co-ac-ic { position: absolute; left: 13px; top: 50%; width: 17px; height: 17px; transform: translateY(-50%); color: #94A3B8; pointer-events: none; z-index: 2; }
+  .co-grid .co-ac input:not([type="radio"]):not([type="checkbox"]),
+  .co-ac input {
+    padding-left: 38px !important;
+    padding-right: 36px !important;
+  }
+  .co-grid .co-ac:last-of-type input:not([type="radio"]):not([type="checkbox"]),
+  .co-ac:last-of-type input {
+    padding-right: 14px !important;
+  }
+  .co-ac-spin { position: absolute; right: 14px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; border: 2px solid #DCE1EC; border-top-color: var(--navy); animation: spin .8s linear infinite; z-index: 2; }
+  .co-list { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 50; list-style: none; margin: 0; padding: 6px; background: #fff; border: 1px solid #DCD9E3; border-radius: 12px; box-shadow: 0 24px 50px -20px rgba(17,28,53,.45); max-height: 290px; overflow-y: auto; }
   .co-list li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 9px; cursor: pointer; font-weight: 400; }
   .co-list li.act, .co-list li:hover { background: #F1F3F9; }
   .co-list .av { width: 34px; height: 34px; border-radius: 50%; background: var(--navy-pale); color: var(--navy); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
@@ -674,8 +731,8 @@
   #coPay { margin-top: 18px; }
   .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .co-fine { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--muted); margin-top: 14px; }
-  .co-fine svg { width: 15px; height: 15px; color: var(--green); flex: none; margin-top: 1px; }
+  .co-fine { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--muted); margin-top: 14px; line-height: 1.45; }
+  .co-fine svg { width: 15px; height: 15px; color: var(--green); flex-shrink: 0; margin-top: 2px; }
   .co-fine a { color: var(--navy); text-decoration: underline; }
   .co-done { text-align: center; padding-top: 8px; }
   .co-tick { width: 68px; height: 68px; border-radius: 50%; background: #2E9E63; color: #fff; display: grid; place-items: center; margin: 0 auto 16px; box-shadow: 0 0 0 10px #E3F4EA; }
@@ -685,11 +742,47 @@
   .co-next p { font-size: 13.5px; color: var(--text); margin: 4px 0 14px; }
   .co-link { margin-top: 14px; border: 0; background: none; color: var(--muted); font-size: 13.5px; text-decoration: underline; }
   @media (max-width: 560px) {
-    .co-search { grid-template-columns: 1fr; gap: 8px; }
     .co-overlay { padding: 0; align-items: flex-end; }
-    .co-box { border-radius: 20px 20px 0 0; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); max-height: 94vh; overflow-y: auto; }
-    .co-grid { grid-template-columns: 1fr; }
-    .co-sum { margin-right: 44px; }
+    .co-box {
+      border-radius: 22px 22px 0 0;
+      padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 16px));
+      max-height: 90vh;
+      overflow-y: auto;
+      width: 100%;
+      margin: 0;
+      box-sizing: border-box;
+      box-shadow: 0 -12px 36px rgba(15, 23, 42, 0.28);
+      animation: coInMobile .25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes coInMobile {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .co-x { top: 12px; right: 12px; width: 34px; height: 34px; }
+    .co-sum { margin: 0 42px 14px 0; padding: 11px 13px; border-radius: 12px; }
+    .co-sum-row { flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+    .co-sum h3 { font-size: 17px; }
+    .co-price b { font-size: 19px; }
+    .co-box h2 { font-size: 21px; }
+    .co-lead { font-size: 12.5px; margin: 4px 0 12px; }
+    .co-grid { grid-template-columns: 1fr; gap: 10px; }
+    .co-grid > label { font-size: 12.5px; gap: 4px; }
+    .co-grid input:not([type="radio"]):not([type="checkbox"]) { font-size: 14px; min-height: 42px; padding: 9px 12px; }
+    .co-grid .co-ac input:not([type="radio"]):not([type="checkbox"]),
+    .co-ac input {
+      padding-left: 36px !important;
+      padding-right: 32px !important;
+    }
+    .co-search { grid-template-columns: 1fr; gap: 8px; }
+    .co-picked { padding: 9px 10px; gap: 10px; grid-template-columns: 34px 1fr auto; }
+    .co-picked i { width: 34px; height: 34px; }
+    .co-picked b { font-size: 13.5px; }
+    .co-picked span { font-size: 11.5px; }
+    .co-picked button { font-size: 12px; padding: 4px; }
+    .co-radio-group { flex-direction: column; gap: 8px; margin-top: 4px; }
+    .co-grid .co-radio-card { width: 100% !important; box-sizing: border-box !important; padding: 10px 14px !important; font-size: 13px !important; justify-content: flex-start; }
+    #coPay { font-size: 14.5px; padding: 12px 14px; border-radius: 10px; }
+    .co-fine { font-size: 11px; line-height: 1.45; margin-top: 10px; }
   }
 
   /* Tablet */
@@ -1271,10 +1364,6 @@
             <a href="#" class="btn btn-out btn-block" data-buy="website_sales">Choose Plan</a>
           </article>
         </div>
-        <div class="custom rv" id="testPlanRow" hidden style="border-color:var(--rose)">
-          <span><b>Test payment</b> - 1 unit of currency, to check the live payment flow. Not shown to visitors.</span>
-          <a href="#" class="btn btn-rose btn-sm" data-buy-test="1">Pay 1 and test</a>
-        </div>
         <div class="custom rv">
           <span><b>Multiple cities or branches?</b> Custom campaigns from <b id="customFrom">₹20,000</b>.</span>
           <a class="btn btn-out btn-sm" href="https://wa.me/917498987620?text=Hi%20WedEazzy!%20I%27m%20a%20wedding%20vendor%20and%20want%20to%20know%20about%20a%20custom%20Grow%20Business%20campaign." target="_blank" rel="noopener" data-track="custom_wa"><svg style="color:#25D366"><use href="#i-wa"/></svg>Talk to our team</a>
@@ -1402,10 +1491,45 @@
             </div>
             <small id="coBizHint">Pick your business if it's already listed on WedEazzy.</small>
           </div>
-          <label class="co-full" id="coCityWrap" hidden>City<input id="coCity" name="wz-business-city" type="text" autocomplete="off" maxlength="80" placeholder="e.g. Mumbai" /><small>The city your business is in.</small></label>
-          <label>Your name<input id="coName" type="text" autocomplete="name" required minlength="2" maxlength="120" placeholder="e.g. Priya Sharma" /></label>
-          <label>Email<input id="coEmail" type="email" autocomplete="email" required maxlength="190" placeholder="you@business.com" /></label>
-          <label>Phone / WhatsApp<input id="coPhone" type="tel" autocomplete="tel" required minlength="7" maxlength="20" inputmode="tel" placeholder="98765 43210" /><small id="coPhoneHint">10-digit mobile number</small></label>
+
+          <!-- CLAIMED LISTING LOCKED NOTICE -->
+          <div class="co-full" id="coClaimedLockNote" hidden style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:10px 14px; font-size:12.5px; color:#1E40AF; line-height:1.45;">
+            🔒 <strong>Registered Contact Locked:</strong> This listing is already claimed. Contact details are prefilled from the registered owner account and cannot be modified. After payment, you must sign in as the owner to activate the plan on your dashboard.
+          </div>
+
+          <!-- UNCLAIMED LISTING PHONE CONFIRMATION -->
+          <div class="co-full" id="coUnclaimedPhoneCheck" hidden style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:14px 16px; text-align:left;">
+            <div style="font-size:11px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Registered phone on file:</div>
+            <div id="coUnclaimedMaskedDisplay" style="font-family:monospace; font-size:18px; font-weight:800; color:#0F172A; margin-bottom:12px; letter-spacing:0.04em;"></div>
+            <div style="font-size:13px; font-weight:600; color:#1E293B; margin-bottom:8px;">Is this your phone number?</div>
+            <div class="co-radio-group">
+              <label class="co-radio-card" id="coCardYes">
+                <input type="radio" name="coPhoneConfirm" id="coPhoneYes" value="yes" checked />
+                <span>Yes, this is my number</span>
+              </label>
+              <label class="co-radio-card" id="coCardNo">
+                <input type="radio" name="coPhoneConfirm" id="coPhoneNo" value="no" />
+                <span>No, this is not my number</span>
+              </label>
+            </div>
+            <div id="coUnclaimedNoNotice" hidden style="margin-top:12px; padding:10px 14px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; font-size:12px; color:#92400E; line-height:1.45;">
+              ⚠️ <strong>Manual Verification Required:</strong> Because your phone does not match the registered listing, direct automatic claiming is blocked. You may proceed with payment, but you will need to submit business verification proof for manual review before the plan attaches to this listing.
+            </div>
+          </div>
+
+          <!-- DUPLICATE CONTACT WARNING FOR NEW BUSINESS -->
+          <div class="co-full" id="coDuplicateWarning" hidden style="padding:10px 14px; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; font-size:12.5px; color:#991B1B; line-height:1.45;"></div>
+
+          <!-- BUYER DETAILS (Row 1: always side-by-side, 50% / 50%) -->
+          <label id="coNameWrap">Your name<input id="coName" type="text" autocomplete="name" required minlength="2" maxlength="120" placeholder="e.g. Priya Sharma" /></label>
+          <label id="coEmailWrap">Email<input id="coEmail" type="email" autocomplete="email" required maxlength="190" placeholder="you@business.com" /></label>
+
+          <!-- LOCATION DETAILS (Row 2: only shown if business is unlisted / new, side-by-side 50% / 50%) -->
+          <label id="coCityWrap" hidden>City<input id="coCity" name="wz-business-city" type="text" autocomplete="off" maxlength="80" placeholder="e.g. Agra" /><small>The city your business is in.</small></label>
+          <label id="coCountryWrap" hidden>Country<input id="coCountry" name="wz-business-country" type="text" autocomplete="country-name" maxlength="60" value="India" /><small>Country</small></label>
+
+          <!-- PHONE (Row 3: full width 100%) -->
+          <label class="co-full" id="coPhoneWrap">Phone / WhatsApp<input id="coPhone" type="tel" autocomplete="tel" required minlength="7" maxlength="20" inputmode="tel" placeholder="98765 43210" /><small id="coPhoneHint">10-digit mobile number</small></label>
         </div>
         <p class="co-err" id="coErr" role="alert" hidden></p>
         <button class="btn btn-navy btn-block" id="coPay" type="submit">Continue to Payment <svg><use href="#i-lock"/></svg></button>
@@ -1413,11 +1537,88 @@
       </form>
     </div>
 
+    <!-- PATH 1: CLAIMED LISTING -> SIGN IN -->
+    <div class="co-step" data-step="claimed-login" hidden>
+      <div class="co-tick" style="width:52px;height:52px;margin:0 auto 12px;box-shadow:0 0 0 6px #E3F4EA;"><svg style="width:26px;height:26px;"><use href="#i-check"/></svg></div>
+      <h2 style="font-size:22px;text-align:center;margin-bottom:4px;">Payment Successful!</h2>
+      <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:12px 14px;margin:12px 0 16px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#15803D;text-transform:uppercase;letter-spacing:0.05em;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block;"></span> Plan Active · <span id="coClaimedPlanName"></span>
+        </div>
+        <p style="margin:4px 0 0;font-size:13px;color:#166534;">Your purchase is paid! Sign in with your registered vendor account to verify ownership and open your dashboard.</p>
+      </div>
+      <form id="coLoginForm" novalidate>
+        <div style="display:grid;gap:12px;text-align:left;">
+          <label style="display:grid;gap:5px;font-size:13px;font-weight:600;color:var(--ink);">
+            Business Email Address
+            <input id="coLoginEmail" type="email" required autocomplete="email" style="font-size:14px;padding:10px 12px;border:1px solid #DCD9E3;border-radius:10px;width:100%;" />
+          </label>
+          <label style="display:grid;gap:5px;font-size:13px;font-weight:600;color:var(--ink);">
+            Password
+            <input id="coLoginPassword" type="password" required autocomplete="current-password" placeholder="Enter your password" style="font-size:14px;padding:10px 12px;border:1px solid #DCD9E3;border-radius:10px;width:100%;" />
+          </label>
+        </div>
+        <p class="co-err" id="coLoginErr" role="alert" hidden></p>
+        <button class="btn btn-navy btn-block" id="coLoginBtn" type="submit" style="margin-top:14px;">Sign In to Continue &rarr;</button>
+      </form>
+      <div style="display:flex;align-items:center;gap:12px;margin:14px 0;color:var(--muted);font-size:12px;">
+        <span style="flex:1;height:1px;background:#E2E8F0;"></span> OR <span style="flex:1;height:1px;background:#E2E8F0;"></span>
+      </div>
+      <a href="/api/auth/google" class="btn btn-block" style="border:1px solid #DCD9E3;background:#fff;color:var(--ink);font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;padding:11px 16px;border-radius:10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        Sign In with Google
+      </a>
+      <div style="text-align:center;margin-top:12px;">
+        <a id="coClaimedFullLoginLink" href="/pages/vendor-login.html" style="font-size:12px;color:var(--muted);text-decoration:underline;">Open full vendor login page</a>
+      </div>
+    </div>
+
+    <!-- PATH 2: UNCLAIMED LISTING -> CLAIM FLOW (TAKES TO CLAIM PAGE LIKE IMAGE 2) -->
+    <div class="co-step" data-step="unclaimed-claim" hidden>
+      <div class="co-tick" style="width:52px;height:52px;margin:0 auto 12px;box-shadow:0 0 0 6px #E3F4EA;"><svg style="width:26px;height:26px;"><use href="#i-check"/></svg></div>
+      <h2 style="font-size:22px;text-align:center;margin-bottom:4px;">Payment Successful!</h2>
+      <div id="coUnclaimedBannerNormal" style="background:#FEFCE8;border:1px solid #FEF08A;border-radius:12px;padding:12px 14px;margin:12px 0 16px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#854D0E;text-transform:uppercase;letter-spacing:0.05em;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#EAB308;display:inline-block;"></span> Listing Found · Verify Phone to Claim
+        </div>
+        <p style="margin:4px 0 0;font-size:13px;color:#713F12;">Your <b id="coUnclaimedPlanLabel">plan</b> is paid! Taking you to the Claim Listing form for <b id="coUnclaimedBizName">your listing</b> to complete phone verification...</p>
+      </div>
+
+      <div id="coUnclaimedBannerManual" hidden style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:12px 14px;margin:12px 0 16px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:0.05em;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#F59E0B;display:inline-block;"></span> Manual Review · Proof Required
+        </div>
+        <p style="margin:4px 0 0;font-size:13px;color:#78350F;">Your payment is safely confirmed! Because your contact number does not match the registered listing, automatic claiming is blocked. Please submit business ownership documents for manual review so our team can attach your plan.</p>
+      </div>
+
+      <div id="coUnclaimedPhoneCard" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:#334155;text-align:left;">
+        <div style="font-weight:600;margin-bottom:4px;color:#64748B;">Registered contact on file:</div>
+        <div id="coMaskedPhone" style="font-family:monospace;font-size:17px;font-weight:800;color:#0F172A;letter-spacing:0.03em;"></div>
+      </div>
+
+      <button class="btn btn-navy btn-block" id="coClaimRedirectBtn" type="button">Continue to Claim Listing Form &rarr;</button>
+    </div>
+
+    <!-- PATH 3: NOT FOUND -> REGISTER BUSINESS (TAKES TO REGISTRATION PAGE) -->
+    <div class="co-step" data-step="new-register" hidden>
+      <div class="co-tick" style="width:52px;height:52px;margin:0 auto 12px;box-shadow:0 0 0 6px #E3F4EA;"><svg style="width:26px;height:26px;"><use href="#i-check"/></svg></div>
+      <h2 style="font-size:22px;text-align:center;margin-bottom:4px;">Payment Successful!</h2>
+      <div style="background:#EEF2FF;border:1px solid #C7D2FE;border-radius:12px;padding:12px 14px;margin:12px 0 16px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#3730A3;text-transform:uppercase;letter-spacing:0.05em;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#6366F1;display:inline-block;"></span> Plan Reserved · Free Registration
+        </div>
+        <p style="margin:4px 0 0;font-size:13px;color:#312E81;">Your <b id="coNewPlanLabel">plan</b> is confirmed! Taking you to the registration page to register <b id="coNewBizName">your business</b>...</p>
+      </div>
+
+      <button class="btn btn-navy btn-block" id="coRegRedirectBtn" type="button">Continue to Registration Page &rarr;</button>
+    </div>
+
     <div class="co-step co-done" data-step="done" hidden>
       <div class="co-tick"><svg><use href="#i-check"/></svg></div>
-      <h2>Payment successful!</h2>
+      <h2 id="coDoneTitle">Payment successful!</h2>
       <p class="co-lead">Thank you. Your <b id="coDonePlan"></b> is confirmed. A receipt has been sent to <b id="coDoneEmail"></b>, and the WedEazzy team will contact you within 24 hours.</p>
-      <div class="co-next">
+      <div class="co-next" id="coNextCard">
+        <div id="coListingBadge" style="display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; padding:4px 10px; border-radius:6px; margin-bottom:10px;"></div>
         <h3 id="coNextTitle"></h3>
         <p id="coNextText"></p>
         <a class="btn btn-rose btn-block" id="coNextBtn" href="#">Continue</a>
@@ -1576,9 +1777,13 @@
   function initials(n) { return String(n).replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase() || '?'; }
   function closeList() { biz.list.hidden = true; biz.input.setAttribute('aria-expanded', 'false'); biz.active = -1; }
   function setCityMode(on) {
-    $('#coCityWrap').hidden = !on;
-    $('#coCity').required = on;
-    if (on) setTimeout(function () { $('#coCity').focus(); }, 30);
+    var cw = $('#coCityWrap');
+    var ctw = $('#coCountryWrap');
+    var ci = $('#coCity');
+    if (cw) cw.hidden = !on;
+    if (ctw) ctw.hidden = !on;
+    if (ci) ci.required = on;
+    if (on) setTimeout(function () { if (ci) ci.focus(); }, 30);
   }
   function renderList(q, matches) {
     var rows = matches.slice(0, 6).map(function (m, i) {
@@ -1600,27 +1805,172 @@
     co.vendor = m; co.notListed = false;
     biz.input.value = m.businessName;
     $('#coPickedName').textContent = m.businessName;
-    $('#coPickedMeta').textContent = [m.category, m.city].filter(Boolean).join(' · ') + (m.alreadyClaimed ? ' · Already claimed' : '');
+    var metaParts = [m.category, m.city, m.country || (m.countryCode === 'IN' ? 'India' : 'India')];
+    if (m.phoneMasked) metaParts.push('📞 ' + m.phoneMasked);
+    if (m.alreadyClaimed) metaParts.push('Already claimed');
+    $('#coPickedMeta').textContent = metaParts.filter(Boolean).join(' · ');
     $('#coAc').hidden = true; $('#coPicked').hidden = false;
-    $('#coBizHint').textContent = 'Great, we\u2019ll run the campaign for this listing.';
-    setCityMode(false); closeList();
-    if (m.alreadyClaimed) $('#coBizHint').textContent = 'This listing is already on WedEazzy. After payment you can sign in to manage it.';
-    track('checkout_pick_listing', { claimed: !!m.alreadyClaimed });
+
+    // Hide City and Country fields since vendor listing already has them
+    setCityMode(false);
+    if ($('#coCity')) $('#coCity').value = m.city || '';
+    if ($('#coCountry')) $('#coCountry').value = m.country || (m.countryCode === 'IN' ? 'India' : 'India');
+    if (m.countryCode) {
+      state.country = m.countryCode;
+      var cSel = $('#countrySel');
+      if (cSel) cSel.value = m.countryCode;
+    }
+
+    hideDuplicateWarning();
+
+    if (m.alreadyClaimed) {
+      // 1. CLAIMED LISTING SELECTED
+      $('#coClaimedLockNote').hidden = false;
+      $('#coUnclaimedPhoneCheck').hidden = true;
+
+      $('#coEmail').value = m.registeredEmail || '';
+      $('#coEmail').readOnly = true;
+      $('#coEmail').style.backgroundColor = '#F8FAFC';
+
+      $('#coPhone').value = m.phoneMasked || '';
+      $('#coPhone').readOnly = true;
+      $('#coPhone').style.backgroundColor = '#F8FAFC';
+      $('#coPhoneHint').innerHTML = '🔒 Registered contact locked: <b style="color:var(--navy);font-family:monospace;">' + esc(m.phoneMasked || '') + '</b>';
+
+      $('#coBizHint').textContent = 'This listing is claimed. You will sign in as the owner after payment to activate your plan.';
+    } else {
+      // 2. UNCLAIMED LISTING SELECTED
+      $('#coClaimedLockNote').hidden = true;
+      $('#coUnclaimedPhoneCheck').hidden = false;
+
+      $('#coEmail').readOnly = false;
+      $('#coEmail').style.backgroundColor = '';
+
+      $('#coPhone').readOnly = false;
+      $('#coPhone').style.backgroundColor = '';
+
+      $('#coUnclaimedMaskedDisplay').textContent = m.phoneMasked || 'Registered Number';
+      $('#coPhoneYes').checked = true;
+      $('#coPhoneNo').checked = false;
+      $('#coUnclaimedNoNotice').hidden = true;
+      co.unclaimedPhoneOwner = 'yes';
+
+      $('#coPhoneHint').innerHTML = 'Registered on listing: <b style="color:var(--navy);font-family:monospace;letter-spacing:0.04em;">' + esc(m.phoneMasked || '') + '</b>';
+      if (!$('#coPhone').value) $('#coPhone').value = m.phoneMasked || '';
+      $('#coPhone').placeholder = m.phoneMasked || 'Enter your phone number';
+
+      $('#coBizHint').textContent = 'Unclaimed listing. Confirm your phone number to claim ownership and activate your plan.';
+    }
+
+    closeList();
+    track('checkout_pick_listing', { claimed: !!m.alreadyClaimed, city: m.city });
   }
+
   function pickNew() {
     co.vendor = null; co.notListed = true;
+    $('#coClaimedLockNote').hidden = true;
+    $('#coUnclaimedPhoneCheck').hidden = true;
+
+    $('#coEmail').readOnly = false;
+    $('#coEmail').style.backgroundColor = '';
+    $('#coPhone').readOnly = false;
+    $('#coPhone').style.backgroundColor = '';
+
+    setCityMode(true);
     if (biz.city.value.trim() && !$('#coCity').value.trim()) $('#coCity').value = biz.city.value.trim();
-    $('#coBizHint').textContent = 'No problem, we\u2019ll list your business for free after payment.';
-    setCityMode(true); closeList();
+    if ($('#coCountry') && !$('#coCountry').value.trim()) $('#coCountry').value = 'India';
+    $('#coBizHint').textContent = 'No problem, we\u2019ll take you to register your business for free after payment.';
+    $('#coPhoneHint').textContent = state.country === 'IN' ? '10-digit mobile number' : 'Include country code';
+    closeList();
+    setTimeout(function () { if (!$('#coCity').value) $('#coCity').focus(); }, 30);
+    checkNewDuplicate();
   }
+
   function unpick() {
     co.vendor = null; co.notListed = false;
     $('#coPicked').hidden = true; $('#coAc').hidden = false;
-    $('#coBizHint').textContent = 'Pick your business if it\u2019s already listed on WedEazzy.';
+    $('#coClaimedLockNote').hidden = true;
+    $('#coUnclaimedPhoneCheck').hidden = true;
     setCityMode(false);
+    hideDuplicateWarning();
+
+    $('#coEmail').readOnly = false;
+    $('#coEmail').style.backgroundColor = '';
+    $('#coPhone').readOnly = false;
+    $('#coPhone').style.backgroundColor = '';
+
+    $('#coBizHint').textContent = 'Pick your business if it\u2019s already listed on WedEazzy.';
+    $('#coPhoneHint').textContent = state.country === 'IN' ? '10-digit mobile number' : 'Include country code';
     biz.input.focus(); biz.input.select();
   }
   $('#coPickedChange').addEventListener('click', unpick);
+
+  $('#coPhoneYes').addEventListener('change', function () {
+    if (this.checked) {
+      co.unclaimedPhoneOwner = 'yes';
+      $('#coUnclaimedNoNotice').hidden = true;
+      if (co.vendor && co.vendor.phoneMasked && !$('#coPhone').value) {
+        $('#coPhone').value = co.vendor.phoneMasked;
+      }
+    }
+  });
+
+  $('#coPhoneNo').addEventListener('change', function () {
+    if (this.checked) {
+      co.unclaimedPhoneOwner = 'no';
+      $('#coUnclaimedNoNotice').hidden = false;
+      if (co.vendor && $('#coPhone').value === co.vendor.phoneMasked) {
+        $('#coPhone').value = '';
+      }
+      $('#coPhone').placeholder = 'Enter your contact number';
+      $('#coPhone').focus();
+    }
+  });
+
+  var dupTimer = null;
+  function hideDuplicateWarning() {
+    var dw = $('#coDuplicateWarning');
+    if (dw) { dw.hidden = true; dw.textContent = ''; }
+    co.duplicateBlocked = false;
+    if (!co.busy) {
+      coBtn.disabled = false;
+    }
+  }
+
+  function checkNewDuplicate() {
+    if (!co.notListed) {
+      hideDuplicateWarning();
+      return;
+    }
+    clearTimeout(dupTimer);
+    var em = $('#coEmail').value.trim();
+    var ph = $('#coPhone').value.trim();
+    if (!em && (!ph || ph.length < 10)) {
+      hideDuplicateWarning();
+      return;
+    }
+    dupTimer = setTimeout(function () {
+      post('/api/public/checkout/check-availability', { email: em, phone: ph })
+        .then(function (res) {
+          if (res && res.available === false) {
+            co.duplicateBlocked = true;
+            var dw = $('#coDuplicateWarning');
+            dw.hidden = false;
+            var msg = res.message || (res.conflicts && res.conflicts[0] && res.conflicts[0].message) || 'This email or phone is already linked to an existing account.';
+            dw.innerHTML = '<strong>Account already exists:</strong> ' + esc(msg) + '<br/><span style="margin-top:4px;display:inline-block;font-size:12px;">Please select your existing business from the search above or <a href="/pages/vendor-login.html" target="_blank" style="color:#991B1B;text-decoration:underline;font-weight:700;">sign in to your existing account</a>.</span>';
+            coBtn.disabled = true;
+          } else {
+            hideDuplicateWarning();
+          }
+        })
+        .catch(function () {
+          hideDuplicateWarning();
+        });
+    }, 350);
+  }
+
+  $('#coEmail').addEventListener('input', checkNewDuplicate);
+  $('#coPhone').addEventListener('input', checkNewDuplicate);
   function searchNow() {
     co.vendor = null; co.notListed = false; setCityMode(false); biz.ready = false;
     var q = biz.input.value.trim();
@@ -1674,9 +2024,7 @@
   function openCheckout(planType, planKey) {
     co.planType = planType; co.planKey = planKey; co.days = planType === 'grow' ? state.days : 30;
     var summary;
-    if (planType === 'test') {
-      summary = { title: 'Test payment', sub: 'Checks the live payment flow', price: money(1), note: 'Test only' };
-    } else if (planType === 'grow') {
+    if (planType === 'grow') {
       var p = planFor(planKey, state.days);
       summary = { title: LABELS[planKey], sub: (p.days === 90 ? '3 months' : p.days + ' days') + ' · fully managed campaign', price: money(p.price), note: 'Price includes taxes' };
     } else {
@@ -1686,8 +2034,22 @@
     $('#coTitle').textContent = summary.title;
     $('#coSub').textContent = summary.sub;
     $('#coPrice').textContent = summary.price;
-    $('#coNote').textContent = summary.note;
     $('#coPhoneHint').textContent = state.country === 'IN' ? '10-digit mobile number' : 'Include country code';
+    if (co.vendor) {
+      setCityMode(false);
+      if ($('#coCity')) $('#coCity').value = co.vendor.city || '';
+      if ($('#coCountry')) $('#coCountry').value = co.vendor.country || (co.vendor.countryCode === 'IN' ? 'India' : 'India');
+      if (co.vendor.phoneMasked) {
+        $('#coPhoneHint').innerHTML = 'Registered on listing: <b style="color:var(--navy);font-family:monospace;letter-spacing:0.04em;">' + esc(co.vendor.phoneMasked) + '</b>';
+        if (!$('#coPhone').value) $('#coPhone').value = co.vendor.phoneMasked;
+      }
+    } else if (co.notListed) {
+      setCityMode(true);
+      if ($('#coCountry') && !$('#coCountry').value) $('#coCountry').value = state.country === 'IN' ? 'India' : state.country;
+    } else {
+      setCityMode(false);
+      if ($('#coCountry') && !$('#coCountry').value) $('#coCountry').value = state.country === 'IN' ? 'India' : state.country;
+    }
     setErr(''); setBusy(false); showStep('form');
     modal.hidden = false; document.body.style.overflow = 'hidden';
     closeList();
@@ -1705,20 +2067,6 @@
   $$('[data-buy]').forEach(function (a) {
     a.addEventListener('click', function (e) { e.preventDefault(); openCheckout('grow', a.getAttribute('data-buy')); });
   });
-  // ?test=<token> reveals a 1-unit payment for checking the live gateway
-  try {
-    var testToken = new URLSearchParams(location.search).get('test');
-    if (testToken) {
-      var row = $('#testPlanRow');
-      row.hidden = false;
-      row.classList.add('in');
-      $('[data-buy-test]').addEventListener('click', function (e) {
-        e.preventDefault();
-        co.testToken = testToken;
-        openCheckout('test', 'test');
-      });
-    }
-  } catch (_) {}
   $$('[data-listing-buy]').forEach(function (a) {
     a.addEventListener('click', function (e) { e.preventDefault(); openCheckout('listing', a.getAttribute('data-listing-buy')); });
   });
@@ -1756,11 +2104,22 @@
       setErr('Choose your business from the list, or enter your city if it isn\u2019t listed.');
       return;
     }
+    if (co.duplicateBlocked) {
+      setErr('An account with this email or phone already exists. Please select your existing business from the search or sign in.');
+      return;
+    }
     if (!coForm.checkValidity()) { coForm.reportValidity(); return; }
-    co.buyer = { name: $('#coName').value.trim(), businessName: co.vendor ? co.vendor.businessName : biz.input.value.trim(), city: co.vendor ? (co.vendor.city || '') : $('#coCity').value.trim(), email: $('#coEmail').value.trim(), phone: $('#coPhone').value.trim() };
+    co.buyer = {
+      name: $('#coName').value.trim(),
+      businessName: co.vendor ? co.vendor.businessName : biz.input.value.trim(),
+      city: co.vendor ? (co.vendor.city || '') : ($('#coCity') ? $('#coCity').value.trim() : ''),
+      country: $('#coCountry') ? $('#coCountry').value.trim() : (state.country === 'IN' ? 'India' : state.country),
+      email: (co.vendor && co.vendor.alreadyClaimed && co.vendor.registeredEmail) ? co.vendor.registeredEmail : $('#coEmail').value.trim(),
+      phone: (co.vendor && co.vendor.alreadyClaimed && co.vendor.phoneMasked) ? co.vendor.phoneMasked : $('#coPhone').value.trim()
+    };
     setErr(''); setBusy(true, 'Opening secure payment…');
     Promise.all([
-      post('/api/public/checkout/order', Object.assign({ planType: co.planType, planKey: co.planKey, days: co.days, countryCode: state.country, vendorId: co.vendor ? co.vendor.id : null, testToken: co.testToken || null }, co.buyer)),
+      post('/api/public/checkout/order', Object.assign({ planType: co.planType, planKey: co.planKey, days: co.days, countryCode: state.country, vendorId: co.vendor ? co.vendor.id : null }, co.buyer)),
       loadRazorpay()
     ]).then(function (res) {
       var o = res[0];
@@ -1802,26 +2161,141 @@
 
   function showResult(d) {
     var l = d.listing || {};
-    $('#coDoneEmail').textContent = d.email || co.buyer.email;
-    $('#coDonePlan').textContent = d.planLabel || '';
-    var copy = {
-      account: ['Your business already has a WedEazzy account', 'Sign in to your dashboard to follow your campaign and see new enquiries.'],
-      claimed: ['Your listing is already claimed', (l.vendorName ? '"' + l.vendorName + '" is' : 'It is') + ' managed by an existing account. Sign in to follow your campaign.'],
-      unclaimed: ['We found your listing', (l.vendorName ? '"' + l.vendorName + '"' : 'Your business') + ' is on WedEazzy but not claimed yet. Claim it so enquiries reach you directly.'],
-      'new': ['List your business on WedEazzy', 'Your business isn’t listed yet. Register it free so couples can see your profile while your campaign runs.']
-    }[l.state] || ['What’s next', 'Our team will contact you within 24 hours.'];
-    $('#coNextTitle').textContent = copy[0];
-    $('#coNextText').textContent = copy[1];
-    var btn = $('#coNextBtn');
-    var url = l.state === 'unclaimed' ? '/pages/claim.html' : l.state === 'new' ? '/pages/claim.html?mode=register' : '/pages/vendor-login.html?next=grow';
-    btn.textContent = l.actionLabel || 'Continue';
-    btn.setAttribute('href', url);
-    btn.onclick = function () {
-      if (l.state === 'unclaimed' || l.state === 'new') {
-        try { sessionStorage.setItem('wedeazzy_claim_prefill', JSON.stringify(Object.assign({ mode: l.state === 'unclaimed' ? 'claim' : 'register', vendorName: l.vendorName || '' }, co.buyer))); } catch (_) {}
+    var email = d.email || co.buyer.email;
+    var planName = d.planLabel || '';
+    var isClaimed = l.state === 'claimed';
+    var isUnclaimed = l.state === 'unclaimed';
+    var isNew = l.state === 'new';
+
+    // PATH 1: CLAIMED LISTING -> SHOW "Sign in to continue"
+    if (isClaimed) {
+      $('#coClaimedPlanName').textContent = planName;
+      $('#coLoginEmail').value = email;
+      $('#coLoginPassword').value = '';
+      $('#coLoginErr').hidden = true;
+      var fullLoginUrl = '/pages/vendor-login.html?next=grow&email=' + encodeURIComponent(email) + '&business=' + encodeURIComponent(l.vendorName || co.buyer.businessName);
+      $('#coClaimedFullLoginLink').href = fullLoginUrl;
+
+      var loginForm = $('#coLoginForm');
+      loginForm.onsubmit = function (e) {
+        e.preventDefault();
+        var pass = $('#coLoginPassword').value;
+        if (!pass) return;
+        var btn = $('#coLoginBtn');
+        var errEl = $('#coLoginErr');
+        errEl.hidden = true;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spin"></span> Signing in…';
+
+        post('/api/auth/login', { email: $('#coLoginEmail').value.trim(), password: pass })
+          .then(function (res) {
+            btn.disabled = false;
+            btn.innerHTML = 'Sign In to Continue &rarr;';
+            if (res.token) {
+              sessionStorage.setItem('wedeazzy_token', res.token);
+              sessionStorage.setItem('wedeazzy_vendor_token', res.token);
+              localStorage.setItem('wedeazzy_token', res.token);
+              localStorage.setItem('wedeazzy_vendor_token', res.token);
+            }
+            if (res.user && res.user.mustChangePassword) {
+              window.location.href = '/pages/change-password.html';
+            } else {
+              window.location.href = '/pages/bdashboard.html#grow-business';
+            }
+          })
+          .catch(function (err) {
+            btn.disabled = false;
+            btn.innerHTML = 'Sign In to Continue &rarr;';
+            errEl.textContent = err.message || 'Invalid email or password.';
+            errEl.hidden = false;
+          });
+      };
+
+      showStep('claimed-login');
+      track('checkout_next', { state: 'claimed' });
+      return;
+    }
+
+    // PATH 2: UNCLAIMED LISTING -> CLAIM FLOW (OR MANUAL PROOF IF PHONE DOES NOT MATCH)
+    if (isUnclaimed) {
+      var isPhoneOwner = co.unclaimedPhoneOwner !== 'no';
+      $('#coUnclaimedPlanLabel').textContent = planName;
+      $('#coUnclaimedBizName').textContent = l.vendorName || co.buyer.businessName;
+      $('#coMaskedPhone').textContent = l.phoneMasked || (co.vendor && co.vendor.phoneMasked) || 'Contact on file';
+
+      if (!isPhoneOwner) {
+        // Did not confirm phone number -> direct claim blocked, requires manual proof
+        if ($('#coUnclaimedBannerNormal')) $('#coUnclaimedBannerNormal').hidden = true;
+        if ($('#coUnclaimedBannerManual')) $('#coUnclaimedBannerManual').hidden = false;
+        var claimBtn = $('#coClaimRedirectBtn');
+        if (claimBtn) {
+          claimBtn.textContent = 'Submit Ownership Proof &rarr;';
+          claimBtn.onclick = function () {
+            window.location.href = '/pages/claim.html?mode=manual&vendorId=' + encodeURIComponent(l.vendorId || (co.vendor ? co.vendor.id : ''));
+          };
+        }
+      } else {
+        if ($('#coUnclaimedBannerNormal')) $('#coUnclaimedBannerNormal').hidden = false;
+        if ($('#coUnclaimedBannerManual')) $('#coUnclaimedBannerManual').hidden = true;
+        var claimPrefill = {
+          mode: 'claim',
+          vendorId: l.vendorId || (co.vendor ? co.vendor.id : null),
+          vendorName: l.vendorName || (co.vendor ? co.vendor.businessName : co.buyer.businessName),
+          city: co.buyer.city || d.city || '',
+          phone: co.buyer.phone || d.phone || '',
+          email: email,
+          name: co.buyer.name || ''
+        };
+        sessionStorage.setItem('wedeazzy_claim_prefill', JSON.stringify(claimPrefill));
+
+        var navClaim = function () {
+          window.location.href = '/pages/claim.html';
+        };
+        var claimBtn = $('#coClaimRedirectBtn');
+        if (claimBtn) {
+          claimBtn.textContent = 'Continue to Claim Listing Form &rarr;';
+          claimBtn.onclick = navClaim;
+        }
+        setTimeout(navClaim, 1500);
       }
-      track('checkout_next', { state: l.state });
-    };
+
+      showStep('unclaimed-claim');
+      track('checkout_next', { state: 'unclaimed', phoneOwner: isPhoneOwner });
+      return;
+    }
+
+    // PATH 3: NOT FOUND / NEW BUSINESS -> TAKE TO REGISTRATION PAGE
+    if (isNew) {
+      var regPrefill = {
+        mode: 'register',
+        businessName: co.buyer.businessName,
+        city: co.buyer.city || d.city || '',
+        phone: co.buyer.phone || d.phone || '',
+        email: email,
+        name: co.buyer.name || ''
+      };
+      sessionStorage.setItem('wedeazzy_claim_prefill', JSON.stringify(regPrefill));
+
+      $('#coNewPlanLabel').textContent = planName;
+      $('#coNewBizName').textContent = co.buyer.businessName;
+
+      showStep('new-register');
+      track('checkout_next', { state: 'new' });
+
+      var navReg = function () {
+        window.location.href = '/pages/claim.html?mode=register';
+      };
+      var regBtn = $('#coRegRedirectBtn');
+      if (regBtn) {
+        regBtn.onclick = navReg;
+      }
+      setTimeout(navReg, 1500);
+      return;
+    }
+
+    // Fallback: generic done step
+    $('#coDoneEmail').textContent = email;
+    $('#coDonePlan').textContent = planName;
     showStep('done');
   }
 

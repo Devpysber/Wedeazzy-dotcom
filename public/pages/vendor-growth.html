@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-75KZ0FWZ38"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-75KZ0FWZ38');
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#E52B38" />
+<title>WedEazzy for Vendors | Put Your Business in Front of More Couples</title>
+<meta name="description" content="Showcase your work, get discovered by couples planning their wedding and receive direct enquiries — while WedEazzy handles the setup." />
+<link rel="icon" type="image/png" href="../assets/images/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy-dark: #101827;
+    --navy-card: #1E293B;
+    --cream-bg: #F7F3ED;
+    --cream-card: #FFFFFF;
+    --red-main: #E52B38;
+    --red-hover: #C81E2B;
+    --red-light: #FDE8EA;
+    --gold-muted: #B99A5B;
+    --text-dark: #101827;
+    --text-muted: #687180;
+    --border-light: #E2E8F0;
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--cream-bg);
+    color: var(--text-dark);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container-lg {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  /* --- HEADER --- */
+  .wz-header {
+    background: #FFFFFF;
+    border-bottom: 1px solid rgba(16, 24, 39, 0.08);
+    padding: 18px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  .wz-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .wz-logo-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .wz-logo-img {
+    height: 36px;
+    width: auto;
+  }
+  .wz-nav-center {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+  }
+  .wz-nav-link {
+    color: var(--text-dark);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.1px;
+    transition: color 0.2s;
+  }
+  .wz-nav-link:hover {
+    color: var(--red-main);
+  }
+  .wz-header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .btn-header-login {
+    color: var(--text-dark);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 16px;
+    transition: color 0.2s;
+  }
+  .btn-header-login:hover {
+    color: var(--red-main);
+  }
+  .btn-red-action {
+    background: var(--red-main);
+    color: #FFFFFF !important;
+    padding: 11px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.2px;
+  }
+  .btn-red-action:hover {
+    background: var(--red-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(229, 43, 56, 0.3);
+  }
+
+  /* --- HERO SECTION --- */
+  .wz-hero {
+    padding: 80px 0 96px;
+    position: relative;
+  }
+  .wz-hero-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .wz-eyebrow-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--gold-muted);
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    margin-bottom: 20px;
+    display: block;
+  }
+  .wz-hero h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(42px, 5vw, 62px);
+    font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1.1;
+    margin: 0 0 24px;
+    letter-spacing: -0.5px;
+  }
+  .wz-hero h1 span.highlight-red {
+    color: var(--red-main);
+  }
+  .wz-hero-lead {
+    font-size: 17px;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    max-width: 520px;
+    line-height: 1.65;
+  }
+  .wz-hero-cta-group {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 44px;
+    flex-wrap: wrap;
+  }
+  .link-secondary-how {
+    color: var(--text-dark);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+  }
+  .link-secondary-how:hover {
+    color: var(--red-main);
+  }
+  .wz-hero-trust-bar {
+    display: flex;
+    gap: 28px;
+    border-top: 1px solid rgba(16, 24, 39, 0.1);
+    padding-top: 24px;
+    flex-wrap: wrap;
+  }
+  .wz-trust-bullet {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+  .wz-trust-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--red-main);
+    flex-shrink: 0;
+  }
+
+  /* HERO RIGHT VISUAL (EDITORIAL PHOTO + REAL PROFILE UI) */
+  .wz-hero-visual-container {
+    position: relative;
+  }
+  .wz-hero-photo-frame {
+    width: 100%;
+    height: 520px;
+    border-radius: 12px;
+    background-image: linear-gradient(180deg, rgba(16,24,39,0.1) 0%, rgba(16,24,39,0.6) 100%), url('../assets/images/hero-couple.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(16, 24, 39, 0.12);
+  }
+  
+  /* REAL VENDOR PROFILE MOCKUP INTEGRATED IN HERO PHOTO */
+  .wz-profile-hero-ui {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    right: 24px;
+    background: #FFFFFF;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 16px 40px rgba(16, 24, 39, 0.25);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+  }
+  .wz-ui-profile-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .wz-ui-profile-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .wz-ui-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background-image: url('../assets/images/bridal_wear.jpg');
+    background-size: cover;
+    background-position: center;
+  }
+  .wz-ui-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .wz-verified-badge {
+    background: #DCFCE7;
+    color: #15803D;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .wz-ui-location {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .wz-ui-tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .wz-tag {
+    background: var(--cream-bg);
+    color: var(--text-dark);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+  }
+  .wz-ui-portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .wz-ui-photo-thumb {
+    height: 56px;
+    border-radius: 4px;
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* --- SECTION 2: THE BUSINESS OPPORTUNITY (EDITORIAL SPLIT) --- */
+  .wz-section-opportunity {
+    padding: 104px 0;
+    background: #FFFFFF;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .wz-opp-header {
+    max-width: 760px;
+    margin-bottom: 64px;
+  }
+  .wz-opp-header h2 {
+    font-family: var(--font-serif);
+    font-size: clamp(34px, 4.2vw, 48px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text-dark);
+    margin-bottom: 16px;
+  }
+  .wz-opp-header p {
+    font-size: 18px;
+    color: var(--text-muted);
+  }
+  .wz-opp-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .wz-opp-image-frame {
+    height: 440px;
+    border-radius: 10px;
+    background-image: url('../assets/images/pre_couple.jpg');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 16px 40px rgba(16,24,39,0.08);
+  }
+  .wz-opp-content h3 {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 28px;
+  }
+  .wz-opp-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .wz-opp-item {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .wz-opp-item:last-child {
+    border-bottom: none;
+  }
+  .wz-opp-bullet-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--red-main);
+    flex-shrink: 0;
+  }
+
+  /* --- SECTION 3: SHOW THE PRODUCT --- */
+  .wz-section-product {
+    padding: 112px 0;
+  }
+  .wz-product-head {
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto 56px;
+  }
+  .wz-product-head h2 {
+    font-family: var(--font-serif);
+    font-size: clamp(34px, 4vw, 46px);
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-dark);
+  }
+  .wz-product-head p {
+    font-size: 17px;
+    color: var(--text-muted);
+  }
+
+  .wz-storefront-mockup {
+    background: #FFFFFF;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 24px 60px rgba(16, 24, 39, 0.08);
+    overflow: hidden;
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .wz-mock-browser-bar {
+    background: #F8FAFC;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .wz-mock-browser-url {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    padding: 4px 16px;
+    font-family: monospace;
+    font-size: 11.5px;
+    color: #475569;
+  }
+  .wz-mock-body-layout {
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 36px;
+  }
+  .wz-mock-cover-img {
+    height: 220px;
+    background-image: url('../assets/images/hero-couple.jpg');
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+  .wz-mock-profile-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .wz-mock-profile-title h3 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .wz-mock-rating {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .wz-mock-gallery-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .wz-gallery-item {
+    height: 96px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+  }
+  .wz-mock-side-card {
+    background: var(--cream-bg);
+    border-radius: 8px;
+    padding: 24px;
+    border: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .wz-mock-side-card h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .wz-mock-side-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  /* --- SECTION 4: HOW YOU GET ENQUIRIES (HORIZONTAL FLOW) --- */
+  .wz-section-flow {
+    padding: 96px 0;
+    background: #FFFFFF;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .wz-flow-head {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .wz-flow-head h2 {
+    font-family: var(--font-serif);
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+  .wz-flow-horizontal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .wz-flow-step {
+    flex: 1;
+    text-align: center;
+    padding: 24px 16px;
+    background: var(--cream-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+  }
+  .wz-flow-step-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--gold-muted);
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .wz-flow-step-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .wz-flow-arrow {
+    color: var(--text-muted);
+    font-size: 18px;
+    font-weight: 300;
+  }
+  .wz-flow-footer-text {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  /* --- SECTION 5: THE BIG PROMISE (DARK NAVY) --- */
+  .wz-section-promise {
+    background: var(--navy-dark);
+    color: #FFFFFF;
+    padding: 112px 0;
+  }
+  .wz-promise-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .wz-promise-left h2 {
+    font-family: var(--font-serif);
+    font-size: clamp(40px, 4.8vw, 56px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    color: #FFFFFF;
+  }
+  .wz-promise-left p {
+    font-size: 17px;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.65;
+  }
+  .wz-promise-steps-box {
+    background: var(--navy-card);
+    border-radius: 12px;
+    padding: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .wz-promise-step-item {
+    margin-bottom: 32px;
+  }
+  .wz-promise-step-item:last-child {
+    margin-bottom: 0;
+  }
+  .wz-step-big-num {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--red-main);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .wz-promise-step-item h3 {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: 6px;
+  }
+  .wz-promise-step-item p {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* --- SECTION 6: WHAT WE HANDLE --- */
+  .wz-section-onboarding {
+    padding: 104px 0;
+    background: #FFFFFF;
+  }
+  .wz-onboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .wz-onboard-content h2 {
+    font-family: var(--font-serif);
+    font-size: clamp(34px, 4vw, 46px);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 20px;
+    color: var(--text-dark);
+  }
+  .wz-onboard-content p.lead {
+    font-size: 16px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+  }
+  .wz-onboard-checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .wz-onboard-check-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+  .wz-check-bullet {
+    width: 20px;
+    height: 20px;
+    color: var(--red-main);
+    flex-shrink: 0;
+  }
+  .wz-onboard-img-frame {
+    height: 460px;
+    border-radius: 10px;
+    background-image: url('../assets/images/pre_hotels.jpg');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 16px 40px rgba(16,24,39,0.08);
+  }
+
+  /* --- SECTION 7: PRICING --- */
+  .wz-section-pricing {
+    padding: 112px 0;
+    background: var(--cream-bg);
+    border-top: 1px solid var(--border-light);
+  }
+  .wz-pricing-head {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 48px;
+  }
+  .wz-pricing-head h2 {
+    font-family: var(--font-serif);
+    font-size: clamp(36px, 4.2vw, 48px);
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-dark);
+  }
+  .wz-pricing-head p {
+    font-size: 16px;
+    color: var(--text-muted);
+  }
+
+  .wz-billing-toggle {
+    display: inline-flex;
+    align-items: center;
+    background: #FFFFFF;
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border-light);
+    margin-top: 20px;
+  }
+  .wz-toggle-option {
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-size: 13.5px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-dark);
+    transition: all 0.2s;
+  }
+  .wz-toggle-option.active {
+    background: var(--navy-dark);
+    color: #FFFFFF;
+  }
+  .wz-discount-pill {
+    background: #DCFCE7;
+    color: #15803D;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-left: 6px;
+  }
+
+  .wz-pricing-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+  .wz-price-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 36px 28px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .wz-price-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 36px rgba(16, 24, 39, 0.06);
+  }
+  .wz-price-card.popular {
+    border: 2px solid var(--navy-dark);
+    box-shadow: 0 20px 48px rgba(16, 24, 39, 0.1);
+  }
+  .wz-popular-tag {
+    position: absolute;
+    top: -13px;
+    left: 28px;
+    background: var(--navy-dark);
+    color: #FFFFFF;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 3px 12px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+  .wz-plan-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+  }
+  .wz-plan-price-num {
+    font-size: 38px;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin: 14px 0 4px;
+    letter-spacing: -0.5px;
+  }
+  .wz-plan-price-num small {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+  .wz-plan-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    min-height: 38px;
+  }
+  .wz-plan-feature-list {
+    list-style: none;
+    margin: 0 0 32px;
+    padding: 0;
+    flex-grow: 1;
+  }
+  .wz-plan-feature-list li {
+    font-size: 13.5px;
+    color: var(--text-dark);
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  .wz-plan-feature-list li:last-child {
+    border-bottom: none;
+  }
+  .btn-choose-plan {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 13px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid var(--border-light);
+    background: #FFFFFF;
+    color: var(--text-dark);
+    transition: all 0.2s;
+  }
+  .btn-choose-plan:hover {
+    border-color: var(--text-dark);
+  }
+  .btn-choose-plan.primary {
+    background: var(--red-main);
+    color: #FFFFFF !important;
+    border: none;
+  }
+  .btn-choose-plan.primary:hover {
+    background: var(--red-hover);
+    box-shadow: 0 4px 14px rgba(229, 43, 56, 0.3);
+  }
+
+  /* --- SECTION 8: PURCHASE FLOW --- */
+  .wz-section-purchase-flow {
+    padding: 96px 0;
+    background: #FFFFFF;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .wz-pflow-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .wz-pflow-container h2 {
+    font-family: var(--font-serif);
+    font-size: 38px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .wz-pflow-container p.sub {
+    font-size: 16.5px;
+    color: var(--text-muted);
+    margin-bottom: 48px;
+  }
+  .wz-pflow-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: var(--cream-bg);
+    border-radius: 10px;
+    padding: 32px;
+    border: 1px solid var(--border-light);
+  }
+  .wz-pflow-step {
+    flex: 1;
+  }
+  .wz-pflow-num {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--red-main);
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+  .wz-pflow-title {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  /* --- SECTION 9: TRUST SIGNALS --- */
+  .wz-section-trust {
+    padding: 88px 0;
+    background: var(--navy-dark);
+    color: #FFFFFF;
+  }
+  .wz-trust-head {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 48px;
+  }
+  .wz-trust-head h2 {
+    font-family: var(--font-serif);
+    font-size: 36px;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+  .wz-trust-grid-5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+    text-align: center;
+  }
+  .wz-trust-card-item {
+    background: var(--navy-card);
+    padding: 24px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .wz-trust-card-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--gold-muted);
+    margin: 0 auto 12px;
+  }
+  .wz-trust-card-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+
+  /* --- SECTION 10: FAQ --- */
+  .wz-section-faq {
+    padding: 104px 0;
+    background: var(--cream-bg);
+  }
+  .wz-faq-head {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .wz-faq-head h2 {
+    font-family: var(--font-serif);
+    font-size: 40px;
+    font-weight: 700;
+  }
+  .wz-faq-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  .wz-faq-item {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 20px 24px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .wz-faq-item:hover {
+    border-color: #CBD5E1;
+  }
+  .wz-faq-q {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .wz-faq-toggle {
+    font-size: 18px;
+    color: var(--red-main);
+    transition: transform 0.2s;
+  }
+  .wz-faq-a {
+    display: none;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin-top: 12px;
+    line-height: 1.6;
+    border-top: 1px dashed var(--border-light);
+    padding-top: 10px;
+  }
+  .wz-faq-item.open .wz-faq-a {
+    display: block;
+  }
+  .wz-faq-item.open .wz-faq-toggle {
+    transform: rotate(45deg);
+  }
+
+  /* --- FINAL CTA --- */
+  .wz-section-final-cta {
+    background: var(--navy-dark);
+    color: #FFFFFF;
+    padding: 112px 0;
+    text-align: center;
+    position: relative;
+  }
+  .wz-final-head h2 {
+    font-family: var(--font-serif);
+    font-size: clamp(38px, 4.8vw, 54px);
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #FFFFFF;
+  }
+  .wz-final-head p {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 40px;
+  }
+  .wz-reassurance-row {
+    margin-top: 28px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+  }
+
+  /* --- FOOTER --- */
+  .wz-footer {
+    background: #FFFFFF;
+    border-top: 1px solid var(--border-light);
+    padding: 64px 0 36px;
+    font-size: 13.5px;
+  }
+  .wz-footer-grid {
+    display: grid;
+    grid-template-columns: 1.5fr repeat(2, 1fr);
+    gap: 48px;
+    margin-bottom: 48px;
+  }
+  .wz-footer-col h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 18px;
+  }
+  .wz-footer-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .wz-footer-col li {
+    margin-bottom: 12px;
+  }
+  .wz-footer-col a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .wz-footer-col a:hover {
+    color: var(--red-main);
+  }
+  .wz-footer-bottom {
+    border-top: 1px solid var(--border-light);
+    padding-top: 28px;
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+
+  @media (max-width: 900px) {
+    .wz-hero-grid, .wz-opp-split, .wz-mock-body-layout, .wz-promise-grid, .wz-onboard-grid, .wz-pricing-grid-3, .wz-faq-2col {
+      grid-template-columns: 1fr;
+    }
+    .wz-flow-horizontal, .wz-trust-grid-5, .wz-pflow-box {
+      flex-direction: column;
+      grid-template-columns: 1fr;
+    }
+    .wz-nav-center { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="wz-header">
+    <div class="container-lg wz-header-inner">
+      <a href="../index.html" class="wz-logo-group">
+        <img src="../assets/images/logo.png" alt="WedEazzy" class="wz-logo-img" />
+      </a>
+
+      <nav class="wz-nav-center">
+        <a href="#how-it-works" class="wz-nav-link">How It Works</a>
+        <a href="#plans" class="wz-nav-link">Plans</a>
+        <a href="#faq" class="wz-nav-link">FAQ</a>
+      </nav>
+
+      <div class="wz-header-right">
+        <a href="vendor-login.html" class="btn-header-login">Login</a>
+        <a href="#plans" class="btn-red-action">
+          BECOME A VENDOR
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="wz-hero">
+    <div class="container-lg wz-hero-grid">
+      <div>
+        <span class="wz-eyebrow-label">FOR WEDDING PROFESSIONALS</span>
+        <h1>Let More Couples<br /><span class="highlight-red">Discover Your Business.</span></h1>
+        <p class="wz-hero-lead">
+          Showcase your work, get discovered by couples planning their wedding and receive direct enquiries — while WedEazzy handles the setup.
+        </p>
+
+        <div class="wz-hero-cta-group">
+          <a href="#plans" class="btn-red-action" style="padding: 14px 28px; font-size: 15px;">
+            CHOOSE YOUR PLAN
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
+          <a href="#how-it-works" class="link-secondary-how">
+            See how it works
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </a>
+        </div>
+
+        <div class="wz-hero-trust-bar">
+          <div class="wz-trust-bullet">
+            <svg class="wz-trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Direct enquiries</span>
+          </div>
+          <div class="wz-trust-bullet">
+            <svg class="wz-trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>No booking commission</span>
+          </div>
+          <div class="wz-trust-bullet">
+            <svg class="wz-trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>WedEazzy-managed onboarding</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- HERO RIGHT VISUAL (EDITORIAL PHOTO + INTEGRATED REAL VENDOR PROFILE UI) -->
+      <div class="wz-hero-visual-container">
+        <div class="wz-hero-photo-frame">
+          <div class="wz-profile-hero-ui">
+            <div class="wz-ui-profile-top">
+              <div class="wz-ui-profile-meta">
+                <div class="wz-ui-avatar"></div>
+                <div>
+                  <div class="wz-ui-name">
+                    The Wedding Studio
+                    <span class="wz-verified-badge">✓ Verified</span>
+                  </div>
+                  <div class="wz-ui-location">Mumbai, Maharashtra</div>
+                </div>
+              </div>
+              <a href="#plans" class="btn-red-action" style="padding: 7px 16px; font-size: 12px;">Enquire Now</a>
+            </div>
+
+            <div class="wz-ui-tags">
+              <span class="wz-tag">Wedding Photography</span>
+              <span class="wz-tag">Pre-Wedding</span>
+              <span class="wz-tag">Candid</span>
+            </div>
+
+            <div class="wz-ui-portfolio-grid">
+              <div class="wz-ui-photo-thumb" style="background-image: url('../assets/images/pre_couple.jpg');"></div>
+              <div class="wz-ui-photo-thumb" style="background-image: url('../assets/images/bridal_wear.jpg');"></div>
+              <div class="wz-ui-photo-thumb" style="background-image: url('../assets/images/pre_jewellery.jpg');"></div>
+              <div class="wz-ui-photo-thumb" style="background-image: url('../assets/images/groom_suits.jpg');"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: THE BUSINESS OPPORTUNITY -->
+  <section class="wz-section-opportunity" id="how-it-works">
+    <div class="container-lg">
+      <div class="wz-opp-header">
+        <h2>Being great at what you do is only half the job.</h2>
+        <p>Couples need to find you before they can contact you.</p>
+      </div>
+
+      <div class="wz-opp-split">
+        <div class="wz-opp-image-frame"></div>
+        <div class="wz-opp-content">
+          <h3>Be where couples are looking.</h3>
+          <ul class="wz-opp-list">
+            <li class="wz-opp-item">
+              <svg class="wz-opp-bullet-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              Get discovered by active wedding planners
+            </li>
+            <li class="wz-opp-item">
+              <svg class="wz-opp-bullet-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              Showcase your best portfolio work
+            </li>
+            <li class="wz-opp-item">
+              <svg class="wz-opp-bullet-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              Build trust with a verified business presence
+            </li>
+            <li class="wz-opp-item">
+              <svg class="wz-opp-bullet-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              Receive direct enquiries straight to your contact details
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: SHOW THE PRODUCT -->
+  <section class="wz-section-product">
+    <div class="container-lg">
+      <div class="wz-product-head">
+        <h2>Your WedEazzy profile becomes your digital storefront.</h2>
+        <p>Before a couple calls you, they can already see what you do, where you work and what your business looks like.</p>
+      </div>
+
+      <div class="wz-storefront-mockup">
+        <div class="wz-mock-browser-bar">
+          <div style="display: flex; gap: 6px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444;"></span>
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #F59E0B;"></span>
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #10B981;"></span>
+          </div>
+          <div class="wz-mock-browser-url">wedeazzy.com/vendors/photographers/the-wedding-studio</div>
+          <div></div>
+        </div>
+
+        <div class="wz-mock-body-layout">
+          <div>
+            <div class="wz-mock-cover-img"></div>
+            <div class="wz-mock-profile-title">
+              <div>
+                <h3>The Wedding Studio <span class="wz-verified-badge">✓ Verified</span></h3>
+                <div class="wz-mock-rating">★ 4.9 (120 reviews) • Mumbai, Maharashtra</div>
+              </div>
+            </div>
+
+            <div class="wz-mock-gallery-4">
+              <div class="wz-gallery-item" style="background-image: url('../assets/images/hero-couple.jpg');"></div>
+              <div class="wz-gallery-item" style="background-image: url('../assets/images/bridal_wear.jpg');"></div>
+              <div class="wz-gallery-item" style="background-image: url('../assets/images/pre_jewellery.jpg');"></div>
+              <div class="wz-gallery-item" style="background-image: url('../assets/images/groom_suits.jpg');"></div>
+            </div>
+          </div>
+
+          <div class="wz-mock-side-card">
+            <div>
+              <h4>Direct Customer Contact</h4>
+              <p>Couples review your services and reach out directly to your registered WhatsApp number or phone.</p>
+            </div>
+            <a href="#plans" class="btn-red-action" style="text-align: center; justify-content: center; width: 100%;">Enquire Now</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: HOW YOU GET ENQUIRIES -->
+  <section class="wz-section-flow">
+    <div class="container-lg">
+      <div class="wz-flow-head">
+        <h2>From discovery to enquiry.</h2>
+      </div>
+
+      <div class="wz-flow-horizontal">
+        <div class="wz-flow-step">
+          <div class="wz-flow-step-num">STEP 01</div>
+          <div class="wz-flow-step-title">Couple Searches</div>
+        </div>
+        <div class="wz-flow-arrow">→</div>
+        <div class="wz-flow-step">
+          <div class="wz-flow-step-num">STEP 02</div>
+          <div class="wz-flow-step-title">Your Business Appears</div>
+        </div>
+        <div class="wz-flow-arrow">→</div>
+        <div class="wz-flow-step">
+          <div class="wz-flow-step-num">STEP 03</div>
+          <div class="wz-flow-step-title">They View Profile</div>
+        </div>
+        <div class="wz-flow-arrow">→</div>
+        <div class="wz-flow-step">
+          <div class="wz-flow-step-num">STEP 04</div>
+          <div class="wz-flow-step-title">They Explore Work</div>
+        </div>
+        <div class="wz-flow-arrow">→</div>
+        <div class="wz-flow-step">
+          <div class="wz-flow-step-num">STEP 05</div>
+          <div class="wz-flow-step-title">They Contact You</div>
+        </div>
+      </div>
+
+      <div class="wz-flow-footer-text">
+        You take the conversation forward.
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: THE BIG PROMISE (DARK NAVY) -->
+  <section class="wz-section-promise">
+    <div class="container-lg wz-promise-grid">
+      <div class="wz-promise-left">
+        <h2>Two steps.<br />We'll handle the rest.</h2>
+        <p>
+          Once your purchase is complete, WedEazzy takes care of the onboarding process, listing setup, and profile configuration for your business.
+        </p>
+      </div>
+
+      <div class="wz-promise-steps-box">
+        <div class="wz-promise-step-item">
+          <div class="wz-step-big-num">01</div>
+          <h3>CHOOSE YOUR PLAN</h3>
+          <p>Select the plan that fits your business goals and service capacity.</p>
+        </div>
+
+        <div class="wz-promise-step-item">
+          <div class="wz-step-big-num">02</div>
+          <h3>PURCHASE YOUR PLAN</h3>
+          <p>Complete your payment securely. That's all you need to do.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6: WHAT WE HANDLE -->
+  <section class="wz-section-onboarding">
+    <div class="container-lg wz-onboard-grid">
+      <div class="wz-onboard-content">
+        <h2>You focus on your business.<br />We handle the setup.</h2>
+        <p class="lead">Our dedicated onboarding team gets your storefront live without technical hassle.</p>
+
+        <ul class="wz-onboard-checklist">
+          <li class="wz-onboard-check-item">
+            <svg class="wz-check-bullet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Business onboarding & verification
+          </li>
+          <li class="wz-onboard-check-item">
+            <svg class="wz-check-bullet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Profile & storefront setup
+          </li>
+          <li class="wz-onboard-check-item">
+            <svg class="wz-check-bullet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Listing preparation & service tagging
+          </li>
+          <li class="wz-onboard-check-item">
+            <svg class="wz-check-bullet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Portfolio organization & image optimization
+          </li>
+          <li class="wz-onboard-check-item">
+            <svg class="wz-check-bullet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Category placement & search indexing
+          </li>
+          <li class="wz-onboard-check-item">
+            <svg class="wz-check-bullet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            City & location service setup
+          </li>
+          <li class="wz-onboard-check-item">
+            <svg class="wz-check-bullet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Ongoing vendor dashboard support
+          </li>
+        </ul>
+      </div>
+
+      <div class="wz-onboard-img-frame"></div>
+    </div>
+  </section>
+
+  <!-- SECTION 7: PRICING -->
+  <section class="wz-section-pricing" id="plans">
+    <div class="container-lg">
+      <div class="wz-pricing-head">
+        <h2>Choose your plan.</h2>
+        <p>Two steps are all it takes to get started.</p>
+
+        <div class="wz-billing-toggle">
+          <button class="wz-toggle-option active" id="btnMonthly" onclick="switchBilling('monthly')">Monthly</button>
+          <button class="wz-toggle-option" id="btnYearly" onclick="switchBilling('yearly')">Billed Annually</button>
+          <span class="wz-discount-pill">Save 20%</span>
+        </div>
+      </div>
+
+      <div class="wz-pricing-grid-3">
+        <!-- STARTER -->
+        <div class="wz-price-card">
+          <div class="wz-plan-title">Starter</div>
+          <div class="wz-plan-price-num">Free</div>
+          <div class="wz-plan-desc">For businesses getting started.</div>
+          <ul class="wz-plan-feature-list">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Business profile
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Contact details
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Basic portfolio
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Get discovered
+            </li>
+          </ul>
+          <a href="vendor-login.html" class="btn-choose-plan">CHOOSE THIS PLAN →</a>
+        </div>
+
+        <!-- GROW -->
+        <div class="wz-price-card popular">
+          <div class="wz-popular-tag">MOST POPULAR</div>
+          <div class="wz-plan-title">Grow</div>
+          <div class="wz-plan-price-num" id="valGrow">₹499 <small>/month</small></div>
+          <div class="wz-plan-desc">For businesses looking for greater visibility.</div>
+          <ul class="wz-plan-feature-list">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Everything in Starter
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Enhanced profile
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              More portfolio space
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Priority visibility
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Enquiry access
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Basic insights
+            </li>
+          </ul>
+          <a href="vendor-login.html?plan=grow" class="btn-choose-plan primary">CHOOSE THIS PLAN →</a>
+        </div>
+
+        <!-- FEATURED -->
+        <div class="wz-price-card">
+          <div class="wz-plan-title">Featured</div>
+          <div class="wz-plan-price-num" id="valFeatured">₹999 <small>/month</small></div>
+          <div class="wz-plan-desc">For maximum exposure.</div>
+          <ul class="wz-plan-feature-list">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Everything in Grow
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Featured placement
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Premium profile
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              More visibility
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Advanced insights
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E52B38" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Promotional opportunities
+            </li>
+          </ul>
+          <a href="vendor-login.html?plan=featured" class="btn-choose-plan">CHOOSE THIS PLAN →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 8: PURCHASE FLOW -->
+  <section class="wz-section-purchase-flow">
+    <div class="container-lg wz-pflow-container">
+      <h2>That's all you need to do.</h2>
+      <p class="sub">Once your payment is complete, we'll guide you through getting your business profile ready.</p>
+
+      <div class="wz-pflow-box">
+        <div class="wz-pflow-step">
+          <div class="wz-pflow-num">STEP 01</div>
+          <div class="wz-pflow-title">Choose a Plan</div>
+        </div>
+        <div style="font-size: 20px; color: var(--text-muted);">→</div>
+        <div class="wz-pflow-step">
+          <div class="wz-pflow-num">STEP 02</div>
+          <div class="wz-pflow-title">Purchase Securely</div>
+        </div>
+        <div style="font-size: 20px; color: var(--text-muted);">→</div>
+        <div class="wz-pflow-step">
+          <div class="wz-pflow-num">SUCCESS</div>
+          <div class="wz-pflow-title" style="color: var(--red-main);">WedEazzy Handles the Rest</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 9: TRUST SIGNALS -->
+  <section class="wz-section-trust">
+    <div class="container-lg">
+      <div class="wz-trust-head">
+        <h2>Built to make growing your business simpler.</h2>
+      </div>
+
+      <div class="wz-trust-grid-5">
+        <div class="wz-trust-card-item">
+          <svg class="wz-trust-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <div class="wz-trust-card-title">Secure Payment</div>
+        </div>
+
+        <div class="wz-trust-card-item">
+          <svg class="wz-trust-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          <div class="wz-trust-card-title">Transparent Pricing</div>
+        </div>
+
+        <div class="wz-trust-card-item">
+          <svg class="wz-trust-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          <div class="wz-trust-card-title">Direct Enquiries</div>
+        </div>
+
+        <div class="wz-trust-card-item">
+          <svg class="wz-trust-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+          <div class="wz-trust-card-title">No Booking Commission</div>
+        </div>
+
+        <div class="wz-trust-card-item">
+          <svg class="wz-trust-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <div class="wz-trust-card-title">Dedicated Support</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 10: FAQ -->
+  <section class="wz-section-faq" id="faq">
+    <div class="container-lg">
+      <div class="wz-faq-head">
+        <h2>Frequently asked questions.</h2>
+      </div>
+
+      <div class="wz-faq-2col">
+        <div class="wz-faq-item open" onclick="toggleFaq(this)">
+          <div class="wz-faq-q">
+            How does WedEazzy help my business?
+            <span class="wz-faq-toggle">+</span>
+          </div>
+          <div class="wz-faq-a">
+            WedEazzy showcases your profile to active wedding couples searching for trusted vendors in your city, delivering direct enquiries straight to your WhatsApp and phone.
+          </div>
+        </div>
+
+        <div class="wz-faq-item" onclick="toggleFaq(this)">
+          <div class="wz-faq-q">
+            How do couples contact me?
+            <span class="wz-faq-toggle">+</span>
+          </div>
+          <div class="wz-faq-a">
+            Couples can send enquiries directly to your registered WhatsApp number or call your mobile phone directly.
+          </div>
+        </div>
+
+        <div class="wz-faq-item" onclick="toggleFaq(this)">
+          <div class="wz-faq-q">
+            What happens after I purchase a plan?
+            <span class="wz-faq-toggle">+</span>
+          </div>
+          <div class="wz-faq-a">
+            Our onboarding team contacts you to gather your business details, portfolio photos, and service information to complete your listing setup.
+          </div>
+        </div>
+
+        <div class="wz-faq-item" onclick="toggleFaq(this)">
+          <div class="wz-faq-q">
+            Do I have to create my profile myself?
+            <span class="wz-faq-toggle">+</span>
+          </div>
+          <div class="wz-faq-a">
+            No! WedEazzy handles your profile setup and listing configuration for you once you purchase a plan.
+          </div>
+        </div>
+
+        <div class="wz-faq-item" onclick="toggleFaq(this)">
+          <div class="wz-faq-q">
+            Do you charge commission on bookings?
+            <span class="wz-faq-toggle">+</span>
+          </div>
+          <div class="wz-faq-a">
+            No! WedEazzy charges 0% commission on any of your wedding bookings. You keep 100% of your earnings.
+          </div>
+        </div>
+
+        <div class="wz-faq-item" onclick="toggleFaq(this)">
+          <div class="wz-faq-q">
+            Can I update my business information?
+            <span class="wz-faq-toggle">+</span>
+          </div>
+          <div class="wz-faq-a">
+            Yes, you get full access to your vendor dashboard to update photos, services, pricing, and contact details anytime.
+          </div>
+        </div>
+
+        <div class="wz-faq-item" onclick="toggleFaq(this)">
+          <div class="wz-faq-q">
+            How long does onboarding take?
+            <span class="wz-faq-toggle">+</span>
+          </div>
+          <div class="wz-faq-a">
+            Once you provide your basic business details and portfolio photos, your profile is typically live within 24 to 48 hours.
+          </div>
+        </div>
+
+        <div class="wz-faq-item" onclick="toggleFaq(this)">
+          <div class="wz-faq-q">
+            Can I cancel my plan?
+            <span class="wz-faq-toggle">+</span>
+          </div>
+          <div class="wz-faq-a">
+            Yes, you can manage or cancel your subscription renewal anytime from your vendor dashboard or by contacting support.
+          </div>
+        </div>
+
+        <div class="wz-faq-item" onclick="toggleFaq(this)">
+          <div class="wz-faq-q">
+            Are bookings guaranteed?
+            <span class="wz-faq-toggle">+</span>
+          </div>
+          <div class="wz-faq-a">
+            WedEazzy provides high-visibility placement and direct customer enquiries from active couples. Final bookings depend on your portfolio, availability, and pricing.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="wz-section-final-cta">
+    <div class="container-lg">
+      <div class="wz-final-head">
+        <h2>Your business deserves to be discovered.</h2>
+        <p>Choose your plan. Purchase it. We'll handle the rest.</p>
+
+        <a href="#plans" class="btn-red-action" style="padding: 16px 36px; font-size: 16px;">
+          CHOOSE YOUR PLAN
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+
+        <div class="wz-reassurance-row">
+          <span>• Transparent plans</span>
+          <span>• Secure payment</span>
+          <span>• Direct enquiries</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="wz-footer">
+    <div class="container-lg">
+      <div class="wz-footer-grid">
+        <div>
+          <a href="../index.html" class="wz-logo-group" style="margin-bottom: 14px;">
+            <img src="../assets/images/logo.png" alt="WedEazzy" class="wz-logo-img" />
+          </a>
+          <p style="color: var(--text-muted); font-size: 13px; max-width: 300px; line-height: 1.55;">
+            India's trusted wedding marketplace connecting wedding professionals with active couples.
+          </p>
+        </div>
+
+        <div class="wz-footer-col">
+          <h4>For Vendors</h4>
+          <ul>
+            <li><a href="#plans">Plans & Pricing</a></li>
+            <li><a href="vendor-login.html">Vendor Login</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+          </ul>
+        </div>
+
+        <div class="wz-footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="marketing.html">About Us</a></li>
+            <li><a href="privacy.html">Contact</a></li>
+            <li><a href="terms.html">Terms & Conditions</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Refund Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="wz-footer-bottom">
+        <span>© 2026 WedEazzy. All rights reserved.</span>
+        <span>Dedicated Vendor Acquisition Portal</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function toggleFaq(cardElement) {
+      const isOpen = cardElement.classList.contains('open');
+      document.querySelectorAll('.wz-faq-item').forEach(el => el.classList.remove('open'));
+      if (!isOpen) {
+        cardElement.classList.add('open');
+      }
+    }
+
+    function switchBilling(type) {
+      const btnMonthly = document.getElementById('btnMonthly');
+      const btnYearly = document.getElementById('btnYearly');
+      const valGrow = document.getElementById('valGrow');
+      const valFeatured = document.getElementById('valFeatured');
+
+      if (type === 'yearly') {
+        btnYearly.classList.add('active');
+        btnMonthly.classList.remove('active');
+        valGrow.innerHTML = '₹399 <small>/month billed annually</small>';
+        valFeatured.innerHTML = '₹799 <small>/month billed annually</small>';
+      } else {
+        btnMonthly.classList.add('active');
+        btnYearly.classList.remove('active');
+        valGrow.innerHTML = '₹499 <small>/month</small>';
+        valFeatured.innerHTML = '₹999 <small>/month</small>';
+      }
+    }
+  </script>
+</body>
+</html>

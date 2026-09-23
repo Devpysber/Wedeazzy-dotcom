@@ -170,12 +170,13 @@ async function search(req, res, next) {
         category: true,
         city: true,
         country: true,
+        countryCode: true,
         area: true,
         address: true,
         whatsappNumber: true,
         rating: true,
         userId: true,
-        user: { select: { mustChangePassword: true } }
+        user: { select: { email: true, phone: true, mustChangePassword: true } }
       },
       take: 30,
       orderBy: { businessName: 'asc' },
@@ -191,12 +192,14 @@ async function search(req, res, next) {
         category: v.category,
         city: v.city,
         country: v.country,
+        countryCode: v.countryCode || (v.country === 'India' ? 'IN' : 'IN'),
         area: v.area,
         address: v.address,
         rating: v.rating,
         phoneMasked: maskPhone(v.whatsappNumber),
         hasContact: Boolean(v.whatsappNumber),
         alreadyClaimed: isClaimedAndSet,
+        registeredEmail: isClaimedAndSet && v.user ? v.user.email : null,
         phoneMatch: shareDigits,
       };
     });
@@ -439,6 +442,12 @@ async function complete(req, res, next) {
 
     logger.info({ vendorId: vendor.id, userId, email: normalizedEmail }, 'Business successfully claimed via simplified phone match');
 
+    // Link & activate any pending paid guest orders for this newly claimed vendor
+    const { linkPendingGuestOrders } = require('./guestCheckout.controller');
+    await linkPendingGuestOrders(vendor.id, userId).catch((err) => {
+      logger.error({ err, vendorId: vendor.id }, 'Failed to link pending guest orders on claim complete');
+    });
+
     res.json({
       ok: true,
       emailMasked: maskEmail(normalizedEmail),
@@ -537,6 +546,16 @@ async function registerBusiness(req, res, next) {
       }
     }
 
+    if (phoneDigits && phoneDigits.length === 10) {
+      const userByPhone = await prisma.user.findFirst({
+        where: { phone: { endsWith: phoneDigits } },
+        include: { vendor: true }
+      });
+      if (userByPhone && userByPhone.vendor && userByPhone.vendor.some(v => v.isActive)) {
+        throw new HttpError(409, 'This phone number is already associated with an active vendor listing on WedEazzy.', 'ERR_PHONE_CONFLICT');
+      }
+    }
+
     const tempPassword = generateTempPassword();
     const passwordHash = await bcrypt.hash(tempPassword, 10);
     const ownerName = String(name || businessName).trim();
@@ -609,6 +628,12 @@ async function registerBusiness(req, res, next) {
     } catch (err) {
       logger.error({ err, email: normalizedEmail }, 'Failed to send new vendor credentials email');
     }
+
+    // Link & activate any pending paid guest orders for this newly registered vendor
+    const { linkPendingGuestOrders } = require('./guestCheckout.controller');
+    await linkPendingGuestOrders(createdVendor.id, createdVendor.userId).catch((err) => {
+      logger.error({ err, vendorId: createdVendor.id }, 'Failed to link pending guest orders on business register');
+    });
 
     res.json({
       ok: true,

@@ -490,6 +490,15 @@
       flow.matches = data.matches || [];
       renderMatches();
       show('searchResults');
+
+      if (window._autoClaimVendorId) {
+        const targetId = window._autoClaimVendorId;
+        window._autoClaimVendorId = null;
+        const idx = flow.matches.findIndex(m => m.id === targetId && !m.alreadyClaimed);
+        if (idx >= 0) {
+          window.wedeazzyStartClaim(idx);
+        }
+      }
     } catch (err) {
       showErr('searchErr', err.message);
     } finally {
@@ -719,11 +728,13 @@
 
   window.updateClaimCities();
 
-  // URL mode auto-trigger (?mode=register)
+  // URL mode auto-trigger (?mode=register or ?mode=manual)
   try {
     const params = new URLSearchParams(location.search);
     if (params.get('mode') === 'register') {
       el('tabRegister').click();
+    } else if (params.get('mode') === 'manual') {
+      showErr('searchErr', '⚠️ Manual Ownership Verification: Because your phone number does not match the registered listing, automatic claiming is disabled. Please contact WedEazzy Support on WhatsApp at +91 74989 87620 or email support@wedeazzy.com with your business proof (Visiting card, GST, or Utility bill) and your purchase receipt.');
     }
   } catch (_) {}
 
@@ -738,7 +749,25 @@
       set('fOwnerName', pre.name); set('fClaimEmail', pre.email); set('fFullPhone', pre.phone);
       set('fBiz', pre.vendorName || pre.businessName);
       set('fCity', pre.city);
-      if (pre.mode === 'claim' && el('fBiz').value) el('searchForm').requestSubmit();
+      if (pre.mode === 'register') {
+        el('tabRegister').click();
+      } else if (pre.mode === 'claim' && pre.vendorId) {
+        (async function () {
+          try {
+            const data = await api('/api/claim/start', { vendorId: pre.vendorId });
+            flow.claimSessionId = data.claimSessionId;
+            flow.selectedVendor = data.vendor;
+            el('phoneBizName').textContent = data.vendor.businessName;
+            el('maskedPhoneDisplay').textContent = data.vendor.phoneMasked;
+            el('fFullPhone').value = '';
+            setState('phone');
+          } catch (e) {
+            if (el('fBiz').value) el('searchForm').requestSubmit();
+          }
+        })();
+      } else if (pre.mode === 'claim' && el('fBiz').value) {
+        el('searchForm').requestSubmit();
+      }
     }
   } catch (_) {}
 })();
