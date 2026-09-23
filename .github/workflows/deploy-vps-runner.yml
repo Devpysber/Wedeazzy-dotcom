@@ -13,8 +13,10 @@
 name: Deploy to VPS (self-hosted runner)
 
 on:
-  push:
-    branches: [main]
+  # Manual only. Deploys happen from the VPS itself on a schedule (see
+  # DEPLOY-VPS-AUTO.md); with no runner installed, a push-triggered job here
+  # would queue for 24 hours waiting for one. Kept for the day a self-hosted
+  # runner is set up.
   workflow_dispatch:
 
 concurrency:

@@ -1,0 +1,44 @@
+# Cheap checks that need nothing but the repository.
+#
+# Deploys are pull-based now (the VPS runs scripts/vps-auto-deploy.sh on a
+# schedule - see DEPLOY-VPS-AUTO.md), so nothing on a push talks to the server.
+# These two checks still run on every push and pull request, because they are
+# the ones that caught a main that could not boot: a server.js with unresolved
+# merge conflict markers in it, which crash-looped the container behind a 502.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Reject unresolved merge conflict markers
+        run: |
+          if git grep -In -e '^<<<<<<< ' -e '^>>>>>>> ' -e '^=======$' -- . ; then
+            echo "::error::Merge conflict markers are committed - see the lines above."
+            exit 1
+          fi
+          echo "No conflict markers."
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Parse every backend source file
+        run: |
+          failed=0
+          while IFS= read -r f; do
+            node --check "$f" || { echo "::error file=$f::does not parse"; failed=1; }
+          done < <(find backend/src -name '*.js' -not -path '*/node_modules/*')
+          [ "$failed" -eq 0 ]
+
+      - name: Check the deploy script parses
+        run: bash -n scripts/vps-auto-deploy.sh && echo "vps-auto-deploy.sh parses."
