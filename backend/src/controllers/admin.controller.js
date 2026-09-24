@@ -2476,6 +2476,190 @@ async function getTopCitiesReport(req, res, next) {
   } catch (e) { next(e); }
 }
 
+/**
+ * GET /api/admin/grow-orders
+ * Fetch all Grow Plan Purchases (GuestOrder records) with summary analytics
+ */
+async function getGrowOrders(req, res, next) {
+  try {
+    const { status, limit } = req.query || {};
+    const where = {};
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    const take = limit ? Math.min(parseInt(limit, 10) || 500, 5000) : 5000;
+    const ordersList = await prisma.guestOrder.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take
+    });
+
+    const vendorIds = ordersList.map(o => o.matchedVendorId).filter(Boolean);
+    let vendorMap = {};
+    if (vendorIds.length > 0) {
+      const vendors = await prisma.vendor.findMany({
+        where: { id: { in: vendorIds } },
+        select: { id: true, businessName: true, category: true, city: true, isVerified: true }
+      });
+      vendorMap = Object.fromEntries(vendors.map(v => [v.id, v]));
+    }
+
+    const orders = ordersList.map(o => {
+      const totalRs = (o.amount / 100).toFixed(2);
+      const matched = o.matchedVendorId ? vendorMap[o.matchedVendorId] : null;
+      return {
+        id: o.id,
+        razorpayOrderId: o.razorpayOrderId,
+        razorpayPaymentId: o.razorpayPaymentId || '—',
+        status: o.status,
+        planType: o.planType,
+        planKey: o.planKey,
+        planLabel: o.planLabel,
+        planDays: o.planDays,
+        currency: o.currency || 'INR',
+        amount: o.amount,
+        amountFormatted: `₹${totalRs}`,
+        name: o.name,
+        email: o.email,
+        phone: o.phone,
+        businessName: o.businessName,
+        city: o.city || '—',
+        matchedVendorId: o.matchedVendorId || null,
+        vendorName: matched ? matched.businessName : null,
+        vendorCategory: matched ? matched.category : null,
+        listingState: o.listingState || '—',
+        emailSentAt: o.emailSentAt ? o.emailSentAt.toISOString() : null,
+        paidAt: o.paidAt ? o.paidAt.toISOString() : null,
+        createdAt: o.createdAt.toISOString()
+      };
+    });
+
+    const paidOrders = orders.filter(o => o.status === 'paid');
+    const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.amount / 100), 0);
+
+    res.json({
+      ok: true,
+      orders,
+      stats: {
+        totalOrders: orders.length,
+        paidOrdersCount: paidOrders.length,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        totalRevenueFormatted: `₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      }
+    });
+  } catch (err) { next(err); }
+}
+
+/**
+ * GET /api/admin/subscriptions-list
+ * Fetch all Vendor Subscription purchases & active subscription tiers
+ */
+async function getSubscriptionOrders(req, res, next) {
+  try {
+    const { plan, limit } = req.query || {};
+
+    const txns = await prisma.transaction.findMany({
+      where: {
+        status: 'success',
+        purpose: { startsWith: 'subscription:' }
+      },
+      include: {
+        user: {
+          select: { name: true, email: true, phone: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit ? Math.min(parseInt(limit, 10) || 500, 5000) : 5000
+    });
+
+    const userIds = txns.map(t => t.userId).filter(Boolean);
+    const vendors = await prisma.vendor.findMany({
+      where: { userId: { in: userIds } },
+      select: { id: true, userId: true, businessName: true, category: true, city: true, subscriptionPlan: true, subscriptionExpiry: true, tier: true, updatedAt: true, createdAt: true }
+    });
+    const vendorMap = Object.fromEntries(vendors.map(v => [v.userId, v]));
+
+    const activeVendors = await prisma.vendor.findMany({
+      where: {
+        subscriptionPlan: { in: ['Featured', 'Premium', 'Pro', 'Gold'] }
+      },
+      include: {
+        user: { select: { name: true, email: true, phone: true } }
+      },
+      orderBy: { subscriptionExpiry: 'desc' }
+    });
+
+    const subscriptions = txns.map(t => {
+      const v = vendorMap[t.userId] || {};
+      const planName = t.purpose.replace('subscription:', '');
+      const amountRs = (t.amount / 100).toFixed(2);
+      const isExpired = v.subscriptionExpiry ? new Date(v.subscriptionExpiry) < new Date() : false;
+
+      return {
+        id: t.id,
+        userId: t.userId,
+        vendorId: v.id || null,
+        businessName: v.businessName || t.user?.name || '—',
+        userName: t.user?.name || '—',
+        userEmail: t.user?.email || '—',
+        userPhone: t.user?.phone || '—',
+        category: v.category || '—',
+        city: v.city || '—',
+        planName,
+        amount: t.amount,
+        amountFormatted: `₹${amountRs}`,
+        gatewayRef: t.gatewayRef || t.id,
+        gateway: t.gateway || 'razorpay',
+        startDate: t.createdAt.toISOString(),
+        expiryDate: v.subscriptionExpiry ? v.subscriptionExpiry.toISOString() : null,
+        status: isExpired ? 'expired' : 'active',
+        createdAt: t.createdAt.toISOString()
+      };
+    });
+
+    activeVendors.forEach(v => {
+      const exists = subscriptions.some(s => s.vendorId === v.id);
+      if (!exists && v.subscriptionPlan !== 'Free') {
+        const isExpired = v.subscriptionExpiry ? new Date(v.subscriptionExpiry) < new Date() : false;
+        subscriptions.push({
+          id: `sub_${v.id.slice(-8)}`,
+          userId: v.userId || '',
+          vendorId: v.id,
+          businessName: v.businessName,
+          userName: v.user?.name || '—',
+          userEmail: v.user?.email || '—',
+          userPhone: v.user?.phone || '—',
+          category: v.category || '—',
+          city: v.city || '—',
+          planName: v.subscriptionPlan,
+          amount: v.subscriptionPlan === 'Featured' ? 707882 : 353882,
+          amountFormatted: v.subscriptionPlan === 'Featured' ? '₹7,078.82' : '₹3,538.82',
+          gatewayRef: v.razorpayOrderId || 'MANUAL',
+          gateway: 'razorpay',
+          startDate: v.updatedAt ? v.updatedAt.toISOString() : v.createdAt.toISOString(),
+          expiryDate: v.subscriptionExpiry ? v.subscriptionExpiry.toISOString() : null,
+          status: isExpired ? 'expired' : 'active',
+          createdAt: v.createdAt.toISOString()
+        });
+      }
+    });
+
+    const totalSubRevenue = subscriptions.reduce((sum, s) => sum + (s.amount / 100), 0);
+
+    res.json({
+      ok: true,
+      subscriptions,
+      stats: {
+        totalSubscriptions: subscriptions.length,
+        activeSubscriptions: subscriptions.filter(s => s.status === 'active').length,
+        totalRevenue: Math.round(totalSubRevenue * 100) / 100,
+        totalRevenueFormatted: `₹${totalSubRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      }
+    });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   getAnalytics,
   getVendors,
@@ -2563,4 +2747,7 @@ module.exports = {
   updateAdminRegion,
   getCountryPerformanceReport,
   getTopCitiesReport,
+  // Grow Orders & Subscriptions
+  getGrowOrders,
+  getSubscriptionOrders,
 };

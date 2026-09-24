@@ -123,7 +123,10 @@ const WedEazzyStore = {
       if (needPayments) promises.push(fetchJson(`${API_BASE}/api/reports/export/payments`).catch(() => ({ ok: false })));
       else promises.push(Promise.resolve(null));
 
-      const [analyticsRes, vendorsRes, usersRes, bookingsRes, paymentsRes] = await Promise.all(promises);
+      promises.push(fetchJson(`${API_BASE}/api/admin/grow-orders`).catch(() => null));
+      promises.push(fetchJson(`${API_BASE}/api/admin/subscriptions-list`).catch(() => null));
+
+      const [analyticsRes, vendorsRes, usersRes, bookingsRes, paymentsRes, growOrdersRes, subOrdersRes] = await Promise.all(promises);
 
       if (analyticsRes && analyticsRes.stats) store.stats = analyticsRes.stats;
       if (vendorsRes && vendorsRes.vendors) {
@@ -146,6 +149,8 @@ const WedEazzyStore = {
       if (usersRes && usersRes.users) { store.users = usersRes.users; store.usersTotalCount = usersRes.totalCount ?? usersRes.users.length; }
       if (bookingsRes && bookingsRes.bookings) { store.bookings = bookingsRes.bookings; store.bookingsTotalCount = bookingsRes.totalCount ?? bookingsRes.bookings.length; }
       if (paymentsRes && paymentsRes.ok) store.payments = paymentsRes.data;
+      if (growOrdersRes && growOrdersRes.ok) { store.growOrders = growOrdersRes.orders; store.growStats = growOrdersRes.stats; }
+      if (subOrdersRes && subOrdersRes.ok) { store.subscriptionPurchases = subOrdersRes.subscriptions; store.subscriptionStats = subOrdersRes.stats; }
 
       this.save(store, force);
     } catch (e) {

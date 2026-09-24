@@ -528,6 +528,53 @@ module.exports = {
   },
 
   /**
+   * Send Admin Notification when a Subscription Plan is purchased.
+   */
+  async sendSubscriptionAdminNotification(recipients, txn, vendor, user) {
+    const planName = (txn.purpose && txn.purpose.startsWith('subscription:')) ? txn.purpose.slice(13) : (txn.purpose || 'Subscription Plan');
+    const amountRs = (txn.amount / 100).toFixed(2);
+    const dateStr = new Date(txn.createdAt || Date.now()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
+    const expiryStr = vendor.subscriptionExpiry ? new Date(vendor.subscriptionExpiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '30 Days';
+
+    const row = (k, v) => `
+      <tr style="border-bottom:1px solid #E2E8F0;">
+        <td style="padding:10px 12px; font-weight:bold; color:#475569; background:#F8FAFC; width:180px;">${esc(k)}</td>
+        <td style="padding:10px 12px; color:#0F172A;">${esc(v)}</td>
+      </tr>`;
+
+    const html = `
+      <div style="font-family:sans-serif; max-width:640px; color:#1E293B; line-height:1.5;">
+        <h2 style="color:#B24A5B; margin-bottom:12px;">🎉 New Subscription Plan Purchased!</h2>
+        <p style="margin-bottom:16px;">A vendor has purchased or renewed a subscription plan. Full details are below:</p>
+        <table style="width:100%; border-collapse:collapse; font-size:14px; border:1px solid #E2E8F0; margin-bottom:20px;">
+          ${row('Business Name', vendor.businessName || '—')}
+          ${row('Contact Name', (user && user.name) || vendor.contactPerson || '—')}
+          ${row('Email Address', (user && user.email) || '—')}
+          ${row('Phone / WhatsApp', (user && user.phone) || vendor.whatsappNumber || '—')}
+          ${row('Category', vendor.category || '—')}
+          ${row('City', vendor.city || vendor.address || '—')}
+          ${row('Plan Purchased', `${planName} Subscription Plan`)}
+          ${row('Amount Paid', `₹${amountRs} INR`)}
+          ${row('Payment ID', txn.gatewayRef || txn.id || 'N/A')}
+          ${row('Transaction Date', dateStr)}
+          ${row('Subscription Expiry', expiryStr)}
+        </table>
+        <p style="font-size:12px; color:#64748B;">This notification was automatically dispatched to management recipients so no order is missed.</p>
+      </div>
+    `;
+
+    const targets = Array.isArray(recipients) ? recipients : [recipients];
+    for (const to of targets) {
+      if (!to) continue;
+      await this.sendAdminNotification(
+        to,
+        `New Subscription Purchase: ${planName} - ${vendor.businessName}`,
+        html
+      ).catch(err => logger.error({ err, to }, 'Failed to send subscription admin notification'));
+    }
+  },
+
+  /**
    * Send Payment Confirmation Receipt email.
    */
   async sendPaymentReceiptEmail(to, txn, vendorName) {

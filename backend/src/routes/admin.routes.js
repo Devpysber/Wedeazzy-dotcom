@@ -128,6 +128,8 @@ router.patch('/bookings/:id/status', ctrl.updateBookingStatus);
 router.post('/transactions/:id/refund', ctrl.refundTransaction);
 router.post('/vendors/:id/cancel-subscription', ctrl.cancelVendorSubscription);
 router.patch('/vendors/:id/subscription', ctrl.updateVendorSubscription);
+router.get('/grow-orders', ctrl.getGrowOrders);
+router.get('/subscriptions-list', ctrl.getSubscriptionOrders);
 
 // --- Bulk listing import (Approve Businesses > Import Listings) ---
 // preview parses + reports duplicates and writes nothing; commit persists.

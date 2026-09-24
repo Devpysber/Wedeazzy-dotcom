@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "claimed-listings", "city", "regions", "venues-category", "vendors-category",
     "send-emails", "email-templates", "blogs", "contact-inquiries", "whatsapp-status", "grow-campaigns",
     "grow-pricing", "vendor-crm-dashboard", "invitations", "blacklisted",
-    "import-listings", "countries", "locations"
+    "import-listings", "countries", "locations", "grow-purchases", "subscription-purchases"
   ];
 
   function tabFromHash() {
@@ -910,6 +910,10 @@ document.addEventListener("DOMContentLoaded", () => {
       renderGrowCampaigns(store);
     } else if (state.activeTab === "grow-pricing") {
       renderGrowPricing(store);
+    } else if (state.activeTab === "grow-purchases") {
+      renderGrowPurchases(store);
+    } else if (state.activeTab === "subscription-purchases") {
+      renderSubscriptionPurchases(store);
     }
   }
 
@@ -1272,6 +1276,381 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
     }
+  }
+
+  /* ===========================================================================
+   * GROW PLAN PURCHASES — Dedicated Admin View for /grow Orders
+   * ========================================================================= */
+  function renderGrowPurchases(store) {
+    const rawOrders = store.growOrders || [];
+    const stats = store.growStats || {
+      totalOrders: rawOrders.length,
+      paidOrdersCount: rawOrders.filter(o => o.status === 'paid').length,
+      totalRevenueFormatted: '₹0.00'
+    };
+
+    const paidCount = rawOrders.filter(o => o.status === 'paid').length;
+    const createdCount = rawOrders.filter(o => o.status === 'created').length;
+    const failedCount = rawOrders.filter(o => o.status === 'failed').length;
+
+    let paidRevenue = rawOrders
+      .filter(o => o.status === 'paid')
+      .reduce((sum, o) => sum + (Number(o.amount || 0) / 100), 0);
+    const revFormatted = `₹${paidRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    el.portalBody.innerHTML = `
+      <div class="spa-tab-wrapper">
+        <div class="locator-breadcrumb">
+          <a href="#">WedEazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Grow Plan Purchases</span>
+        </div>
+
+        <div class="portal-welcome-banner">
+          <div>
+            <h2>📦 Grow Plan Purchases (/grow)</h2>
+            <p>Dedicated tracking console for all marketing package purchases from the /grow page. Inspect purchaser details, payment IDs, and listing claim statuses.</p>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="growOrderSearchInput" placeholder="Search purchaser, business, email..." 
+              style="border:1.5px solid var(--border-color);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text-main);background:var(--surface-bg);outline:none;min-width:240px;" />
+            <select id="growOrderStatusFilter" 
+              style="border:1.5px solid var(--border-color);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text-main);background:var(--surface-bg);outline:none;cursor:pointer;">
+              <option value="all">All Statuses (${rawOrders.length})</option>
+              <option value="paid">Paid (${paidCount})</option>
+              <option value="created">Checkout Pending (${createdCount})</option>
+              <option value="failed">Failed (${failedCount})</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- KPI SUMMARY CARDS -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="panel-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16,185,129,0.12); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+              <i class="fa-solid fa-indian-rupee-sign"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Grow Revenue</div>
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">${revFormatted}</div>
+            </div>
+          </div>
+
+          <div class="panel-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(37,99,235,0.12); color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+              <i class="fa-solid fa-cart-shopping"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Paid Orders</div>
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">${paidCount} / ${rawOrders.length}</div>
+            </div>
+          </div>
+
+          <div class="panel-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(220,31,48,0.12); color: var(--brand-rose); display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+              <i class="fa-solid fa-bullhorn"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Active Marketing Packages</div>
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">${paidCount}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ORDERS TABLE -->
+        <div class="panel-card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1rem; font-weight: 800;">Purchases &amp; Orders Log</h3>
+            <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Showing ${rawOrders.length} records</span>
+          </div>
+
+          <div class="responsive-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date &amp; Time</th>
+                  <th>Purchaser Contact</th>
+                  <th>Business Name &amp; City</th>
+                  <th>Package / Plan</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Razorpay Details</th>
+                  <th>Listing Link</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="growOrdersTableBody">
+                ${rawOrders.length === 0 ? `
+                  <tr>
+                    <td colspan="9" style="text-align:center; padding: 48px; color: var(--text-muted);">
+                      <i class="fa-solid fa-box-open" style="font-size: 2.2rem; margin-bottom: 12px; display: block;"></i>
+                      No Grow plan purchases recorded yet.
+                    </td>
+                  </tr>
+                ` : rawOrders.map(o => {
+                  const paidDateStr = o.paidAt ? new Date(o.paidAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : new Date(o.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+                  const statusBadge = o.status === 'paid'
+                    ? `<span class="interactive-pill-badge" style="background:#ECFDF5; border-color:#A7F3D0; color:#047857; font-weight:700;"><i class="fa-solid fa-circle-check"></i> Paid</span>`
+                    : o.status === 'created'
+                    ? `<span class="interactive-pill-badge" style="background:#FFFBEB; border-color:#FDE68A; color:#B45309; font-weight:700;"><i class="fa-solid fa-clock"></i> Pending</span>`
+                    : `<span class="interactive-pill-badge" style="background:#FEF2F2; border-color:#FECACA; color:#B91C1C; font-weight:700;"><i class="fa-solid fa-circle-xmark"></i> Failed</span>`;
+
+                  const listingBadge = {
+                    claimed: `<span class="interactive-pill-badge" style="background:#EFF6FF; border-color:#BFDBFE; color:#1E40AF;">Claimed Owner</span>`,
+                    unclaimed: `<span class="interactive-pill-badge" style="background:#FEF3C7; border-color:#FDE68A; color:#92400E;">Unclaimed Listing</span>`,
+                    new: `<span class="interactive-pill-badge" style="background:#F3E8FF; border-color:#E9D5FF; color:#6B21A8;">New Business</span>`
+                  }[o.listingState] || `<span class="interactive-pill-badge" style="background:#F1F5F9; border-color:#E2E8F0; color:#475569;">—</span>`;
+
+                  return `
+                    <tr data-grow-search="${escHtml((o.name + ' ' + o.email + ' ' + o.phone + ' ' + o.businessName + ' ' + o.planLabel).toLowerCase())}">
+                      <td style="font-size: 0.8rem; font-weight: 600; white-space: nowrap;">${paidDateStr}</td>
+                      <td>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.85rem;">${escHtml(o.name)}</div>
+                        <div style="font-size: 0.76rem; color: var(--text-muted);">${escHtml(o.email)}</div>
+                        <div style="font-size: 0.76rem; color: var(--brand-rose); font-weight: 600;"><i class="fa-brands fa-whatsapp"></i> ${escHtml(o.phone)}</div>
+                      </td>
+                      <td>
+                        <div style="font-weight: 700; color: var(--text-main);">${escHtml(o.businessName)}</div>
+                        <div style="font-size: 0.76rem; color: var(--text-muted);"><i class="fa-solid fa-location-dot"></i> ${escHtml(o.city || '—')}</div>
+                      </td>
+                      <td>
+                        <div style="font-weight: 700; color: var(--brand-rose);">${escHtml(o.planLabel)}</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">${o.planDays ? `${o.planDays} Days Duration` : 'Monthly Package'}</div>
+                      </td>
+                      <td style="font-weight: 800; color: var(--text-main); font-size: 0.95rem;">${o.amountFormatted || ('₹' + (o.amount/100).toFixed(2))}</td>
+                      <td>${statusBadge}</td>
+                      <td style="font-size: 0.75rem; font-family: monospace;">
+                        <div><strong style="color:var(--text-muted);">Ord:</strong> ${escHtml(o.razorpayOrderId)}</div>
+                        <div><strong style="color:var(--text-muted);">Pay:</strong> ${escHtml(o.razorpayPaymentId || '—')}</div>
+                      </td>
+                      <td>${listingBadge}</td>
+                      <td>
+                        <button class="interactive-table-btn" onclick="window.viewGrowOrderDetail('${o.id}')" title="View Details">
+                          <i class="fa-solid fa-eye"></i> Details
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const searchInput = document.getElementById("growOrderSearchInput");
+    const statusFilter = document.getElementById("growOrderStatusFilter");
+
+    function applyFilter() {
+      const q = searchInput ? searchInput.value.toLowerCase() : "";
+      const st = statusFilter ? statusFilter.value : "all";
+
+      document.querySelectorAll("#growOrdersTableBody tr").forEach(row => {
+        const text = row.getAttribute("data-grow-search") || "";
+        const matchesQuery = !q || text.includes(q);
+        const matchesStatus = st === "all" || row.innerHTML.toLowerCase().includes(st);
+        row.style.display = matchesQuery && matchesStatus ? "" : "none";
+      });
+    }
+
+    if (searchInput) searchInput.addEventListener("input", applyFilter);
+    if (statusFilter) statusFilter.addEventListener("change", applyFilter);
+
+    window.viewGrowOrderDetail = function(orderId) {
+      const o = (store.growOrders || []).find(x => x.id === orderId);
+      if (!o) return;
+
+      const bodyHtml = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:0.85rem;">
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px;">
+            <div style="font-weight:800; color:#0F172A; text-transform:uppercase; font-size:0.75rem; margin-bottom:8px; letter-spacing:0.05em;">Purchaser Input Details</div>
+            <div style="margin-bottom:6px;"><strong>Name:</strong> ${escHtml(o.name)}</div>
+            <div style="margin-bottom:6px;"><strong>Email:</strong> ${escHtml(o.email)}</div>
+            <div style="margin-bottom:6px;"><strong>Phone / WhatsApp:</strong> ${escHtml(o.phone)}</div>
+            <div style="margin-bottom:6px;"><strong>Business Name:</strong> ${escHtml(o.businessName)}</div>
+            <div><strong>City:</strong> ${escHtml(o.city || '—')}</div>
+          </div>
+
+          <div style="background:#FAF7F5; border:1px solid #EADFD7; border-radius:10px; padding:14px;">
+            <div style="font-weight:800; color:#B24A5B; text-transform:uppercase; font-size:0.75rem; margin-bottom:8px; letter-spacing:0.05em;">Order &amp; Payment Details</div>
+            <div style="margin-bottom:6px;"><strong>Package:</strong> ${escHtml(o.planLabel)}</div>
+            <div style="margin-bottom:6px;"><strong>Amount Paid:</strong> ${o.amountFormatted || ('₹' + (o.amount/100).toFixed(2))}</div>
+            <div style="margin-bottom:6px;"><strong>Payment Status:</strong> ${o.status.toUpperCase()}</div>
+            <div style="margin-bottom:6px;"><strong>Razorpay Order:</strong> <span style="font-family:monospace;">${escHtml(o.razorpayOrderId)}</span></div>
+            <div><strong>Razorpay Payment:</strong> <span style="font-family:monospace;">${escHtml(o.razorpayPaymentId || '—')}</span></div>
+          </div>
+        </div>
+      `;
+
+      if (window.showModal) {
+        window.showModal({
+          title: `Grow Order Details — ${escHtml(o.businessName)}`,
+          body: bodyHtml,
+          confirmText: "Close",
+          onConfirm: () => window.closeModal()
+        });
+      }
+    };
+  }
+
+  /* ===========================================================================
+   * SUBSCRIPTION PURCHASES — Dedicated Admin View for Vendor Membership Plans
+   * ========================================================================= */
+  function renderSubscriptionPurchases(store) {
+    const rawSubs = store.subscriptionPurchases || [];
+    const paidSubs = rawSubs.filter(s => s.status === 'active');
+
+    let totalSubRev = rawSubs.reduce((sum, s) => sum + (Number(s.amount || 0) / 100), 0);
+    const revFormatted = `₹${totalSubRev.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const featuredCount = rawSubs.filter(s => s.planName === 'Featured').length;
+    const premiumCount = rawSubs.filter(s => s.planName === 'Premium').length;
+
+    el.portalBody.innerHTML = `
+      <div class="spa-tab-wrapper">
+        <div class="locator-breadcrumb">
+          <a href="#">WedEazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Subscription Plan Purchases</span>
+        </div>
+
+        <div class="portal-welcome-banner">
+          <div>
+            <h2>💳 Vendor Subscription Plan Purchases</h2>
+            <p>Comprehensive tracking of vendor membership subscriptions (Featured, Premium, etc.). Inspect active memberships, expiry dates, and payment refs.</p>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="subPurchasesSearchInput" placeholder="Search vendor, email, plan..." 
+              style="border:1.5px solid var(--border-color);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text-main);background:var(--surface-bg);outline:none;min-width:240px;" />
+            <select id="subPurchasesPlanFilter" 
+              style="border:1.5px solid var(--border-color);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text-main);background:var(--surface-bg);outline:none;cursor:pointer;">
+              <option value="all">All Plans (${rawSubs.length})</option>
+              <option value="featured">Featured (${featuredCount})</option>
+              <option value="premium">Premium (${premiumCount})</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- KPI SUMMARY CARDS -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="panel-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16,185,129,0.12); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+              <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Subscription Revenue</div>
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">${revFormatted}</div>
+            </div>
+          </div>
+
+          <div class="panel-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(245,158,11,0.12); color: #F59E0B; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+              <i class="fa-solid fa-crown"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Featured Vendors</div>
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">${featuredCount}</div>
+            </div>
+          </div>
+
+          <div class="panel-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(147,51,234,0.12); color: #9333EA; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+              <i class="fa-solid fa-gem"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Premium Vendors</div>
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">${premiumCount}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="panel-card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1rem; font-weight: 800;">Subscription Purchases Log</h3>
+            <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Showing ${rawSubs.length} records</span>
+          </div>
+
+          <div class="responsive-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date &amp; Time</th>
+                  <th>Vendor Business</th>
+                  <th>Contact Person</th>
+                  <th>Category &amp; City</th>
+                  <th>Subscription Plan</th>
+                  <th>Amount</th>
+                  <th>Expiry Date</th>
+                  <th>Payment Ref</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="subPurchasesTableBody">
+                ${rawSubs.length === 0 ? `
+                  <tr>
+                    <td colspan="9" style="text-align:center; padding: 48px; color: var(--text-muted);">
+                      <i class="fa-solid fa-receipt" style="font-size: 2.2rem; margin-bottom: 12px; display: block;"></i>
+                      No vendor subscription purchases recorded yet.
+                    </td>
+                  </tr>
+                ` : rawSubs.map(s => {
+                  const dateStr = new Date(s.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+                  const expiryStr = s.expiryDate ? new Date(s.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+                  const isExpired = s.status === 'expired';
+
+                  const planPill = s.planName === 'Featured'
+                    ? `<span class="interactive-pill-badge" style="background:#FFFBEB; border-color:#FDE68A; color:#B45309; font-weight:800;"><i class="fa-solid fa-crown"></i> Featured</span>`
+                    : `<span class="interactive-pill-badge" style="background:#F3E8FF; border-color:#E9D5FF; color:#6B21A8; font-weight:800;"><i class="fa-solid fa-gem"></i> Premium</span>`;
+
+                  return `
+                    <tr data-sub-search="${escHtml((s.businessName + ' ' + s.userName + ' ' + s.userEmail + ' ' + s.userPhone + ' ' + s.planName).toLowerCase())}">
+                      <td style="font-size: 0.8rem; font-weight: 600; white-space: nowrap;">${dateStr}</td>
+                      <td>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem;">${escHtml(s.businessName)}</div>
+                      </td>
+                      <td>
+                        <div style="font-weight: 600; color: var(--text-main); font-size: 0.82rem;">${escHtml(s.userName)}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${escHtml(s.userEmail)}</div>
+                        <div style="font-size: 0.75rem; color: var(--brand-rose); font-weight: 600;"><i class="fa-brands fa-whatsapp"></i> ${escHtml(s.userPhone)}</div>
+                      </td>
+                      <td>
+                        <div style="font-weight: 600; color: var(--text-main);">${escHtml(s.category)}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-location-dot"></i> ${escHtml(s.city)}</div>
+                      </td>
+                      <td>${planPill}</td>
+                      <td style="font-weight: 800; color: var(--text-main); font-size: 0.95rem;">${s.amountFormatted || ('₹' + (s.amount/100).toFixed(2))}</td>
+                      <td style="font-size: 0.8rem; font-weight: 700; color: ${isExpired ? '#EF4444' : '#10B981'};">${expiryStr}</td>
+                      <td style="font-size: 0.75rem; font-family: monospace; color: var(--text-muted);">${escHtml(s.gatewayRef || s.id)}</td>
+                      <td>
+                        ${isExpired
+                          ? `<span class="interactive-pill-badge" style="background:#FEF2F2; border-color:#FECACA; color:#B91C1C;">Expired</span>`
+                          : `<span class="interactive-pill-badge" style="background:#ECFDF5; border-color:#A7F3D0; color:#047857; font-weight:700;">Active</span>`}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const searchInput = document.getElementById("subPurchasesSearchInput");
+    const planFilter = document.getElementById("subPurchasesPlanFilter");
+
+    function applySubFilter() {
+      const q = searchInput ? searchInput.value.toLowerCase() : "";
+      const p = planFilter ? planFilter.value.toLowerCase() : "all";
+
+      document.querySelectorAll("#subPurchasesTableBody tr").forEach(row => {
+        const text = row.getAttribute("data-sub-search") || "";
+        const matchesQuery = !q || text.includes(q);
+        const matchesPlan = p === "all" || text.includes(p);
+        row.style.display = matchesQuery && matchesPlan ? "" : "none";
+      });
+    }
+
+    if (searchInput) searchInput.addEventListener("input", applySubFilter);
+    if (planFilter) planFilter.addEventListener("change", applySubFilter);
   }
 
   // Global invoice printer

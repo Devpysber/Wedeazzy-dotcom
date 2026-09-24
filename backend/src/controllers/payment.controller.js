@@ -249,6 +249,16 @@ async function activateSubscription(merchantTransactionId, razorpayPaymentId) {
     }).catch(err => logger.error({ err }, 'Failed to send payment receipt WhatsApp'));
   }
 
+  // Admin Notification: alert management team (antriksh@psyber.co + support email) so no purchase is missed
+  const adminRecipients = ['antriksh@psyber.co'];
+  const fallback = env.SUPPORT_EMAIL || env.ADMIN_EMAIL;
+  if (fallback && !adminRecipients.includes(fallback)) {
+    adminRecipients.push(fallback);
+  }
+  await emailService.sendSubscriptionAdminNotification(adminRecipients, updatedTxn, vendor, txn.user).catch(err =>
+    logger.error({ err }, 'Failed to send subscription admin notification email')
+  );
+
   return true;
 }
 
