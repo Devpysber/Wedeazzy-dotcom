@@ -9,7 +9,9 @@ const bcrypt = require('bcryptjs');
 const { HttpError } = require('../middleware/error');
 const { slugify, uniqueSlug } = require('../utils/slug');
 const { sanitizeFields } = require('../utils/sanitize');
-const { sendMail, sendBookingConfirmedEmail, sendAccountSuspendedEmail } = require('../services/email.service');
+const emailService = require('../services/email.service');
+const { sendMail, sendBookingConfirmedEmail, sendAccountSuspendedEmail } = emailService;
+const guestCheckoutCtrl = require('./guestCheckout.controller');
 const { getEmailWorkflows, saveEmailWorkflows } = require('../config/emailWorkflowsConfig');
 const { assertStrongPassword } = require('../services/auth.service');
 const logger = require('../config/logger');
@@ -2660,6 +2662,66 @@ async function getSubscriptionOrders(req, res, next) {
   } catch (err) { next(err); }
 }
 
+/**
+ * POST /api/admin/grow-orders/:id/resend-email
+ * Manually re-trigger purchaser receipt & admin notification emails for a Grow Order
+ */
+async function resendGrowOrderEmails(req, res, next) {
+  try {
+    const { id } = req.params;
+    const order = await prisma.guestOrder.findUnique({ where: { id } });
+    if (!order) {
+      return res.status(404).json({ ok: false, error: 'Grow Order not found' });
+    }
+
+    const listing = await guestCheckoutCtrl.findListing(order);
+
+    let receiptOk = false;
+    let receiptError = null;
+    try {
+      const receipt = await emailService.sendGuestOrderReceiptEmail(order.email, order, listing);
+      if (receipt && receipt.ok) {
+        receiptOk = true;
+        await prisma.guestOrder.update({
+          where: { id: order.id },
+          data: { emailSentAt: new Date() }
+        }).catch(() => {});
+      } else {
+        receiptError = receipt?.error || 'Email service failed';
+      }
+    } catch (err) {
+      receiptError = err.message;
+      logger.error({ err, orderId: order.id }, 'Resend guest order receipt failed');
+    }
+
+    let adminOk = false;
+    let adminError = null;
+    try {
+      await guestCheckoutCtrl.notifyAdmin(order, listing);
+      adminOk = true;
+    } catch (err) {
+      adminError = err.message;
+      logger.error({ err, orderId: order.id }, 'Resend guest order admin notification failed');
+    }
+
+    if (!receiptOk && !adminOk) {
+      return res.status(500).json({
+        ok: false,
+        error: `Failed to resend emails. Customer receipt: ${receiptError || 'Failed'}, Admin alert: ${adminError || 'Failed'}`
+      });
+    }
+
+    res.json({
+      ok: true,
+      message: 'Emails resent successfully',
+      receiptSent: receiptOk,
+      receiptError,
+      adminNotified: adminOk,
+      adminError
+    });
+  } catch (err) { next(err); }
+}
+
 module.exports = {
   getAnalytics,
   getVendors,
@@ -2750,4 +2812,5 @@ module.exports = {
   // Grow Orders & Subscriptions
   getGrowOrders,
   getSubscriptionOrders,
+  resendGrowOrderEmails,
 };

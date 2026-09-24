@@ -740,6 +740,7 @@ module.exports = {
   handleWebhookFailed,
   findListing,
   activatePlanForVendor,
-  linkPendingGuestOrders
+  linkPendingGuestOrders,
+  notifyAdmin
 };
 

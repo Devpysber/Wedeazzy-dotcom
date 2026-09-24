@@ -129,6 +129,7 @@ router.post('/transactions/:id/refund', ctrl.refundTransaction);
 router.post('/vendors/:id/cancel-subscription', ctrl.cancelVendorSubscription);
 router.patch('/vendors/:id/subscription', ctrl.updateVendorSubscription);
 router.get('/grow-orders', ctrl.getGrowOrders);
+router.post('/grow-orders/:id/resend-email', ctrl.resendGrowOrderEmails);
 router.get('/subscriptions-list', ctrl.getSubscriptionOrders);
 
 // --- Bulk listing import (Approve Businesses > Import Listings) ---

@@ -536,6 +536,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.closeModal = closeModal; // Export to globally call
+  window.openModal = openModal;
+  window.showModal = function(opts) {
+    const title = opts.title || '';
+    const body = opts.body || '';
+    const footer = opts.footer || `<button class="btn-secondary" onclick="window.closeModal()">${opts.confirmText || 'Close'}</button>`;
+    openModal(title, body, footer);
+  };
 
   // 5. Toast signals spawner
   function showToast(message, type = "info") {
@@ -1455,9 +1462,47 @@ document.addEventListener("DOMContentLoaded", () => {
     if (searchInput) searchInput.addEventListener("input", applyFilter);
     if (statusFilter) statusFilter.addEventListener("change", applyFilter);
 
+    window.resendGrowOrderEmail = async function(orderId, btn) {
+      if (!confirm('Resend purchaser receipt and admin alert emails for this order?')) return;
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resending...';
+      }
+      try {
+        const token = localStorage.getItem('token') || localStorage.getItem('wedeazzy_admin_token') || '';
+        const res = await fetch(`/api/admin/grow-orders/${orderId}/resend-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          }
+        });
+        const data = await res.json();
+        if (data.ok) {
+          window.showToast('Emails resent successfully!', 'success');
+          if (window.WedEazzyStore) window.WedEazzyStore.sync();
+          window.closeModal();
+        } else {
+          window.showToast(`Resend failed: ${data.error || 'Unknown error'}`, 'danger');
+        }
+      } catch (err) {
+        window.showToast(`Error resending email: ${err.message}`, 'danger');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }
+    };
+
     window.viewGrowOrderDetail = function(orderId) {
       const o = (store.growOrders || []).find(x => x.id === orderId);
       if (!o) return;
+
+      const emailStatusText = o.emailSentAt 
+        ? `<span style="color:#16a34a;font-weight:600;"><i class="fa-solid fa-check-circle"></i> Sent (${new Date(o.emailSentAt).toLocaleString()})</span>`
+        : `<span style="color:#dc2626;font-weight:600;"><i class="fa-solid fa-triangle-exclamation"></i> Not Sent / Pending</span>`;
 
       const bodyHtml = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:0.85rem;">
@@ -1475,19 +1520,22 @@ document.addEventListener("DOMContentLoaded", () => {
             <div style="margin-bottom:6px;"><strong>Package:</strong> ${escHtml(o.planLabel)}</div>
             <div style="margin-bottom:6px;"><strong>Amount Paid:</strong> ${o.amountFormatted || ('₹' + (o.amount/100).toFixed(2))}</div>
             <div style="margin-bottom:6px;"><strong>Payment Status:</strong> ${o.status.toUpperCase()}</div>
+            <div style="margin-bottom:6px;"><strong>Email Receipt:</strong> ${emailStatusText}</div>
             <div style="margin-bottom:6px;"><strong>Razorpay Order:</strong> <span style="font-family:monospace;">${escHtml(o.razorpayOrderId)}</span></div>
             <div><strong>Razorpay Payment:</strong> <span style="font-family:monospace;">${escHtml(o.razorpayPaymentId || '—')}</span></div>
           </div>
         </div>
       `;
 
-      if (window.showModal) {
-        window.showModal({
-          title: `Grow Order Details — ${escHtml(o.businessName)}`,
-          body: bodyHtml,
-          confirmText: "Close",
-          onConfirm: () => window.closeModal()
-        });
+      const footerHtml = `
+        <button class="btn-primary" style="background:#0284c7;border-color:#0284c7;" onclick="window.resendGrowOrderEmail('${o.id}', this)">
+          <i class="fa-solid fa-paper-plane"></i> Resend Receipt &amp; Admin Alert
+        </button>
+        <button class="btn-secondary" onclick="window.closeModal()">Close</button>
+      `;
+
+      if (window.openModal) {
+        window.openModal(`Grow Order Details — ${escHtml(o.businessName)}`, bodyHtml, footerHtml);
       }
     };
   }
