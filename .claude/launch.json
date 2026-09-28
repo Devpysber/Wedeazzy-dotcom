@@ -5,7 +5,21 @@
       "name": "wedeazzy",
       "runtimeExecutable": "node",
       "runtimeArgs": ["backend/src/server.js"],
-      "port": 4000
+      "port": 4000,
+      "autoPort": true
+    },
+    {
+      "name": "wedeazzy-mailtest",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["backend/src/server.js"],
+      "port": 4100,
+      "env": {
+        "PORT": "4100",
+        "PUBLIC_BASE_URL": "http://localhost:4100",
+        "SMTP_HOST": "127.0.0.1",
+        "SMTP_PORT": "2525",
+        "SMTP_SECURE": "false"
+      }
     }
   ]
 }

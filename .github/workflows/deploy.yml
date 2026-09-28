@@ -25,10 +25,12 @@
 name: Deploy to VPS
 
 on:
-  # Manual only. Pushes deploy through deploy-vps-runner.yml, which runs on a
-  # runner installed on the VPS: GitHub-hosted runners cannot open an inbound
-  # SSH connection to this server (see DEPLOY-SELF-HOSTED-RUNNER.md). Kept as a
-  # fallback for when the self-hosted runner is offline.
+  # Deploys on every push to main again. The pull-based VPS cron
+  # (DEPLOY-VPS-AUTO.md) was never installed on the server, so since the
+  # switch to manual-only nothing reached production. Re-run this workflow
+  # from the Actions tab to redeploy by hand.
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
