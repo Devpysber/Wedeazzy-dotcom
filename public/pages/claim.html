@@ -249,15 +249,16 @@
       Ownership of <strong id="successBizName"></strong> has been verified successfully.
     </p>
 
-    <div class="alert alert-success">
+    <div class="alert alert-success" id="successSentAlert">
       <i class="fa-solid fa-envelope-circle-check" style="margin-top:2px;"></i>
       <div>
         We have dispatched your temporary login credentials to:<br />
         <strong id="successEmailMasked" style="font-family:monospace; font-size:15px;"></strong>
       </div>
     </div>
+    <div class="alert alert-error hidden" id="successNotSentAlert"></div>
 
-    <p style="font-size:13.5px; color:#5A5560; text-align:center; margin-top:16px; margin-bottom:24px;">
+    <p id="successCheckInbox" style="font-size:13.5px; color:#5A5560; text-align:center; margin-top:16px; margin-bottom:24px;">
       Please check your email inbox and log in with your temporary password. You will be prompted to create your new password upon first login.
     </p>
 
@@ -600,14 +601,26 @@
       });
 
       el('successBizName').textContent = flow.selectedVendor.businessName;
-      el('successEmailMasked').textContent = data.emailMasked || email;
-      setState('success');
+      showCredentialsResult(data, email);
     } catch (err) {
       showErr('emailErr', err.message);
     } finally {
       setBtnLoading(btn, false);
     }
   });
+
+  // The server reports emailSent:false when the credentials email could not be
+  // delivered; say so instead of promising an email that is never coming.
+  function showCredentialsResult(data, email) {
+    el('successEmailMasked').textContent = data.emailMasked || email;
+    const failed = data.emailSent === false;
+    el('successSentAlert').classList.toggle('hidden', failed);
+    el('successCheckInbox').classList.toggle('hidden', failed);
+    const warn = el('successNotSentAlert');
+    warn.textContent = failed ? (data.message || 'We could not email your login details.') : '';
+    warn.classList.toggle('hidden', !failed);
+    setState('success');
+  }
 
   /* --- REGISTER NEW BUSINESS (PATH B) --- */
   el('registerForm').addEventListener('submit', async (e) => {
@@ -645,8 +658,7 @@
       }
 
       el('successBizName').textContent = payload.businessName;
-      el('successEmailMasked').textContent = data.emailMasked || payload.email;
-      setState('success');
+      showCredentialsResult(data, payload.email);
     } catch (err) {
       showErr('registerErr', err.message);
     } finally {

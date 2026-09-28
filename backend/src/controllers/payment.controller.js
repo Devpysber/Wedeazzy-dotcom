@@ -106,12 +106,26 @@ async function downgradeVendorToBasic(vendorId) {
 
 /** Mark a transaction failed — only downgrades "initiated" rows. */
 async function markFailed(merchantOrderId, reason) {
-  await prisma.transaction.updateMany({
+  const r = await prisma.transaction.updateMany({
     where: { id: merchantOrderId, status: 'initiated' },
     data: { status: 'failed', updatedAt: new Date() }
-  }).catch(err =>
-    logger.error({ err }, `Failed to mark transaction ${merchantOrderId} as failed (${reason})`)
-  );
+  }).catch(err => {
+    logger.error({ err }, `Failed to mark transaction ${merchantOrderId} as failed (${reason})`);
+    return null;
+  });
+  return !!(r && r.count > 0);
+}
+
+/**
+ * The vendor listing a transaction was bought for. User.vendor is a list (one
+ * account can own several listings), so it can't be used as a single vendor;
+ * createOrder records the listing in meta.vendorId, and only rows older than
+ * that fall back to the account's first listing.
+ */
+function vendorForTxn(txn) {
+  const listings = (txn.user && txn.user.vendor) || [];
+  const wantedId = txn.meta && typeof txn.meta === 'object' ? txn.meta.vendorId : null;
+  return (wantedId && listings.find((v) => v.id === wantedId)) || listings[0] || null;
 }
 
 /** Activate subscription / campaign after a confirmed Razorpay payment. */
@@ -137,7 +151,7 @@ async function activateSubscription(merchantTransactionId, razorpayPaymentId) {
   }
 
   const updatedTxn = { ...txn, status: 'success', gatewayRef: razorpayPaymentId };
-  const vendor = txn.user.vendor;
+  const vendor = vendorForTxn(txn);
   if (!vendor) {
     logger.error(`Vendor not found for user: ${txn.userId}`);
     return false;
@@ -582,9 +596,19 @@ async function handleWebhook(req, res, next) {
       const orderId = payload.payment?.entity?.order_id;
       if (orderId) {
         const txn = await prisma.transaction.findFirst({
-          where: { meta: { path: '$.razorpayOrderId', equals: orderId } }
+          where: { meta: { path: '$.razorpayOrderId', equals: orderId } },
+          include: { user: { select: { email: true } } }
         });
-        if (txn) await markFailed(txn.id, 'webhook-payment-failed');
+        if (txn) {
+          // Only the call that actually moves the row to "failed" emails the
+          // payer, so Razorpay's webhook retries can't send it twice.
+          const flipped = await markFailed(txn.id, 'webhook-payment-failed');
+          if (flipped && txn.user && txn.user.email) {
+            const reason = payload.payment?.entity?.error_description || null;
+            emailService.sendPaymentFailedEmail(txn.user.email, txn, reason)
+              .catch(err => logger.error({ err, to: txn.user.email }, 'Failed to send payment failure email'));
+          }
+        }
         else await require('./guestCheckout.controller').handleWebhookFailed(orderId).catch(() => {});
       }
       return res.json({ success: true });
@@ -675,7 +699,7 @@ async function refundTransaction(req, res, next) {
       data: { status: 'refunded', meta: { ...currentMeta, refundId, refundedAt: new Date().toISOString() }, updatedAt: new Date() }
     });
 
-    const vendor = txn.user.vendor;
+    const vendor = vendorForTxn(txn);
     if (txn.purpose.startsWith('subscription:') && vendor) {
       await downgradeVendorToBasic(vendor.id);
     } else if (txn.purpose.startsWith('campaign:')) {
@@ -690,17 +714,19 @@ async function refundTransaction(req, res, next) {
     const vendorName = vendor?.businessName || txn.user.name || 'Vendor';
     const planLabel  = txn.purpose.startsWith('subscription:') ? txn.purpose.slice(13) : 'Campaign';
     const refundAmt  = txn.amount / 100;
+    const refundCur  = String((txn.meta && txn.meta.currency) || 'INR').toUpperCase();
+    const refundSym  = refundCur === 'INR' ? '₹' : `${refundCur} `;
 
     if (userEmail) {
       await emailService.sendMail({
         to: userEmail,
         subject: 'Payment Refund Issued - WedEazzy.com',
-        html: `<p>Dear ${vendorName} Team,</p><p>We have processed a refund of <strong>₹${refundAmt.toFixed(2)}</strong> for transaction <strong>${txn.id}</strong> (${planLabel} Plan). Your listing has been downgraded to the Basic Plan. The amount will reflect in 5-7 business days.</p><p>Best regards,<br>WedEazzy Billing Team</p>`,
-        text: `Refund of ₹${refundAmt.toFixed(2)} processed for transaction ${txn.id}.`
+        html: `<p>Dear ${vendorName} Team,</p><p>We have processed a refund of <strong>${refundSym}${refundAmt.toFixed(2)}</strong> for transaction <strong>${txn.id}</strong> (${planLabel} Plan). Your listing has been downgraded to the Basic Plan. The amount will reflect in 5-7 business days.</p><p>Best regards,<br>WedEazzy Billing Team</p>`,
+        text: `Refund of ${refundSym}${refundAmt.toFixed(2)} processed for transaction ${txn.id}.`
       }).catch(err => logger.error({ err }, 'Failed to send refund email'));
     }
     if (userPhone) {
-      await whatsappService.sendWa({ to: userPhone, body: `*Refund Issued - WedEazzy.com*\n\nRefund of *₹${refundAmt.toFixed(2)}* for transaction *${txn.id}* has been issued. Amount will credit in 5-7 days.`, template: 'refund_issued' })
+      await whatsappService.sendWa({ to: userPhone, body: `*Refund Issued - WedEazzy.com*\n\nRefund of *${refundSym}${refundAmt.toFixed(2)}* for transaction *${txn.id}* has been issued. Amount will credit in 5-7 days.`, template: 'refund_issued' })
         .catch(err => logger.error({ err }, 'Failed to send refund WhatsApp'));
     }
 

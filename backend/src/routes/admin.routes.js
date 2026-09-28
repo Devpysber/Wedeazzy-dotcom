@@ -6,6 +6,7 @@ const { v4: uuid } = require('uuid');
 const rateLimit = require('express-rate-limit');
 const ctrl = require('../controllers/admin.controller');
 const importCtrl = require('../controllers/import.controller');
+const chatCtrl = require('../controllers/chat.controller');
 const env = require('../config/env');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { rateLimitHandler } = require('../utils/rateLimitLogger');
@@ -179,6 +180,10 @@ router.delete('/cities/:slug', ctrl.deleteCity);
 router.get('/suburbs', ctrl.listSuburbs);
 router.post('/suburbs', ctrl.createSuburb);
 router.delete('/suburbs/:slug', ctrl.deleteSuburb);
+
+// Couple <-> vendor chats, read-only. Never marks messages read.
+router.get('/chat/conversations', chatCtrl.adminList);
+router.get('/chat/conversations/:id', chatCtrl.adminGet);
 
 router.get('/email-workflows', ctrl.listEmailWorkflows);
 router.patch('/email-workflows/:id', ctrl.updateEmailWorkflow);

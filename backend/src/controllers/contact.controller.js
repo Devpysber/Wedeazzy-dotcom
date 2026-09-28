@@ -33,12 +33,22 @@ async function postContactForm(req, res, next) {
       throw new HttpError(500, 'Contact form is temporarily unavailable. Please try again later.', 'ERR_NO_RECIPIENT');
     }
 
-    await emailService.sendContactFormEmail(adminEmail, {
+    // sendMail() never throws — it resolves { ok: false } on SMTP failure and
+    // { fallback: true } when SMTP isn't configured. Either way the message was
+    // NOT delivered, and email is its only destination, so report the failure
+    // instead of telling the visitor it was sent.
+    const result = await emailService.sendContactFormEmail(adminEmail, {
       name: name.trim(),
       email: email.trim().toLowerCase(),
       subject: (subject || '').trim(),
       message: message.trim()
     });
+    if (!result || !result.ok || result.fallback) {
+      logger.error({ email: email.trim().toLowerCase(), subject, result }, 'Contact form message could not be delivered');
+      const deliveryErr = new HttpError(502, 'We could not send your message right now. Please try again in a few minutes.', 'ERR_DELIVERY_FAILED');
+      deliveryErr.expose = true; // user-facing wording, safe to return despite the 5xx status
+      throw deliveryErr;
+    }
 
     res.json({
       ok: true,

@@ -199,10 +199,10 @@ async function inviteVendorToClaim(req, res, next) {
       : ['whatsapp', 'email'];
 
     const env = require('../config/env');
-    // Links to the real vendor onboarding page — there's no dedicated
-    // "claim this specific listing" flow yet, so this just gets them
-    // started on a normal signup rather than a dead/unconsumed query param.
-    const claimUrl = `${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/vendor.html`;
+    // The claim portal: the vendor searches for their listing and verifies
+    // ownership there. /pages/vendor.html is the public profile page and, with
+    // no ?slug, only shows "Vendor not found".
+    const claimUrl = `${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/claim.html`;
     const defaultMessage = `Hi! Your business "${vendor.businessName}" is listed on WedEazzy.com. Claim your free listing to manage your profile, photos, and leads: ${claimUrl}`;
     // A custom message is admin-authored but still ends up in an HTML email, so
     // it gets escaped on the HTML path (plain text/WhatsApp need no escaping).
@@ -280,7 +280,7 @@ async function bulkInviteVendors(req, res, next) {
       : ['whatsapp', 'email'];
 
     const env = require('../config/env');
-    const claimUrl = `${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/vendor.html`;
+    const claimUrl = `${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/claim.html`;
 
     const vendors = await prisma.vendor.findMany({
       where: { id: { in: ids } },
@@ -686,6 +686,10 @@ async function updateBookingStatus(req, res, next) {
       throw new HttpError(400, `Invalid booking status. Must be one of: ${VALID_BOOKING_STATUSES.join(', ')}`, 'ERR_INPUT');
     }
 
+    // Re-saving an already-confirmed booking must not mail the couple again.
+    const previous = await prisma.booking.findUnique({ where: { id }, select: { status: true } });
+    if (!previous) throw new HttpError(404, 'Booking not found', 'ERR_NOT_FOUND');
+
     const booking = await prisma.booking.update({
       where: { id },
       data: { status },
@@ -697,7 +701,7 @@ async function updateBookingStatus(req, res, next) {
 
     res.json({ ok: true, booking });
 
-    if (status === 'confirmed' && booking.couple?.user?.email) {
+    if (status === 'confirmed' && previous.status !== 'confirmed' && booking.couple?.user?.email) {
       sendBookingConfirmedEmail(booking.couple.user.email, booking, booking.vendor?.businessName || 'your vendor').catch((e) =>
         logger.error({ err: e, bookingId: id }, 'Failed to send booking-confirmed email')
       );
@@ -1303,6 +1307,10 @@ async function sendTestEmail(req, res, next) {
 
     if (result.fallback) {
       res.json({ ok: true, message: `Test email simulated (SMTP fallback mode) for ${testEmail}` });
+    } else if (!result.ok) {
+      // sendMail() resolves (never throws) on an SMTP failure; this branch used
+      // to fall through to "successfully delivered".
+      res.status(502).json({ ok: false, code: 'ERR_DELIVERY_FAILED', message: `Test email could not be sent: ${result.error || 'SMTP error'}` });
     } else {
       res.json({ ok: true, message: `Test email successfully delivered to ${testEmail}` });
     }
@@ -1534,7 +1542,9 @@ async function testEmailTemplate(req, res, next) {
       emailSent,
       message: emailSent
         ? `Test email sent to ${testEmail.trim()} successfully!`
-        : `Email dispatched, but SMTP fallback mode was active.`
+        : mailResult && mailResult.fallback
+          ? `Email dispatched, but SMTP fallback mode was active.`
+          : `Test email could not be sent: ${(mailResult && mailResult.error) || 'SMTP error'}`
     });
   } catch (e) {
     next(e);

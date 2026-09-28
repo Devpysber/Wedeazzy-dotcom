@@ -41,6 +41,8 @@ const env = {
 
   // Notification recipients — configurable, never hardcoded in senders.
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
+  // WhatsApp number that receives home-page enquiries from visitors who aren't signed in.
+  ENQUIRY_WHATSAPP: process.env.ENQUIRY_WHATSAPP || '919930090487',
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || '',
 
   UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads',

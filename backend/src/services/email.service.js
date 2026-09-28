@@ -39,6 +39,15 @@ function esc(str) {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * Currency of a Transaction, from the meta written at order creation
+ * (payment.controller createOrder). Older rows without it were all INR.
+ */
+function currencyOf(txn) {
+  const code = String((txn && txn.meta && txn.meta.currency) || 'INR').toUpperCase();
+  return { code, symbol: code === 'INR' ? '₹' : `${code} `, isInr: code === 'INR' };
+}
+
 let transporter = null;
 
 function getTransporter() {
@@ -196,11 +205,72 @@ async function sendBusinessLoginOtpEmail(to, code, businessName = 'your business
   return sendMail({ to, subject: 'Business Portal Verification Code - WedEazzy.com', html, text });
 }
 
+/**
+ * Send the Admin Portal 2FA sign-in code. Admins used to get sendOtpEmail,
+ * whose copy asks the reader to "complete your registration".
+ */
+async function sendAdminLoginOtpEmail(to, code) {
+  const html = renderHtmlFrame('Your admin sign-in code', 'Admin Portal Sign-In', `
+    <p>Hello,</p>
+    <p>Use the 6-digit code below to finish signing in to the WedEazzy Admin Portal:</p>
+    <div class="otp-box">${code}</div>
+    <p>This code is valid for <strong>${env.OTP_TTL_MIN} minutes</strong>. Do not share it with anyone.</p>
+    <p style="color: #79706A; font-size: 13px; margin-top: 20px;">If you did not just try to sign in, change your admin password immediately.</p>
+    <p>Best regards,<br>The WedEazzy Team</p>
+  `);
+  const text = `WedEazzy Admin Portal sign-in code: ${code} (valid ${env.OTP_TTL_MIN} minutes).`;
+  return sendMail({ to, subject: 'Admin Portal Sign-In Code - WedEazzy.com', html, text });
+}
+
+/**
+ * Account settings codes (couple Profile page): authorising an email change,
+ * and authorising a password change. Both expire with the normal OTP TTL.
+ */
+async function sendEmailChangeOtpEmail(to, code) {
+  const html = renderHtmlFrame('Email change code', 'Change Your Account Email', `
+    <p>Hello,</p>
+    <p>Someone asked to change the email address on your WedEazzy account. If this was you, enter this code on your Profile page:</p>
+    <div class="otp-box">${code}</div>
+    <p>This code is valid for <strong>${env.OTP_TTL_MIN} minutes</strong>. If you did not request this, ignore this email — your account email stays the same — and consider changing your password.</p>
+    <p>Best regards,<br>The WedEazzy Team</p>
+  `);
+  const text = `Your WedEazzy email change code is ${code} (valid ${env.OTP_TTL_MIN} minutes). If you did not request this, ignore this email.`;
+  return sendMail({ to, subject: 'Your email change code - WedEazzy.com', html, text });
+}
+
+async function sendPasswordChangeOtpEmail(to, code) {
+  const html = renderHtmlFrame('Password change code', 'Change Your Password', `
+    <p>Hello,</p>
+    <p>Use this code on your Profile page to set a new password for your WedEazzy account:</p>
+    <div class="otp-box">${code}</div>
+    <p>This code is valid for <strong>${env.OTP_TTL_MIN} minutes</strong>. If you did not request this, you can ignore this email and your password stays the same.</p>
+    <p>Best regards,<br>The WedEazzy Team</p>
+  `);
+  const text = `Your WedEazzy password change code is ${code} (valid ${env.OTP_TTL_MIN} minutes).`;
+  return sendMail({ to, subject: 'Your password change code - WedEazzy.com', html, text });
+}
+
+/** Security notice to the OLD address after the account email was changed. */
+async function sendEmailChangedNoticeEmail(oldEmail, newEmail) {
+  const html = renderHtmlFrame('Your email was changed', 'Account Email Changed', `
+    <p>Hello,</p>
+    <p>The email address on your WedEazzy account was just changed to <strong>${esc(newEmail)}</strong>. You will sign in with that address from now on.</p>
+    <p>If you did not make this change, contact us right away on WhatsApp at <strong>+91 74989 87620</strong>.</p>
+    <p>Best regards,<br>The WedEazzy Team</p>
+  `);
+  const text = `The email on your WedEazzy account was changed to ${newEmail}. If this was not you, contact us on WhatsApp at +91 74989 87620.`;
+  return sendMail({ to: oldEmail, subject: 'Your WedEazzy account email was changed', html, text });
+}
+
 module.exports = {
   sendMail,
+  sendEmailChangeOtpEmail,
+  sendPasswordChangeOtpEmail,
+  sendEmailChangedNoticeEmail,
   sendOtpEmail,
   sendPasswordResetEmail,
   sendBusinessLoginOtpEmail,
+  sendAdminLoginOtpEmail,
   
   /**
    * Send Passwordless OTP Login verification email.
@@ -231,7 +301,15 @@ module.exports = {
     const accountLabel = role === 'vendor' ? 'WedEazzy vendor account'
       : role === 'couple' ? 'WedEazzy account'
       : 'WedEazzy administrative account';
-    const resetUrl = `${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/admin-login.html?action=reset&token=${token}&role=${role}`;
+    // /pages/admin-login.html is only the Google OAuth gateway and has no reset
+    // form, so links pointing there left the recipient on an "Administrator
+    // sign-in" screen. Vendors (and couples, who only reach this token flow
+    // from the vendor sign-in page) reset on vendor-login.html, admins on the
+    // admin panel's own login page.
+    const base = env.PUBLIC_BASE_URL || 'http://localhost:4000';
+    const resetUrl = role === 'admin'
+      ? `${base}/${env.ADMIN_PANEL_PATH}/login.html?action=reset&token=${encodeURIComponent(token)}&role=admin`
+      : `${base}/pages/vendor-login.html?token=${encodeURIComponent(token)}`;
     const html = renderHtmlFrame(title, heading, `
       <p>Hello there,</p>
       <p>We received a request to reset the password for your ${accountLabel}.</p>
@@ -554,7 +632,7 @@ module.exports = {
           ${row('Category', vendor.category || '—')}
           ${row('City', vendor.city || vendor.address || '—')}
           ${row('Plan Purchased', `${planName} Subscription Plan`)}
-          ${row('Amount Paid', `₹${amountRs} INR`)}
+          ${row('Amount Paid', `${currencyOf(txn).symbol}${amountRs} ${currencyOf(txn).code}`)}
           ${row('Payment ID', txn.gatewayRef || txn.id || 'N/A')}
           ${row('Transaction Date', dateStr)}
           ${row('Subscription Expiry', expiryStr)}
@@ -583,6 +661,9 @@ module.exports = {
     
     const isSubscription = txn.purpose.startsWith('subscription:');
     const planName = isSubscription ? txn.purpose.slice(13) : 'Ad Campaign';
+    // Plans are sold in several currencies (plans.json "countries"); only INR
+    // carries the 18% GST breakdown. Everything else shows the plain total.
+    const { symbol, isInr } = currencyOf(txn);
     const amountRs = (txn.amount / 100).toFixed(2);
     const baseRs = (txn.amount / 1.18 / 100).toFixed(2);
     const gstRs = (txn.amount / 100 - parseFloat(baseRs)).toFixed(2);
@@ -624,17 +705,17 @@ module.exports = {
           <td style="padding:10px; font-weight:bold;">Date & Time</td>
           <td style="padding:10px;">${dateStr}</td>
         </tr>
-        <tr style="border-bottom:1px solid #E8DFD4;">
+        ${isInr ? `<tr style="border-bottom:1px solid #E8DFD4;">
           <td style="padding:10px; font-weight:bold;">Base Amount</td>
           <td style="padding:10px;">₹${baseRs}</td>
         </tr>
         <tr style="border-bottom:1px solid #E8DFD4;">
           <td style="padding:10px; font-weight:bold;">GST (18%)</td>
           <td style="padding:10px;">₹${gstRs}</td>
-        </tr>
+        </tr>` : ''}
         <tr style="border-bottom:1px solid #E8DFD4;">
-          <td style="padding:10px; font-weight:bold; color: #1B1B1F;">Total Paid (Inc. GST)</td>
-          <td style="padding:10px; color: #C8102E; font-weight: bold; font-size:16px;">₹${amountRs}</td>
+          <td style="padding:10px; font-weight:bold; color: #1B1B1F;">Total Paid${isInr ? ' (Inc. GST)' : ''}</td>
+          <td style="padding:10px; color: #C8102E; font-weight: bold; font-size:16px;">${symbol}${amountRs}</td>
         </tr>
       </table>
       
@@ -645,7 +726,7 @@ module.exports = {
       <p>Best regards,<br>The WedEazzy Team</p>
     `);
 
-    const text = `Payment Confirmed: Thank you for purchasing the ${planName} Plan. Transaction ID: ${txn.id}, Amount Paid: ₹${amountRs}.`;
+    const text = `Payment Confirmed: Thank you for purchasing the ${planName} Plan. Transaction ID: ${txn.id}, Amount Paid: ${symbol}${amountRs}.`;
     return sendMail({ to, subject: `Payment Receipt: ${planName} Activated - WedEazzy.com`, html, text });
   },
 
@@ -697,7 +778,7 @@ module.exports = {
   async sendVendorCredentialsEmail(to, businessName, tempPassword, loginEmail) {
     const title = 'Your WedEazzy Vendor Account Is Ready';
     const heading = 'Welcome to WedEazzy Vendor Portal';
-    const loginUrl = `${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/admin-login.html`;
+    const loginUrl = `${env.PUBLIC_BASE_URL || 'http://localhost:4000'}/pages/vendor-login.html?email=${encodeURIComponent(loginEmail || to)}`;
     const html = renderHtmlFrame(title, heading, `
       <p>Hello,</p>
       <p>Your business <strong>${esc(businessName)}</strong> has been successfully set up on WedEazzy.</p>
@@ -713,7 +794,8 @@ module.exports = {
       </div>
       <p>Best regards,<br>The WedEazzy Team</p>
     `);
-    const text = `Welcome to WedEazzy! Your business "${businessName}" is ready. Login Email: ${loginEmail || to}, Temporary Password: ${tempPassword}. Login at: ${loginUrl}`;
+    // One value per line: a "." straight after the password got copied along with it.
+    const text = `Welcome to WedEazzy! Your business "${businessName}" is ready.\n\nLogin Email: ${loginEmail || to}\nTemporary Password: ${tempPassword}\n\nLogin at: ${loginUrl}`;
     return sendMail({ to, subject: 'Your WedEazzy Vendor Account Credentials', html, text });
   },
 
@@ -820,7 +902,7 @@ module.exports = {
         </tr>
         ${amountRs ? `<tr style="border-bottom:1px solid #E8DFD4;">
           <td style="padding:10px; font-weight:bold;">Amount</td>
-          <td style="padding:10px;">₹${esc(amountRs)}</td>
+          <td style="padding:10px;">${esc(currencyOf(txn).symbol)}${esc(amountRs)}</td>
         </tr>` : ''}
         <tr style="border-bottom:1px solid #E8DFD4;">
           <td style="padding:10px; font-weight:bold;">Reason</td>

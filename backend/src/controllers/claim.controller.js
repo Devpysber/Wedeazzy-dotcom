@@ -25,6 +25,31 @@ const { HttpError } = require('../middleware/error');
 const { generateOtp, hashOtp, compareOtp } = require('../utils/otp');
 const { sendMail, sendVendorCredentialsEmail } = require('../services/email.service');
 
+function escHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+const CREDENTIALS_NOT_SENT_MSG = (lead) =>
+  `${lead} However, we could not email your login details. Use "Forgot password" on the vendor sign-in page with this email to set your password, or contact us on WhatsApp at +91 74989 87620.`;
+
+/**
+ * Email the temporary vendor password. sendMail() never throws on an SMTP
+ * failure — it resolves { ok: false } — so the old try/catch never noticed a
+ * failed send and the claimant was told credentials were on the way for a
+ * password nobody would ever see. Returns whether it was actually delivered.
+ */
+async function deliverCredentials(email, businessName, tempPassword, logCtx) {
+  const result = await sendVendorCredentialsEmail(email, businessName, tempPassword, email)
+    .catch((err) => ({ ok: false, error: err && err.message }));
+  const delivered = !!(result && result.ok && !result.fallback);
+  if (!delivered) {
+    logger.error({ ...logCtx, email, result: result && { ok: result.ok, fallback: result.fallback, error: result.error } }, 'Vendor credentials email was NOT delivered');
+  }
+  return delivered;
+}
+
 const OTP_TTL_MS = 15 * 60 * 1000;               // 15 minutes
 const MAX_OTP_PER_VENDOR_PER_HOUR = 10;
 const MAX_OTP_PER_IP_PER_HOUR = 20;
@@ -434,11 +459,7 @@ async function complete(req, res, next) {
     await recordAttempt(vendor.id, normalizedEmail, ip, true, 'claimed_successfully');
 
     // Send Temporary Credentials Email (Plaintext password is NEVER returned in JSON)
-    try {
-      await sendVendorCredentialsEmail(normalizedEmail, vendor.businessName, tempPassword, normalizedEmail);
-    } catch (err) {
-      logger.error({ err, vendorId: vendor.id, email: normalizedEmail }, 'Failed to send vendor credentials email');
-    }
+    const emailSent = await deliverCredentials(normalizedEmail, vendor.businessName, tempPassword, { vendorId: vendor.id });
 
     logger.info({ vendorId: vendor.id, userId, email: normalizedEmail }, 'Business successfully claimed via simplified phone match');
 
@@ -450,6 +471,7 @@ async function complete(req, res, next) {
 
     res.json({
       ok: true,
+      emailSent,
       emailMasked: maskEmail(normalizedEmail),
       vendor: {
         id: vendor.id,
@@ -457,7 +479,9 @@ async function complete(req, res, next) {
         category: vendor.category,
         city: vendor.city,
       },
-      message: 'Business successfully claimed! We have sent your temporary login credentials to your email.',
+      message: emailSent
+        ? 'Business successfully claimed! We have sent your temporary login credentials to your email.'
+        : CREDENTIALS_NOT_SENT_MSG('Business successfully claimed!'),
     });
   } catch (e) { next(e); }
 }
@@ -623,11 +647,7 @@ async function registerBusiness(req, res, next) {
     });
 
     // Send credentials email
-    try {
-      await sendVendorCredentialsEmail(normalizedEmail, createdVendor.businessName, tempPassword, normalizedEmail);
-    } catch (err) {
-      logger.error({ err, email: normalizedEmail }, 'Failed to send new vendor credentials email');
-    }
+    const emailSent = await deliverCredentials(normalizedEmail, createdVendor.businessName, tempPassword, { vendorId: createdVendor.id });
 
     // Link & activate any pending paid guest orders for this newly registered vendor
     const { linkPendingGuestOrders } = require('./guestCheckout.controller');
@@ -637,6 +657,7 @@ async function registerBusiness(req, res, next) {
 
     res.json({
       ok: true,
+      emailSent,
       emailMasked: maskEmail(normalizedEmail),
       vendor: {
         id: createdVendor.id,
@@ -644,7 +665,9 @@ async function registerBusiness(req, res, next) {
         category: createdVendor.category,
         city: createdVendor.city,
       },
-      message: 'Business registered successfully! Your temporary login details have been emailed to you.'
+      message: emailSent
+        ? 'Business registered successfully! Your temporary login details have been emailed to you.'
+        : CREDENTIALS_NOT_SENT_MSG('Business registered successfully!')
     });
   } catch (e) { next(e); }
 }
@@ -690,17 +713,25 @@ async function requestManual(req, res, next) {
     });
 
     // Notify admin
-    const adminEmail = env.ADMIN_EMAIL || 'admin@wedeazzy.local';
-    sendMail({
+    // Same recipient fallback as the contact form and inquiry alerts; the old
+    // admin@wedeazzy.local default was an address nobody receives mail at.
+    const adminEmail = env.ADMIN_EMAIL || env.SMTP.user;
+    // Every claimant field is attacker-controlled and lands in the admin's
+    // inbox: escape all of them, and only link proof URLs that are http(s).
+    const proof = request.proofUrl;
+    const proofHtml = !proof ? '—'
+      : /^https?:\/\//i.test(proof) ? `<a href="${escHtml(proof)}">${escHtml(proof)}</a>`
+      : escHtml(proof);
+    if (adminEmail) sendMail({
       to: adminEmail,
       subject: `Manual claim request: ${vendor.businessName}`,
       html: `<p>A vendor has requested manual verification for a business listing.</p>
              <ul>
-               <li><strong>Business:</strong> ${(vendor.businessName || '').replace(/[<>&"]/g, '')}</li>
-               <li><strong>Claimant:</strong> ${(claimantName || '').replace(/[<>&"]/g, '')} (${claimantEmail})</li>
-               <li><strong>Phone:</strong> ${claimantPhone || '—'}</li>
-               <li><strong>Proof link:</strong> ${proofUrl ? `<a href="${proofUrl}">${proofUrl}</a>` : '—'}</li>
-               <li><strong>Notes:</strong> ${(proofNotes || '').replace(/[<>&"]/g, '') || '—'}</li>
+               <li><strong>Business:</strong> ${escHtml(vendor.businessName)}</li>
+               <li><strong>Claimant:</strong> ${escHtml(request.claimantName)} (${escHtml(request.claimantEmail)})</li>
+               <li><strong>Phone:</strong> ${escHtml(request.claimantPhone) || '—'}</li>
+               <li><strong>Proof link:</strong> ${proofHtml}</li>
+               <li><strong>Notes:</strong> ${escHtml(request.proofNotes) || '—'}</li>
              </ul>`,
       text: `Manual claim request for "${vendor.businessName}" by ${claimantName} (${claimantEmail}).`,
     }).catch(err => logger.error({ err }, 'Failed to send admin notification for manual claim'));

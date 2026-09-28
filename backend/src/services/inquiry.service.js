@@ -1,7 +1,8 @@
 const prisma = require('../config/db');
 const env = require('../config/env');
+const logger = require('../config/logger');
 const { HttpError } = require('../middleware/error');
-const { normalisePhone, isValidPhone } = require('../utils/phone');
+const { normalisePhone } = require('../utils/phone');
 const { sendTemplate, sendWa } = require('./whatsapp.service');
 
 const STATUSES = ['new', 'contacted', 'quoted', 'booked', 'closed', 'lost'];
@@ -17,8 +18,15 @@ async function create(payload) {
   if (!vendor) throw new HttpError(404, 'Vendor not found - seed the public dataset first', 'ERR_NO_VENDOR');
   const vendorId = vendor.id;
 
-  const phone = normalisePhone(payload.phone || (payload.coupleUser && payload.coupleUser.phone));
-  if (!isValidPhone(phone)) throw new HttpError(400, 'A valid couple phone is required', 'ERR_BAD_PHONE');
+  const rawPhone = payload.phone || (payload.coupleUser && payload.coupleUser.phone);
+  let phone = normalisePhone(rawPhone);
+  // Signed-in couples may be outside India (their account phone is stored as
+  // country code + number, e.g. 447700900123); accept those as-is.
+  if (!phone && payload.coupleUser) {
+    const digits = String(rawPhone || '').replace(/\D/g, '');
+    if (digits.length >= 8 && digits.length <= 15) phone = digits;
+  }
+  if (!phone) throw new HttpError(400, 'A valid couple phone is required', 'ERR_BAD_PHONE');
 
   const name = String(payload.name || (payload.coupleUser && payload.coupleUser.name) || 'Couple').trim().slice(0, 80);
   const data = {
@@ -36,6 +44,12 @@ async function create(payload) {
   };
 
   const inq = await prisma.inquiry.create({ data });
+
+  // Signed-in couple's enquiry: open the couple <-> vendor chat for it. A
+  // failure here must not lose the enquiry itself; the couple can still open
+  // the chat later from My Inquiries (chat.service.openForEnquiry).
+  await require('./chat.service').ensureForEnquiry(inq)
+    .catch((err) => logger.error({ err, inquiryId: inq.id }, 'Failed to create chat conversation for enquiry'));
 
   // Record profile_visit and lead_gen analytics events to ensure real-time dashboard updates
   await prisma.analyticsEvent.createMany({
@@ -83,6 +97,9 @@ async function create(payload) {
         .catch(() => null)
     : null;
 
+  const workflow = require('../config/emailWorkflowsConfig').getEmailWorkflows()['inquiry-forward'];
+  const vendorInquiryEmailEnabled = !!vendorEmail && (!workflow || workflow.enabled !== false);
+
   // (Optional) light vendor ping with NO couple PII — admin still gatekeeps.
   if (vendor.whatsappNumber && /^\d{10,15}$/.test(vendor.whatsappNumber)) {
     sendWa({
@@ -90,7 +107,11 @@ async function create(payload) {
       body: `*WedEazzy:* a new couple inquiry just landed for *${vendor.businessName}*. Our team is verifying and will forward the couple's details to you on WhatsApp shortly.`,
       template: 'vendor_new_inquiry_blind',
       userId: vendor.userId,
-      fallbackEmail: vendorEmail,
+      // The vendor already gets the full inquiry by email below (the
+      // inquiry-forward workflow), so emailing this ping as well while
+      // WhatsApp is offline gave them two emails per inquiry. Only fall back
+      // when that email is switched off.
+      fallbackEmail: vendorInquiryEmailEnabled ? null : vendorEmail,
       subjectHint: 'New inquiry for your listing',
     }).catch((e) => {
       const logger = require('../config/logger');
@@ -100,7 +121,6 @@ async function create(payload) {
 
   // Trigger email notifications (fire-and-forget)
   const emailService = require('./email.service');
-  const logger = require('../config/logger');
 
   // 1. Notify Admin via Email
   const adminEmail = env.ADMIN_EMAIL || env.SMTP.user;

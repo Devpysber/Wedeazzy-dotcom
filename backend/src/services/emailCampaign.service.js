@@ -15,8 +15,14 @@ const EMAIL_BROADCAST_DELAY_MS = 150;
 function buildUserWhereClause(rules = {}) {
   const where = {
     email: { not: null },
-    role: { not: 'admin' }
+    role: { not: 'admin' },
+    suspendedAt: null // suspended accounts get no marketing mail
   };
+
+  // Declared before the audienceType branches below, which write to it —
+  // declaring it after them threw a TDZ ReferenceError for every vendor
+  // segment (vendors/claimed/unclaimed/verified/active/inactive).
+  const vendorWhere = {};
 
   const { audienceType, countryCode, country, categories, cities, claimStatus, verificationStatus, status, tier, hasPhone, hasPhotos, registrationDateFrom, registrationDateTo } = rules;
 
@@ -37,8 +43,6 @@ function buildUserWhereClause(rules = {}) {
   }
 
   // Vendor relation filters
-  const vendorWhere = {};
-
   if (countryCode && countryCode.toLowerCase() !== 'all') {
     vendorWhere.countryCode = countryCode.toUpperCase();
   } else if (country && country.toLowerCase() !== 'all') {

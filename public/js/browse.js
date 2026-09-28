@@ -1,553 +1,425 @@
-/* WedEazzy browse logic - powers city.html and category.html */
+/* WedEazzy browse page - powers category.html and city.html
+ *
+ *   category.html?cat=bridal-mehndi[&city=mumbai][&country=GB]
+ *   city.html?city=mumbai[&cat=banquet-halls]
+ *
+ * One toolbar drives everything: search, place (city on category pages,
+ * category on city pages), minimum rating and sort. Results page in with
+ * "Load more".
+ */
 (function () {
-  var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    ? 'http://localhost:4000'
-    : window.location.origin;
+  var API_BASE = window.location.origin;
+  var WA_NUMBER = '917498987620';
 
   function qs(name) {
     var m = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search);
     return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
   }
-  function titleCase(s) { return (s || '').replace(/(^|[\s-])(\w)/g, function(_,a,b){ return a + b.toUpperCase(); }); }
-  function esc(s) { return (s || '').toString().replace(/[<>&"]/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];}); }
+  function $(id) { return document.getElementById(id); }
+  function titleCase(s) { return (s || '').replace(/(^|[\s-])(\w)/g, function (_, a, b) { return a + b.toUpperCase(); }); }
+  function esc(s) { return (s == null ? '' : String(s)).replace(/[<>&"']/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
-  // Some vendors put emoji into their self-submitted business name (e.g. "✅Best Banquet Hall").
-  // Strip them before display so listings stay clean and on-brand regardless of what was typed in.
+  // Some vendors put emoji into their self-submitted business name; strip them for display.
   var EMOJI_RE = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2190}-\u{21FF}\u{FE0F}]/gu;
   function cleanName(s) { return (s || '').toString().replace(EMOJI_RE, '').replace(/\s{2,}/g, ' ').trim(); }
 
+  // Stock photos for vendors without their own (vetted: on-topic and reachable)
   var CAT_IMG = {
     'banquet-halls': ['photo-1519741497674-611481863552','photo-1464366400600-7168b8af9bc3','photo-1519225421980-715cb0215aed','photo-1469371670807-013ccf25f16a','photo-1465495976277-4387d4b0b4c6','photo-1530023367847-a683933f4172','photo-1478146896981-b80fe463b330','photo-1513278974582-3e1b4a4fa21e','photo-1675247488725-22d1b78e75db','photo-1783314867628-220ab03cac99','photo-1775918427144-51f0bf53f8c4','photo-1762765684665-6b6855bb6fe6','photo-1773407377203-faf8b19a2142','photo-1761114905078-163aa92141c8','photo-1783314863884-be035ed5ed5c','photo-1765947384834-3bdcffcaffff','photo-1780337092331-6580fd9ccb47','photo-1717680281618-442cb9c12b6c','photo-1769224751561-feca3f403d49','photo-1780593116478-c46838f86523','photo-1780337092243-8cc6bdd6cb3e','photo-1780337092608-aad7948d7a60','photo-1759477274116-e3cb02d2b9d8'],
-    'marriage-gardens': ['photo-1465495976277-4387d4b0b4c6','photo-1469371670807-013ccf25f16a','photo-1519741497674-611481863552','photo-1519225421980-715cb0215aed','photo-1464366400600-7168b8af9bc3','photo-1478146896981-b80fe463b330','photo-1502635994848-43d6f7a14784','photo-1513278974582-3e1b4a4fa21e','photo-1634507554990-2043ccc61e61','photo-1663185776079-33231c5242eb','photo-1778842893922-5635dbde6c82','photo-1783142979736-9596873cf20a','photo-1762216444919-043cf813e4de','photo-1784749615325-fbe47c1243c7','photo-1772404245994-200ca40c47fa','photo-1759954644836-a57275881ded','photo-1759490821541-f78bb13a752d','photo-1762216444731-802dcf3da009','photo-1780245989879-1d0234b161de','photo-1768777278961-df45d3c2aa22','photo-1781268520671-6b59d4c6d83b','photo-1783352117644-11f69ea78256'],
-    'wedding-lawns': ['photo-1465495976277-4387d4b0b4c6','photo-1469371670807-013ccf25f16a','photo-1519225421980-715cb0215aed','photo-1530023367847-a683933f4172','photo-1519741497674-611481863552','photo-1502635994848-43d6f7a14784','photo-1478146896981-b80fe463b330','photo-1464366400600-7168b8af9bc3','photo-1712764995305-75422fbe0ecc','photo-1696271026740-4c0c1a367f03','photo-1578730169862-749bbdc763a8','photo-1613256253852-d3a720ad9983','photo-1620704043184-bc985bebeb8e','photo-1427477321886-abc24e8ce923','photo-1635073431256-aa670801bd4b','photo-1557296440-0dc5e8ba9bc8','photo-1676189676971-2ceedca28d3c','photo-1768777277892-a7853afe5bd7','photo-1770217614282-a74cd3309528','photo-1770824906466-6254ca2cdc14','photo-1774814305525-c302b0dee3e7','photo-1773407377148-8e9551e31b9f','photo-1782025419777-09e493453d9f'],
+    'marriage-gardens': ['photo-1465495976277-4387d4b0b4c6','photo-1469371670807-013ccf25f16a','photo-1519741497674-611481863552','photo-1519225421980-715cb0215aed','photo-1464366400600-7168b8af9bc3','photo-1478146896981-b80fe463b330','photo-1513278974582-3e1b4a4fa21e','photo-1634507554990-2043ccc61e61','photo-1663185776079-33231c5242eb','photo-1778842893922-5635dbde6c82','photo-1783142979736-9596873cf20a','photo-1762216444919-043cf813e4de','photo-1784749615325-fbe47c1243c7','photo-1772404245994-200ca40c47fa','photo-1759954644836-a57275881ded','photo-1759490821541-f78bb13a752d','photo-1762216444731-802dcf3da009','photo-1780245989879-1d0234b161de','photo-1768777278961-df45d3c2aa22','photo-1781268520671-6b59d4c6d83b','photo-1783352117644-11f69ea78256'],
+    'wedding-lawns': ['photo-1465495976277-4387d4b0b4c6','photo-1469371670807-013ccf25f16a','photo-1519225421980-715cb0215aed','photo-1530023367847-a683933f4172','photo-1519741497674-611481863552','photo-1478146896981-b80fe463b330','photo-1464366400600-7168b8af9bc3','photo-1712764995305-75422fbe0ecc','photo-1696271026740-4c0c1a367f03','photo-1578730169862-749bbdc763a8','photo-1613256253852-d3a720ad9983','photo-1620704043184-bc985bebeb8e','photo-1427477321886-abc24e8ce923','photo-1635073431256-aa670801bd4b','photo-1557296440-0dc5e8ba9bc8','photo-1676189676971-2ceedca28d3c','photo-1768777277892-a7853afe5bd7','photo-1770217614282-a74cd3309528','photo-1770824906466-6254ca2cdc14','photo-1774814305525-c302b0dee3e7','photo-1773407377148-8e9551e31b9f','photo-1782025419777-09e493453d9f'],
     'wedding-photographers': ['photo-1511795409834-ef04bbd61622','photo-1519741497674-611481863552','photo-1469371670807-013ccf25f16a','photo-1519225421980-715cb0215aed','photo-1530023367847-a683933f4172','photo-1525258946800-98cfd641d0de','photo-1606216794074-735e91aa2c92','photo-1583939003579-730e3918a45a','photo-1623783356340-95375aac85ce','photo-1629756048377-09540f52caa1','photo-1622277430358-f4d134452e2e','photo-1630526720753-aa4e71acf67d','photo-1519741196428-6a2175fa2557','photo-1600164913117-2125c1f60b01','photo-1617724975854-70b5d0cedb0a','photo-1611550287705-7ff8b459c8eb','photo-1519689950823-0a2251441815','photo-1503525443530-339273ca8a86','photo-1622277583249-4c1fad490804','photo-1506355639690-a1f2a100689e','photo-1722805740177-04256b6517f2','photo-1617725145063-56958eadf557'],
-    'bridal-makeup': ['photo-1487412947147-5cebf100ffc2','photo-1591035897819-f4bdf739f446','photo-1583001931096-959e7d3b9d80','photo-1583241800698-9c2e2c0bf06d','photo-1492106087820-71f1a00d2b11','photo-1522337360788-8b13dee7a37e','photo-1503236823255-94609f598e71','photo-1604336732494-bf02af26f97f','photo-1512496015851-a90fb38ba796','photo-1684868268327-7e5590bcfbd6','photo-1684868265714-fd2300637c23','photo-1610047614301-13c63f00c032','photo-1610173827043-9db50e0d8ef9','photo-1600685890506-593fdf55949b','photo-1684868682581-4cac3af5b8d4','photo-1631549424057-403e75d68e2f','photo-1684868265715-03e19a3e0e00','photo-1511923199659-1c16881689de','photo-1707576618343-26a1b377ca7a','photo-1684868264466-4c4fcf0a5b37','photo-1662561283890-b00a2d5b4bfc','photo-1641699862936-be9f49b1c38d'],
-    'bridal-mehndi': ['photo-1602216056096-3b40cc0c9944','photo-1611106671620-37b1eaecd55b','photo-1591035897819-f4bdf739f446','photo-1583001931096-959e7d3b9d80','photo-1492106087820-71f1a00d2b11','photo-1604336732494-bf02af26f97f','photo-1601001815853-3835274403b3','photo-1522337360788-8b13dee7a37e','photo-1505932794465-147d1f1b2c97','photo-1525135850648-b42365991054','photo-1684814070823-97e0b9e99c69','photo-1530082625928-db66d39c5a21','photo-1564809392273-798ebbb1914a','photo-1619734089700-842e56497353','photo-1530785404354-f4ed0206a0d1','photo-1566745265763-de510bdae868','photo-1619733839322-1e28cdb928a0','photo-1572969147844-920fff94e326','photo-1566829682463-2aa5f6c8afd8','photo-1556536088-f010a312a8d3','photo-1684813270065-73dce8b31b92','photo-1730003873829-09b4b16444c1','photo-1565368114375-ba1a4db7099f'],
+    'bridal-makeup': ['photo-1487412947147-5cebf100ffc2','photo-1503236823255-94609f598e71','photo-1512496015851-a90fb38ba796','photo-1684868268327-7e5590bcfbd6','photo-1684868265714-fd2300637c23','photo-1610047614301-13c63f00c032','photo-1610173827043-9db50e0d8ef9','photo-1600685890506-593fdf55949b','photo-1684868682581-4cac3af5b8d4','photo-1631549424057-403e75d68e2f','photo-1684868265715-03e19a3e0e00','photo-1511923199659-1c16881689de','photo-1707576618343-26a1b377ca7a','photo-1684868264466-4c4fcf0a5b37','photo-1662561283890-b00a2d5b4bfc','photo-1641699862936-be9f49b1c38d'],
+    'bridal-mehndi': ['photo-1505932794465-147d1f1b2c97','photo-1525135850648-b42365991054','photo-1684814070823-97e0b9e99c69','photo-1530082625928-db66d39c5a21','photo-1564809392273-798ebbb1914a','photo-1619734089700-842e56497353','photo-1530785404354-f4ed0206a0d1','photo-1566745265763-de510bdae868','photo-1619733839322-1e28cdb928a0','photo-1572969147844-920fff94e326','photo-1566829682463-2aa5f6c8afd8','photo-1556536088-f010a312a8d3','photo-1684813270065-73dce8b31b92','photo-1730003873829-09b4b16444c1','photo-1565368114375-ba1a4db7099f'],
     'wedding-planners': ['photo-1530023367847-a683933f4172','photo-1469371670807-013ccf25f16a','photo-1519225421980-715cb0215aed','photo-1519741497674-611481863552','photo-1464366400600-7168b8af9bc3','photo-1465495976277-4387d4b0b4c6','photo-1606490194859-07c18c9f0968','photo-1583939003579-730e3918a45a','photo-1502635385003-ee1e6a1a742d','photo-1511285560929-80b456fea0bc','photo-1494955870715-979ca4f13bf0','photo-1576694667642-6f289dd54187','photo-1522673607200-164d1b6ce486','photo-1525441273400-056e9c7517b3','photo-1515715709530-858f7bfa1b10','photo-1612599542558-f3022089fb38','photo-1524777313293-86d2ab467344','photo-1620315472787-52921e5f88a0','photo-1587271407850-8d438ca9fdf2','photo-1729237261091-bae8eba0c60c','photo-1509316554658-04f9287cdb78','photo-1625076932159-61a032e2b7ad'],
     'wedding-decorators': ['photo-1519225421980-715cb0215aed','photo-1519741497674-611481863552','photo-1464366400600-7168b8af9bc3','photo-1469371670807-013ccf25f16a','photo-1530023367847-a683933f4172','photo-1478146896981-b80fe463b330','photo-1513278974582-3e1b4a4fa21e','photo-1465495976277-4387d4b0b4c6','photo-1521129866021-4313ccf20e9e','photo-1644135129271-e80c8c673511','photo-1772127822561-35f4e05a004b','photo-1684243920725-956d93ff391a','photo-1664530140722-7e3bdbf2b870','photo-1613067532295-b4f1760616cd','photo-1544813618-56d190260a84','photo-1544577080-91762bc7f475','photo-1630300728268-90c227710a3f','photo-1724847764267-12775ec49657','photo-1724847664831-27b55fef3121','photo-1724847664518-c62583f1bf69','photo-1724847664903-ef526403bd6b','photo-1724847665541-46d65d4a27ec'],
-    'wedding-caterers': ['photo-1555244162-803834f70033','photo-1414235077428-338989a2e8c0','photo-1502998070258-dc1338445ac2','photo-1493676304819-0d7a8d026dcf','photo-1546069901-ba9599a7e63c','photo-1565299507177-b0ac66763828','photo-1567620905732-2d1ec7ab7445','photo-1551782450-a2132b4ba21d','photo-1525265332434-d52e2314161d','photo-1576842546422-60562b9242ae','photo-1518619745898-93e765966dcd','photo-1740047602722-b4993b79e4b7','photo-1633424411431-5eb8d0e96488','photo-1567496295302-b8dbcd2913b6','photo-1678646142794-253fdd20fa05','photo-1637059395523-d5a35541d544','photo-1651964060295-ef9e1ee08667','photo-1633424414664-c24a6d28086b','photo-1565898094840-7e408a6f361d','photo-1636906227201-f3ec32645129','photo-1668097519018-f7d13a079c0a','photo-1637059395717-109549c5d055'],
-    'wedding-invitations': ['photo-1607344645866-009c320b63e0','photo-1542665952-14513db15293','photo-1525857597365-5f6dbff2e36e','photo-1551184451-76b762941ad6','photo-1469371670807-013ccf25f16a','photo-1606800052052-a08af7148866','photo-1583241800698-9c2e2c0bf06d','photo-1606490194859-07c18c9f0968','photo-1632610992723-82d7c212f6d7','photo-1656104717095-9d062b0d4e8d','photo-1697217866029-2aef7068ecee','photo-1509316554658-04f9287cdb78','photo-1612611450433-360c82a57e01','photo-1641317136698-284db1e10c1b','photo-1712313992209-93a2cc377ede','photo-1710587384897-b1390bd46cc6','photo-1612611450392-826af708c34a','photo-1621877504328-8c802bef9614','photo-1518600593288-2ec370b80cba','photo-1721176487015-5408ae0e9bc2','photo-1732649124686-3bab54f79aa3','photo-1741893043659-ca8b82a8b637','photo-1738898179451-b5fc497f9f8e'],
-    'wedding-entertainment': ['photo-1493676304819-0d7a8d026dcf','photo-1501281668745-f7f57925c3b4','photo-1470229722913-7c0e2dbbafd3','photo-1429962714451-bb934ecdc4ec','photo-1514525253161-7a46d19cd819','photo-1485872299712-c6c97ed29f3b','photo-1465495976277-4387d4b0b4c6','photo-1583939003579-730e3918a45a','photo-1470225620780-dba8ba36b745','photo-1541126274323-dbac58d14741','photo-1571266028243-d220c6a7edbf','photo-1594623930572-300a3011d9ae','photo-1544785349-c4a5301826fd','photo-1618409698966-6caa2b95733a','photo-1660211934853-e33d8a02201d','photo-1651065699236-6a6885503943','photo-1553190842-24c3f93ba116','photo-1641573481523-3e0447d7ba86','photo-1516873240891-4bf014598ab4','photo-1461784180009-21121b2f204c','photo-1618107095181-e3ba0f53ee59','photo-1642784353725-5a79aaaaecab','photo-1571397133301-3f838ea96f56']
+    'wedding-caterers': ['photo-1555244162-803834f70033','photo-1414235077428-338989a2e8c0','photo-1502998070258-dc1338445ac2','photo-1493676304819-0d7a8d026dcf','photo-1546069901-ba9599a7e63c','photo-1525265332434-d52e2314161d','photo-1576842546422-60562b9242ae','photo-1518619745898-93e765966dcd','photo-1740047602722-b4993b79e4b7','photo-1633424411431-5eb8d0e96488','photo-1567496295302-b8dbcd2913b6','photo-1678646142794-253fdd20fa05','photo-1637059395523-d5a35541d544','photo-1651964060295-ef9e1ee08667','photo-1633424414664-c24a6d28086b','photo-1565898094840-7e408a6f361d','photo-1636906227201-f3ec32645129','photo-1668097519018-f7d13a079c0a','photo-1637059395717-109549c5d055'],
+    'wedding-invitations': ['photo-1607344645866-009c320b63e0','photo-1542665952-14513db15293','photo-1469371670807-013ccf25f16a','photo-1606800052052-a08af7148866','photo-1606490194859-07c18c9f0968','photo-1632610992723-82d7c212f6d7','photo-1656104717095-9d062b0d4e8d','photo-1697217866029-2aef7068ecee','photo-1509316554658-04f9287cdb78','photo-1612611450433-360c82a57e01','photo-1641317136698-284db1e10c1b','photo-1712313992209-93a2cc377ede','photo-1710587384897-b1390bd46cc6','photo-1612611450392-826af708c34a','photo-1621877504328-8c802bef9614','photo-1518600593288-2ec370b80cba','photo-1721176487015-5408ae0e9bc2','photo-1732649124686-3bab54f79aa3','photo-1741893043659-ca8b82a8b637','photo-1738898179451-b5fc497f9f8e'],
+    'wedding-entertainment': ['photo-1493676304819-0d7a8d026dcf','photo-1501281668745-f7f57925c3b4','photo-1470229722913-7c0e2dbbafd3','photo-1429962714451-bb934ecdc4ec','photo-1514525253161-7a46d19cd819','photo-1465495976277-4387d4b0b4c6','photo-1583939003579-730e3918a45a','photo-1470225620780-dba8ba36b745','photo-1541126274323-dbac58d14741','photo-1571266028243-d220c6a7edbf','photo-1594623930572-300a3011d9ae','photo-1544785349-c4a5301826fd','photo-1618409698966-6caa2b95733a','photo-1660211934853-e33d8a02201d','photo-1651065699236-6a6885503943','photo-1553190842-24c3f93ba116','photo-1641573481523-3e0447d7ba86','photo-1516873240891-4bf014598ab4','photo-1461784180009-21121b2f204c','photo-1618107095181-e3ba0f53ee59','photo-1642784353725-5a79aaaaecab','photo-1571397133301-3f838ea96f56']
   };
 
+  function seedOf(v) { return (v.id || v.name || '').split('').reduce(function (a, c) { return a + c.charCodeAt(0); }, 0); }
+  function stockImg(v, offset) {
+    var arr = CAT_IMG[v.category_slug] || CAT_IMG['banquet-halls'];
+    return 'https://images.unsplash.com/' + arr[(seedOf(v) + (offset || 0)) % arr.length] + '?w=720&h=480&fit=crop&q=70';
+  }
+  // Stock photos already shown in the current results, so neighbouring
+  // vendors without their own photo don't get the same picture.
+  var usedStock = {};
   function vendorImg(v) {
     if (v.image_url) return v.image_url;
-    if (v.photos && v.photos.length > 0 && v.photos[0].url) return v.photos[0].url;
+    if (v.photos && v.photos.length && v.photos[0].url) return v.photos[0].url;
     var arr = CAT_IMG[v.category_slug] || CAT_IMG['banquet-halls'];
-    var seed = (v.id || v.name || '').split('').reduce(function(a,c){return a + c.charCodeAt(0);}, 0);
-    var pic = arr[seed % arr.length];
-    return 'https://images.unsplash.com/' + pic + '?w=600&h=420&fit=crop&q=70';
+    var seed = seedOf(v);
+    for (var k = 0; k < arr.length; k++) {
+      var pick = arr[(seed + k) % arr.length];
+      if (!usedStock[pick]) { usedStock[pick] = true; return 'https://images.unsplash.com/' + pick + '?w=720&h=480&fit=crop&q=70'; }
+    }
+    return stockImg(v, 0); // more vendors than photos: repeats are unavoidable
   }
 
-  // Fallback stock image for Quick View thumbnail slot idx (0-4), used until
-  // overridden by a real vendor photo at that index if one exists.
-  function imgFor(v, idx) {
-    var arr = CAT_IMG[v.category_slug] || CAT_IMG['banquet-halls'];
-    var seed = (v.id || v.name || '').split('').reduce(function(a,c){return a + c.charCodeAt(0);}, 0);
-    var pic = arr[(seed + idx) % arr.length];
-    return 'https://images.unsplash.com/' + pic + '?w=700&h=500&fit=crop&q=70';
-  }
-
+  // ---------- page context ----------
+  var MODE = window.BROWSE_MODE || 'category';
   var citySlug = (qs('city') || '').toLowerCase();
-  var catSlug  = (qs('cat')  || '').toLowerCase();
-  var initialMode = window.BROWSE_MODE || 'city';
-  if (initialMode === 'city' && !citySlug) citySlug = 'mumbai';
-  if (initialMode === 'category' && !catSlug) catSlug = 'banquet-halls';
+  var catSlug = (qs('cat') || '').toLowerCase();
+  if (MODE === 'city' && !citySlug) citySlug = 'mumbai';
+  if (MODE === 'category' && !catSlug) catSlug = 'banquet-halls';
+  var countryCode = (qs('country') || '').toUpperCase();
+  if (!/^[A-Z]{2}$/.test(countryCode)) countryCode = '';
+  var COUNTRY_NAMES = { IN: 'India', AE: 'the UAE', GB: 'the UK', US: 'the USA', CA: 'Canada', AU: 'Australia' };
 
-  var vendors = [];
-  var page = 1;
-  var limit = 20;
-  var total = 0;
-  var loading = false;
-  var hasMore = true;
+  var CATS = [
+    ['banquet-halls', 'Venues & Banquets', 'https://images.unsplash.com/photo-1587271407850-8d438ca9fdf2?w=80&h=80&fit=crop&q=70'],
+    ['wedding-photographers', 'Photographers', '../assets/images/hero-couple.jpg'],
+    ['bridal-makeup', 'Bridal Makeup', 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=80&h=80&fit=crop&q=70'],
+    ['bridal-mehndi', 'Mehendi Artists', 'https://images.unsplash.com/photo-1597157639073-69284dc0fdaf?w=80&h=80&fit=crop&q=70'],
+    ['wedding-decorators', 'Decorators', 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=80&h=80&fit=crop&q=70'],
+    ['wedding-caterers', 'Caterers', 'https://images.unsplash.com/photo-1555244162-803834f70033?w=80&h=80&fit=crop&q=70'],
+    ['wedding-planners', 'Wedding Planners', '../assets/images/pre_couple.jpg'],
+    ['wedding-invitations', 'Invitations', 'https://images.unsplash.com/photo-1607344645866-009c320b63e0?w=80&h=80&fit=crop&q=70'],
+    ['pandits', 'Pandits', '../assets/images/pandit.png'],
+    ['wedding-lawns', 'Wedding Lawns', 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=80&h=80&fit=crop&q=70'],
+    ['wedding-entertainment', 'Entertainment', 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=80&h=80&fit=crop&q=70']
+  ];
+  var CAT_NAME = {};
+  CATS.forEach(function (c) { CAT_NAME[c[0]] = c[1]; });
+  function catLabel(slug) { return CAT_NAME[slug] || titleCase((slug || '').replace(/-/g, ' ')); }
+  var cityName = titleCase(citySlug.replace(/-/g, ' '));
+
+  // ---------- state ----------
+  var state = { page: 1, limit: 18, total: 0, hasMore: false, loading: false, vendors: [], search: '', place: '', rating: 0, sortBy: 'rating', reqId: 0 };
 
   function whatsappLink(v) {
-    var msg = "Hi WedEazzy! I'm interested in *" + v.name + "* (" + v.category + " · " + v.city + (v.area ? ', ' + v.area : '') + "). I'm planning my wedding and would like availability, packages and pricing. Please connect me with the vendor. Thanks!";
-    return 'https://wa.me/917498987620?text=' + encodeURIComponent(msg);
+    var msg = "Hi WedEazzy! I'm interested in *" + cleanName(v.name) + '* (' + v.category + ' · ' + v.city + (v.area ? ', ' + v.area : '') + "). I'm planning my wedding and would like availability, packages and pricing. Please connect me with the vendor. Thanks!";
+    return 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(msg);
   }
 
-  function getSelectedFilters() {
-    var rating = parseFloat((document.querySelector('input[name="rating"]:checked') || {}).value || 0);
-    var cats = Array.from(document.querySelectorAll('input[name="catFilter"]:checked')).map(function(c){return c.value;});
-    var cities = Array.from(document.querySelectorAll('input[name="cityFilter"]:checked')).map(function(c){return c.value;});
-    var sortBy = (document.getElementById('sortBy') || {}).value || 'rating';
-
-    return {
-      rating: rating,
-      cats: cats,
-      cities: cities,
-      sortBy: sortBy
-    };
-  }
-
-  function fetchVendors(append) {
-    if (loading) return;
-    loading = true;
-    renderLoadingState(append);
-
-    var filters = getSelectedFilters();
-    
-    // Build query params
-    var queryParams = new URLSearchParams();
-    queryParams.append('page', page);
-    queryParams.append('limit', limit);
-    queryParams.append('sortBy', filters.sortBy);
-
-    // Apply primary filters
-    if (citySlug) {
-      // Check if user selected sub-city checkboxes, otherwise use page main city
-      if (filters.cities.length > 0) {
-        queryParams.append('city', filters.cities.join(','));
-      } else {
-        queryParams.append('city', citySlug);
-      }
-    } else if (filters.cities.length > 0) {
-      queryParams.append('city', filters.cities.join(','));
-    }
-
-    if (catSlug) {
-      if (filters.cats.length > 0) {
-        queryParams.append('category', filters.cats.join(','));
-      } else {
-        queryParams.append('category', catSlug);
-      }
-    } else if (filters.cats.length > 0) {
-      queryParams.append('category', filters.cats.join(','));
-    }
-
-    if (filters.rating > 0) {
-      queryParams.append('rating', filters.rating);
-    }
-
-    fetch(API_BASE + '/api/public/vendors?' + queryParams.toString())
-      .then(function(r) { return r.json(); })
-      .then(function(res) {
-        loading = false;
-        if (res.ok) {
-          total = res.pagination.total;
-          var newVendors = res.vendors || [];
-          
-          if (append) {
-            vendors = vendors.concat(newVendors);
-          } else {
-            vendors = newVendors;
-          }
-
-          hasMore = page < res.pagination.totalPages;
-          render();
-        } else {
-          showErrorState();
-        }
-      })
-      .catch(function(err) {
-        loading = false;
-        console.error('[WedEazzy] API Error:', err);
-        showErrorState();
-      });
-  }
-
-  function renderLoadingState(append) {
-    var loadMoreContainer = getOrCreateLoadMoreContainer();
-    if (!append) {
-      document.getElementById('vendorList').innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px 0;"><div style="border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid var(--red); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div><p style="color:var(--text-muted);font-weight:600;">Searching vendors...</p></div>';
-      loadMoreContainer.innerHTML = '';
+  function buildQuery() {
+    var p = new URLSearchParams();
+    p.set('page', state.page);
+    p.set('limit', state.limit);
+    p.set('sortBy', state.sortBy);
+    if (MODE === 'category') {
+      p.set('category', catSlug);
+      if (state.place) p.set('city', state.place);
+      else if (citySlug) p.set('city', citySlug);
+      else if (countryCode) p.set('country', countryCode);
     } else {
-      loadMoreContainer.innerHTML = '<div style="border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid var(--red); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;"></div>';
+      p.set('city', citySlug);
+      if (state.place) p.set('category', state.place);
+      else if (catSlug) p.set('category', catSlug);
     }
+    if (state.rating > 0) p.set('rating', state.rating);
+    if (state.search) p.set('search', state.search);
+    return p.toString();
   }
 
-  function showErrorState() {
-    document.getElementById('vendorList').innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:40px 0;"><p style="color:#DC2626;font-weight:700;">Failed to connect to directory. Please refresh or try again.</p></div>';
-    getOrCreateLoadMoreContainer().innerHTML = '';
+  // ---------- rendering ----------
+  function skeletons(n) {
+    var out = '';
+    for (var i = 0; i < n; i++) out += '<div class="skeleton" aria-hidden="true"><div class="sk-img"></div><div class="sk-line w60"></div><div class="sk-line w40"></div></div>';
+    return out;
   }
 
-  function getOrCreateLoadMoreContainer() {
-    var c = document.getElementById('loadMoreContainer');
-    if (!c) {
-      c = document.createElement('div');
-      c.id = 'loadMoreContainer';
-      c.style.textAlign = 'center';
-      c.style.marginTop = '24px';
-      c.style.width = '100%';
-      c.style.gridColumn = '1/-1';
-      document.getElementById('vendorList').insertAdjacentElement('afterend', c);
-    }
-    return c;
+  function card(v) {
+    var reviews = parseInt(v.rating_count, 10) || 0;
+    var rating = parseFloat(v.rating) || 0;
+    var tag = v.subscriptionPlan === 'Featured' ? '<span class="card-tag feat">Featured</span>'
+      : v.subscriptionPlan === 'Premium' ? '<span class="card-tag">Premium</span>'
+      : (reviews && rating >= 4.8 ? '<span class="card-tag">Top rated</span>' : '');
+    var href = 'vendor.html?id=' + encodeURIComponent(v.id);
+    var name = esc(cleanName(v.name));
+    var loc = esc(v.area || v.city) + (v.area && v.city && v.area !== v.city ? ', ' + esc(v.city) : '');
+    var photos = (v.photos || []).length;
+    // Category label only where results mix categories (city page, all vendors)
+    var kicker = MODE === 'city' && !catSlug && !state.place ? '<p class="card-kicker">' + esc(catLabel(v.category_slug) || v.category) + '</p>' : '';
+    var line = reviews
+      ? '<span class="rate"><svg><use href="#i-star"/></svg>' + rating.toFixed(1) + ' <small>(' + reviews + ' review' + (reviews === 1 ? '' : 's') + ')</small></span>'
+      : '<span class="new">New listing</span>';
+    if (v.google_cid) line += '<a class="g" href="https://www.google.com/maps?cid=' + encodeURIComponent(v.google_cid) + '" target="_blank" rel="noopener">Google reviews</a>';
+    var facts = [];
+    if (v.yearsExperience) facts.push(v.yearsExperience + '+ yrs experience');
+    if (v.capacity) facts.push('Up to ' + Number(v.capacity).toLocaleString('en-IN') + ' guests');
+    if (v.acceptsDestination) facts.push('Destination weddings');
+    var price = v.price_min ? '<p class="card-price">Starting at <b>₹' + Number(v.price_min).toLocaleString('en-IN') + '</b></p>' : '';
+
+    return '<article class="card">' +
+      '<a class="card-media" href="' + href + '" aria-label="' + name + '">' + tag +
+        '<img loading="lazy" src="' + esc(vendorImg(v)) + '" alt="" data-fallback="' + esc(stockImg(v, 1)) + '" onerror="if(this.dataset.fallback&&this.src!==this.dataset.fallback){this.src=this.dataset.fallback;}else{this.onerror=null;this.style.visibility=\'hidden\';}" />' +
+        (photos > 1 ? '<span class="card-count"><svg><use href="#i-grid"/></svg>' + photos + '</span>' : '') +
+      '</a>' +
+      '<div class="card-body">' + kicker +
+        '<h3><a href="' + href + '">' + name + '</a></h3>' +
+        '<p class="card-loc"><svg><use href="#i-pin"/></svg>' + loc + '</p>' +
+        '<div class="card-line">' + line + '</div>' +
+        (facts.length ? '<div class="card-facts">' + facts.slice(0, 2).map(function (f) { return '<span>' + esc(f) + '</span>'; }).join('') + '</div>' : '') +
+        price +
+      '</div>' +
+      '<div class="card-actions">' +
+        '<button type="button" class="btn btn-ink" data-enquire="' + esc(v.id) + '">Enquire now</button>' +
+        '<a class="btn btn-wa" href="' + whatsappLink(v) + '" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>WhatsApp</a>' +
+      '</div>' +
+    '</article>';
   }
 
-  function renderFilters(metaData) {
-    if (initialMode === 'city') {
-      var box = document.getElementById('catFilterBox');
-      if (box) {
-        box.innerHTML = metaData.categories.map(function(cat){
-          return '<label><input type="checkbox" name="catFilter" value="'+cat.slug+'"> ' + esc(cat.name) + ' (' + cat.count + ')</label>';
-        }).join('');
-      }
-    } else {
-      var box2 = document.getElementById('cityFilterBox');
-      if (box2) {
-        box2.innerHTML = metaData.cities.map(function(city){
-          return '<label><input type="checkbox" name="cityFilter" value="'+city.slug+'"> ' + esc(city.name) + ' (' + city.count + ')</label>';
-        }).join('');
-      }
-    }
-
-    // Re-bind listeners on checkboxes
-    document.querySelectorAll('input[name="catFilter"], input[name="cityFilter"]').forEach(function(el){
-      el.addEventListener('change', function() {
-        page = 1;
-        fetchVendors(false);
-      });
-    });
+  // Shown within the results: for couples who'd rather be matched than browse
+  function promoCard() {
+    var what = MODE === 'category' ? catLabel(catSlug).toLowerCase() : 'vendors';
+    return '<article class="card promo">' +
+      '<div><small>Free service</small><h3>Can\'t decide? Get matched ' + esc(what) + '.</h3>' +
+      '<ul><li><svg><use href="#i-check"/></svg>Tell us your date, city and budget</li><li><svg><use href="#i-check"/></svg>We shortlist available vendors</li><li><svg><use href="#i-check"/></svg>Quotes within 24 hours, free</li></ul></div>' +
+      '<a class="btn btn-block" href="/#enquire">Get free quotes</a>' +
+    '</article>';
   }
 
   function render() {
-    document.getElementById('resCount').textContent = total;
-    var hCount = document.getElementById('hCount');
-    if (hCount) hCount.textContent = total + ' verified listings found';
-    var list = document.getElementById('vendorList');
-    
-    if (!vendors.length) {
-      list.innerHTML = '<div class="empty" style="grid-column: 1/-1;"><h3>No vendors match your filters</h3><p>Clear filters or chat with us on WhatsApp - we\'ll find one for you.</p><a href="https://wa.me/917498987620" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;background:#25D366;color:#fff;padding:10px 22px;border-radius:8px;font-weight:700;">Chat on WhatsApp</a></div>';
-      getOrCreateLoadMoreContainer().innerHTML = '';
+    var list = $('vendorList'), more = $('moreBox');
+    var n = state.total.toLocaleString('en-IN');
+    $('hCount').textContent = n;
+    setDesc(state.total);
+    $('resText').innerHTML = state.total === 1 ? '<b>1</b> vendor' : '<b>' + n + '</b> vendors';
+    $('clearBtn').hidden = !(state.search || state.place || state.rating);
+
+    if (!state.vendors.length) {
+      list.innerHTML = '<div class="state"><h3>No vendors match yet</h3><p>Try a different area or clear the filters, or tell us what you need and we\'ll find vendors for you.</p><a class="btn btn-ink" href="/#enquire">Get free quotes</a></div>';
+      more.innerHTML = '';
       return;
     }
-
-    list.innerHTML = vendors.map(function(v, i){
-      var hasReviews = (parseInt(v.rating_count, 10) || 0) > 0;
-      var badge = '';
-      if (v.subscriptionPlan === 'Featured') {
-        badge = '<span class="badge badge-feat" style="background:#ea3b3b; color:#fff;">Featured</span>';
-      } else if (v.subscriptionPlan === 'Premium') {
-        badge = '<span class="badge badge-feat" style="background:#3b82f6; color:#fff;">Premium</span>';
-      } else if (hasReviews && (parseFloat(v.rating)||0) >= 4.8) {
-        badge = '<span class="badge">Top Rated</span>';
-      }
-      var tags = [];
-      if (v.price_min) {
-        var priceLabel = '₹' + Number(v.price_min).toLocaleString('en-IN') +
-          (v.price_max && v.price_max !== v.price_min ? ' - ₹' + Number(v.price_max).toLocaleString('en-IN') : '+');
-        tags.push('<span class="v-tag">' + priceLabel + '</span>');
-      }
-      if (v.capacity) {
-        tags.push('<span class="v-tag">Up to ' + Number(v.capacity).toLocaleString('en-IN') + ' guests</span>');
-      }
-      var tagsHtml = tags.length ? '<div class="v-tags">' + tags.join('') + '</div>' : '';
-
-      return '\
-        <article class="v-card">\
-          <a class="v-img" href="vendor.html?id=' + encodeURIComponent(v.id) + '">' + badge + '\
-            <img loading="lazy" src="' + vendorImg(v) + '" alt="' + esc(cleanName(v.name)) + '">\
-          </a>\
-          <div class="v-body">\
-            <span class="v-cat">' + esc(v.category) + '</span>\
-            <h3><a href="vendor.html?id=' + encodeURIComponent(v.id) + '">' + esc(cleanName(v.name)) + '</a></h3>\
-            <div class="v-loc">' + esc(v.area || v.city) + (v.pincode ? ' &middot; ' + esc(v.pincode) : '') + '</div>\
-            <div class="v-meta">\
-              ' + (hasReviews ? '<span class="rating-pill">★ ' + (parseFloat(v.rating)||0).toFixed(1) + ' (' + parseInt(v.rating_count, 10) + ' review' + (parseInt(v.rating_count, 10) === 1 ? '' : 's') + ')</span>' : '<span class="rating-pill" style="background:#f3f4f6;color:#79706A;">No reviews yet</span>') + '\
-              ' + (v.google_cid ? '<a class="g-link" href="https://www.google.com/maps?cid=' + esc(v.google_cid) + '" target="_blank" rel="noopener">View on Google</a>' : '') + '\
-            </div>\
-            ' + tagsHtml + '\
-          </div>\
-          <div class="v-cta">\
-            <a class="btn-view" href="vendor.html?id=' + encodeURIComponent(v.id) + '">View &amp; Inquire</a>\
-            <div class="v-cta-row">\
-              <button class="btn-quick" onclick="window.WEDEAZZY_BROWSE.openQuickView(\'' + esc(v.id) + '\')" style="background:#FFF0F2;border:1.5px solid #FBCDD1;color:#DC1F30;padding:10px 12px;font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1;font-family:inherit;line-height:1.2;box-sizing:border-box;">Quick View</button>\
-              <a class="btn-wa" href="' + whatsappLink(v) + '" target="_blank" rel="noopener">\
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/></svg>\
-                WhatsApp\
-              </a>\
-            </div>\
-          </div>\
-        </article>';
-    }).join('');
-
-    // Render Load More Button
-    var loadMoreContainer = getOrCreateLoadMoreContainer();
-    if (hasMore) {
-      loadMoreContainer.innerHTML = '<button id="btnLoadMore" style="background:var(--red);color:#fff;border:none;padding:12px 28px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;transition:transform 0.1s;box-shadow:var(--shadow);">Load More Vendors</button>';
-      document.getElementById('btnLoadMore').addEventListener('click', function() {
-        page++;
-        fetchVendors(true);
-      });
-    } else {
-      loadMoreContainer.innerHTML = '<p style="color:var(--text-muted);font-size:13px;font-weight:600;padding:15px 0;">Showing all matching verified vendors</p>';
-    }
+    usedStock = {};
+    var cards = state.vendors.map(card);
+    if (cards.length > 7) cards.splice(7, 0, promoCard());
+    list.innerHTML = cards.join('');
+    more.innerHTML = state.hasMore
+      ? '<button type="button" class="btn btn-line" id="loadMore">Show more vendors</button><p>Showing ' + state.vendors.length.toLocaleString('en-IN') + ' of ' + n + '</p>'
+      : (state.total > state.limit ? '<p>You\'ve seen all ' + n + ' vendors</p>' : '');
+    var lm = $('loadMore');
+    if (lm) lm.addEventListener('click', function () { state.page += 1; load(true); });
   }
 
-  // Init titles, breadcrumbs & load metadata
-  document.addEventListener('DOMContentLoaded', function(){
-    var cityName = titleCase(citySlug.replace(/-/g, ' '));
-    var catName  = titleCase(catSlug.replace(/-/g, ' '));
-    var heading;
-    if (initialMode === 'city') {
-      heading = (catSlug ? catName + ' in ' : 'Wedding Vendors in ') + cityName;
-    } else {
-      heading = catName + (citySlug ? ' in ' + cityName : ' across India');
-    }
+  function load(append) {
+    var id = ++state.reqId;
+    state.loading = true;
+    if (!append) { $('vendorList').innerHTML = skeletons(6); $('moreBox').innerHTML = ''; }
+    else { var lm = $('loadMore'); if (lm) { lm.disabled = true; lm.textContent = 'Loading…'; } }
 
-    document.getElementById('pageTitle').textContent = heading + ' | WedEazzy.com';
-    document.getElementById('pageDesc').setAttribute('content', 'Browse ' + heading.toLowerCase() + '. Verified, hand-picked. Inquire direct on WhatsApp. Zero booking fees on WedEazzy.com.');
-    document.getElementById('hH1').textContent = heading;
-    document.getElementById('hCount').textContent = 'Loading verified listings...';
-    document.getElementById('bcLeaf').textContent = heading;
-
-    // Dynamic category circle links & active states
-    var currentCat = catSlug;
-    var catCards = document.querySelectorAll('.cat-circle-card');
-    catCards.forEach(function(card) {
-      var href = card.getAttribute('href');
-      if (citySlug && href && href.indexOf('city=') === -1) {
-        card.setAttribute('href', href + '&city=' + encodeURIComponent(citySlug));
-      }
-      var cardCat = card.getAttribute('data-cat');
-      if (cardCat && cardCat === currentCat) {
-        card.classList.add('active');
-      }
-    });
-
-    // Load filter options from metadata endpoint, scoped so counts match what
-    // the filter would actually return (a city's count on a category page is
-    // "vendors of this category in that city", not the city's total).
-    var metaUrl = API_BASE + '/api/public/meta';
-    if (initialMode === 'category' && catSlug) {
-      metaUrl += '?category=' + encodeURIComponent(catSlug);
-    } else if (initialMode === 'city' && citySlug) {
-      metaUrl += '?city=' + encodeURIComponent(citySlug);
-    }
-    fetch(metaUrl)
-      .then(function(r) { return r.json(); })
-      .then(function(res) {
-        if (res.ok) {
-          renderFilters(res);
-        }
+    fetch(API_BASE + '/api/public/vendors?' + buildQuery())
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (id !== state.reqId) return; // a newer search replaced this one
+        state.loading = false;
+        if (!res || !res.ok) throw new Error('bad response');
+        state.total = res.pagination.total;
+        state.hasMore = state.page < res.pagination.totalPages;
+        state.vendors = append ? state.vendors.concat(res.vendors || []) : (res.vendors || []);
+        render();
       })
-      .catch(function(e){ console.error('[WedEazzy] Metadata fetch failed:', e); });
-
-    // Initial fetch of vendors
-    fetchVendors(false);
-
-    // Bind non-dynamic event listeners
-    document.querySelectorAll('input[name="rating"]').forEach(function(r){
-      r.addEventListener('change', function() {
-        page = 1;
-        fetchVendors(false);
+      .catch(function () {
+        if (id !== state.reqId) return;
+        state.loading = false;
+        $('vendorList').innerHTML = '<div class="state"><h3>Couldn\'t load vendors</h3><p>Please check your connection and try again.</p><button type="button" class="btn btn-line" onclick="location.reload()">Try again</button></div>';
+        $('moreBox').innerHTML = '';
       });
+  }
+
+  function reload() { state.page = 1; load(false); }
+
+  // ---------- enquiry dialog: sign in (email code) then send to this vendor ----------
+  var enqVendor = null;
+  function openEnquiry(v) {
+    enqVendor = v;
+    $('enqImg').src = vendorImg(v);
+    $('enqCat').textContent = catLabel(v.category_slug) + ' · ' + (v.area || v.city || '');
+    $('enqVendor').textContent = cleanName(v.name);
+    $('enqProfile').href = 'vendor.html?id=' + encodeURIComponent(v.id);
+    $('enqForm').hidden = false; $('enqAuth').hidden = true; $('enqAuth').innerHTML = '';
+    $('enqErr').textContent = '';
+    var send = $('enqSend'); send.disabled = false; send.textContent = 'Send enquiry';
+    $('eDate').min = new Date().toISOString().slice(0, 10);
+    // Signed-in couples: prefill their details
+    if (window.WZCoupleAuth) WZCoupleAuth.currentCouple().then(function (acc) {
+      if (!acc) return;
+      if (!$('eName').value) $('eName').value = acc.user.name || '';
+      if (!$('eEmail').value) $('eEmail').value = acc.user.email || '';
+      if (!$('ePhone').value && acc.user.phone) $('ePhone').value = '+' + acc.user.phone;
+    });
+    $('enqScrim').classList.add('open'); $('enqDialog').classList.add('open'); document.body.classList.add('enq-lock');
+    setTimeout(function () { $('eName').focus(); }, 60);
+  }
+  function closeEnquiry() {
+    $('enqScrim').classList.remove('open'); $('enqDialog').classList.remove('open'); document.body.classList.remove('enq-lock');
+  }
+
+  function submitEnquiry(e) {
+    e.preventDefault();
+    var f = $('enqForm'), err = $('enqErr'), send = $('enqSend');
+    var d = { name: f.name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim().toLowerCase(), eventDate: f.eventDate.value, guests: f.guests.value, notes: f.notes.value.trim() };
+    var bad = null;
+    [['name', d.name.length > 1], ['phone', d.phone.replace(/\D/g, '').length >= 8 && d.phone.replace(/\D/g, '').length <= 15], ['email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)]].forEach(function (r) {
+      f[r[0]].setAttribute('aria-invalid', r[1] ? 'false' : 'true');
+      if (!r[1] && !bad) bad = f[r[0]];
+    });
+    if (bad) { err.textContent = 'Please fill in the highlighted fields.'; bad.focus(); return; }
+    err.textContent = ''; send.disabled = true; send.textContent = 'Please wait…';
+
+    var authHost = $('enqAuth');
+    d.onCodeStep = function () { f.hidden = true; authHost.hidden = false; };
+    WZCoupleAuth.ensure(authHost, d).then(function (token) {
+      authHost.hidden = false; f.hidden = true;
+      authHost.innerHTML = '<p class="enq-fine">Sending your enquiry…</p>';
+      return WZCoupleAuth.postJson('/api/inquiry', {
+        vendorId: enqVendor.id, name: d.name, phone: d.phone, email: d.email,
+        eventDate: d.eventDate || undefined, guests: d.guests || undefined, notes: d.notes || undefined
+      }, token);
+    }).then(function (r) {
+      if (!r.res.ok || !r.data.ok) throw new Error(r.data.message || 'Could not send your enquiry right now.');
+      if (window.gtag) gtag('event', 'generate_lead', { vendor: enqVendor.id, category: enqVendor.category_slug });
+      authHost.innerHTML = '<div class="enq-done"><div class="tick">✓</div><h4>Enquiry sent</h4><p>' + esc(cleanName(enqVendor.name)) + ' will get back to you soon. Taking you to your dashboard…</p><a class="btn btn-ink" href="/pages/user-dashboard.html#inquiries">Go to my enquiries</a></div>';
+      setTimeout(function () { location.href = '/pages/user-dashboard.html#inquiries'; }, 2200);
+    }).catch(function (e2) {
+      authHost.hidden = true; authHost.innerHTML = ''; f.hidden = false;
+      send.disabled = false; send.textContent = 'Send enquiry';
+      if (!(e2 && e2.cancelled)) err.textContent = (e2 && e2.message) || 'Something went wrong. Please try again.';
+    });
+  }
+
+  // ---------- setup ----------
+  function setDesc(total) {
+    var el = $('hDesc'); if (!el) return;
+    var n = total ? total.toLocaleString('en-IN') + ' ' : '';
+    var where = citySlug ? 'in ' + cityName : 'across ' + (COUNTRY_NAMES[countryCode] || 'India');
+    el.textContent = MODE === 'city'
+      ? 'Compare ' + n + (catSlug ? catLabel(catSlug).toLowerCase() : 'wedding vendors') + ' in ' + cityName + '. See their work and reviews, then contact them directly. No booking fees, ever.'
+      : 'Compare ' + n + catLabel(catSlug).toLowerCase() + ' ' + where + '. See their work and reviews, then contact them directly. No booking fees, ever.';
+  }
+
+  // Popular quick filters: top cities (category page) or services (city page)
+  function renderPopular(meta) {
+    var box = $('popPlaces'); if (!box || !meta) return;
+    var items = [];
+    if (MODE === 'category') {
+      items = (meta.cities || []).filter(function (c) { return c.slug !== citySlug; }).slice(0, 8).map(function (c) { return [c.slug, c.name]; });
+    } else {
+      var cats = {};
+      (meta.categories || []).forEach(function (c) { if (c.slug && c.slug !== catSlug) cats[c.slug] = (cats[c.slug] || 0) + c.count; });
+      items = Object.keys(cats).sort(function (a, b) { return cats[b] - cats[a]; }).slice(0, 8).map(function (sl) { return [sl, catLabel(sl)]; });
+    }
+    if (!items.length) return;
+    box.innerHTML = '<span>Popular:</span>' + items.map(function (it) { return '<button type="button" data-place="' + esc(it[0]) + '">' + esc(it[1]) + '</button>'; }).join('');
+    box.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-place]'); if (!b) return;
+      var val = b.classList.contains('on') ? '' : b.getAttribute('data-place');
+      $('fPlace').value = val; state.place = val;
+      syncPopular();
+      reload();
+      document.querySelector('.toolbar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+  function syncPopular() {
+    [].forEach.call(document.querySelectorAll('#popPlaces [data-place]'), function (b) { b.classList.toggle('on', b.getAttribute('data-place') === state.place); });
+  }
+
+  function setHeadings() {
+    var where = citySlug ? 'in ' + cityName : 'across ' + (COUNTRY_NAMES[countryCode] || 'India');
+    var h1Html, plain;
+    if (MODE === 'city') {
+      var what = catSlug ? catLabel(catSlug) : 'Wedding vendors';
+      h1Html = esc(what) + ' in <em>' + esc(cityName) + '</em>';
+      plain = what + ' in ' + cityName;
+    } else {
+      h1Html = esc(catLabel(catSlug)) + ' <em>' + esc(where) + '</em>';
+      plain = catLabel(catSlug) + ' ' + where;
+    }
+    $('hH1').innerHTML = h1Html;
+    $('bcLeaf').textContent = plain;
+    $('pageTitle').textContent = plain + ' | WedEazzy.com';
+    $('pageDesc').setAttribute('content', 'Browse ' + plain.toLowerCase() + '. Verified vendors, direct contact on WhatsApp, zero booking fees on WedEazzy.com.');
+  }
+
+  function buildRail() {
+    var extra = citySlug ? '&city=' + encodeURIComponent(citySlug) : (countryCode ? '&country=' + countryCode : '');
+    var base = MODE === 'city' ? 'city.html?city=' + encodeURIComponent(citySlug) + '&cat=' : 'category.html?cat=';
+    var html = CATS.map(function (c) {
+      var href = base + c[0] + (MODE === 'city' ? '' : extra);
+      return '<a href="' + href + '"' + (c[0] === catSlug ? ' class="active" aria-current="page"' : '') + '><img src="' + c[2] + '" alt="" loading="lazy" />' + esc(c[1]) + '</a>';
+    }).join('');
+    if (MODE === 'city') html = '<a href="city.html?city=' + encodeURIComponent(citySlug) + '"' + (!catSlug ? ' class="active" aria-current="page"' : '') + '><img src="../assets/images/logo.png" alt="" style="object-fit:contain;background:#fff" />All vendors</a>' + html;
+    $('catRail').innerHTML = html;
+    var active = $('catRail').querySelector('.active');
+    if (active) active.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+
+  function fillPlaceSelect(meta) {
+    var sel = $('fPlace');
+    if (MODE === 'category') {
+      $('fPlaceLabel').textContent = 'City';
+      var cities = (meta && meta.cities) || [];
+      sel.innerHTML = '<option value="">' + (citySlug ? esc(cityName) : 'All cities') + '</option>' +
+        cities.filter(function (c) { return c.slug !== citySlug; }).map(function (c) {
+          return '<option value="' + esc(c.slug) + '">' + esc(c.name) + ' (' + c.count + ')</option>';
+        }).join('');
+    } else {
+      $('fPlaceLabel').textContent = 'Service';
+      var cats = {};
+      ((meta && meta.categories) || []).forEach(function (c) { if (c.slug) cats[c.slug] = (cats[c.slug] || 0) + c.count; });
+      sel.innerHTML = '<option value="">' + (catSlug ? esc(catLabel(catSlug)) : 'All services') + '</option>' +
+        Object.keys(cats).filter(function (s) { return s !== catSlug && cats[s] > 0; }).sort(function (a, b) { return cats[b] - cats[a]; }).map(function (s) {
+          return '<option value="' + esc(s) + '">' + esc(catLabel(s)) + ' (' + cats[s] + ')</option>';
+        }).join('');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    $('yr').textContent = new Date().getFullYear();
+    setHeadings();
+    buildRail();
+
+    var metaUrl = API_BASE + '/api/public/meta' + (MODE === 'category'
+      ? '?category=' + encodeURIComponent(catSlug) + (countryCode ? '&country=' + countryCode : '')
+      : '?city=' + encodeURIComponent(citySlug));
+    fetch(metaUrl).then(function (r) { return r.json(); }).then(function (m) { if (m && m.ok) { fillPlaceSelect(m); renderPopular(m); } })
+      .catch(function () { fillPlaceSelect(null); });
+
+    // Toolbar
+    var t = null;
+    $('fSearch').addEventListener('input', function (e) {
+      clearTimeout(t);
+      t = setTimeout(function () { state.search = e.target.value.trim(); reload(); }, 350);
+    });
+    $('fPlace').addEventListener('change', function (e) { state.place = e.target.value; syncPopular(); reload(); });
+    $('fRating').addEventListener('change', function (e) { state.rating = parseFloat(e.target.value) || 0; reload(); });
+    $('sortBy').addEventListener('change', function (e) { state.sortBy = e.target.value; reload(); });
+    $('clearBtn').addEventListener('click', function () {
+      state.search = ''; state.place = ''; state.rating = 0;
+      $('fSearch').value = ''; $('fPlace').value = ''; $('fRating').value = '0'; syncPopular();
+      reload();
     });
 
-    var sb = document.getElementById('sortBy');
-    if (sb) {
-      sb.addEventListener('change', function() {
-        page = 1;
-        fetchVendors(false);
-      });
+    // Enquiry dialog
+    $('vendorList').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-enquire]');
+      if (!b) return;
+      var v = state.vendors.filter(function (x) { return String(x.id) === b.getAttribute('data-enquire'); })[0];
+      if (v) openEnquiry(v);
+    });
+    $('enqClose').addEventListener('click', closeEnquiry);
+    $('enqScrim').addEventListener('click', closeEnquiry);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeEnquiry(); });
+    $('enqForm').addEventListener('submit', submitEnquiry);
+    ['eName', 'ePhone', 'eEmail'].forEach(function (id) { $(id).addEventListener('input', function () { $(id).removeAttribute('aria-invalid'); }); });
+
+    // Toolbar gets a solid edge + shadow once it sticks under the header
+    var sentinel = $('tbSentinel'), toolbar = document.querySelector('.toolbar');
+    if (sentinel && toolbar && 'IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) { toolbar.classList.toggle('stuck', !entries[0].isIntersecting); }, { rootMargin: '-72px 0px 0px 0px' }).observe(sentinel);
     }
+
+    // Mobile menu
+    var mb = $('menuBtn'), hr = $('headerRight');
+    if (mb && hr) mb.addEventListener('click', function () {
+      var open = hr.classList.toggle('open');
+      mb.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    load(false);
   });
-
-  window.WEDEAZZY_BROWSE = {
-    resetFilters: function() {
-      document.querySelectorAll('input[name="rating"]').forEach(function(r){ r.checked = r.value === '0'; });
-      document.querySelectorAll('input[name="catFilter"], input[name="cityFilter"]').forEach(function(c){ c.checked = false; });
-      page = 1;
-      fetchVendors(false);
-    },
-    openQuickView: function(vendorId) {
-      // Log profile visit analytics event asynchronously
-      fetch(API_BASE + '/api/public/analytics/event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vendorIdOrSlug: vendorId, eventType: 'profile_visit' })
-      }).catch(function(e) { console.error('Failed to log profile visit analytics event:', e); });
-
-      if (!document.getElementById('wedeazzy-quickview-styles')) {
-        var style = document.createElement('style');
-        style.id = 'wedeazzy-quickview-styles';
-        style.innerHTML = '\
-          @keyframes modal-zoom {\
-            from { transform: scale(0.95); opacity: 0; }\
-            to { transform: scale(1); opacity: 1; }\
-          }\
-          .quickview-info-block {\
-            padding: 10px 12px;\
-            background: #F8F9FC;\
-            border-radius: 8px;\
-            border: 1px solid #E2E8F0;\
-          }\
-          .quickview-info-block strong {\
-            display: block;\
-            font-size: 10.5px;\
-            color: #64748B;\
-            text-transform: uppercase;\
-            letter-spacing: 0.5px;\
-            margin-bottom: 2px;\
-          }\
-          .quickview-info-block span {\
-            font-size: 13px;\
-            color: #0F172A;\
-            font-weight: 700;\
-          }\
-        ';
-        document.head.appendChild(style);
-      }
-
-      var modalId = 'wedeazzy-quickview-modal';
-      var modal = document.getElementById(modalId);
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = modalId;
-        modal.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.65); backdrop-filter:blur(6px); z-index:99999; display:none; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; font-family:var(--font);';
-        document.body.appendChild(modal);
-      }
-
-      modal.style.display = 'flex';
-      modal.innerHTML = '\
-        <div style="background:#fff; width:100%; max-width:850px; max-height:90vh; overflow-y:auto; border-radius:20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position:relative; display:flex; flex-direction:column; animation: modal-zoom 0.3s cubic-bezier(0.16, 1, 0.3, 1);">\
-          <button onclick="document.getElementById(\'wedeazzy-quickview-modal\').style.display=\'none\'" style="position:absolute; top:18px; right:18px; width:36px; height:36px; border-radius:50%; border:none; background:#F1F5F9; color:#64748B; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10;">✕</button>\
-          <div style="padding:40px; text-align:center;">\
-            <div style="border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid var(--red); border-radius: 50%; width: 35px; height: 35px; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>\
-            <p style="color:#64748B; font-weight:600;">Loading details...</p>\
-          </div>\
-        </div>';
-
-      fetch(API_BASE + '/api/public/vendors/' + encodeURIComponent(vendorId))
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-          if (res.ok && res.vendor) {
-            renderModalContent(modal, res.vendor);
-          } else {
-            renderModalError(modal);
-          }
-        })
-        .catch(function(){
-          renderModalError(modal);
-        });
-    }
-  };
-
-  function renderModalContent(modalEl, v) {
-    var imgs = [imgFor(v, 0), imgFor(v, 1), imgFor(v, 2), imgFor(v, 3), imgFor(v, 4)];
-    if (v.photos && v.photos.length > 0) {
-      for (var i = 0; i < 5; i++) {
-        if (v.photos[i]) imgs[i] = v.photos[i].url;
-      }
-    }
-
-    var timingsHtml = '';
-    if (v.businessTimings) {
-      try {
-        var parsed = JSON.parse(v.businessTimings);
-        var days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        timingsHtml = '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; background:#F8F9FC; padding:10px; border-radius:8px; border:1px solid #E2E8F0; margin-top:8px;">';
-        days.forEach(function(day){
-          if (parsed[day]) {
-            var t = parsed[day];
-            timingsHtml += '<div style="display:flex; justify-content:space-between; font-size:11.5px; padding:2px 0; border-bottom:1px dashed #E2E8F0;">' +
-              '<span style="text-transform:capitalize; font-weight:600; color:#334155;">' + day.substring(0,3) + '</span>' +
-              '<span style="color:' + (t.open ? '#0F172A;' : '#DC2626;') + ' font-weight:700;">' + (t.open ? esc(t.from) + '-' + esc(t.to) : 'Closed') + '</span>' +
-            '</div>';
-          }
-        });
-        timingsHtml += '</div>';
-      } catch (e) {
-        timingsHtml = '<p style="font-size:12px; margin:4px 0 0; color:#0F172A; font-weight:600;">⏰ ' + esc(v.businessTimings) + '</p>';
-      }
-    } else {
-      timingsHtml = '<p style="font-size:12px; color:#64748B; margin:4px 0 0;">Timings not specified</p>';
-    }
-
-    var highlightsHtml = '';
-    var parsedServices = [];
-    if (v.services) {
-      try {
-        parsedServices = typeof v.services === 'string' ? JSON.parse(v.services) : v.services;
-      } catch (e) {}
-    }
-    if (parsedServices && Array.isArray(parsedServices) && parsedServices.length > 0) {
-      highlightsHtml = '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;">' +
-        parsedServices.map(function(s){ return '<span style="background:#FFF0F2; color:#DC1F30; border:1px solid #FBCDD1; font-size:11px; font-weight:700; padding:4px 8px; border-radius:6px;">✓ ' + esc(s) + '</span>'; }).join('') +
-      '</div>';
-    }
-
-    var msg = "Hi WedEazzy! I'm interested in *" + v.name + "* (" + v.category + " · " + v.city + "). I saw their profile on the Quick View popup. Please connect me with them. Thanks!";
-    var waUrl = 'https://wa.me/917498987620?text=' + encodeURIComponent(msg);
-
-    modalEl.innerHTML = '\
-      <div style="background:#fff; width:100%; max-width:850px; max-height:90vh; overflow-y:auto; border-radius:20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); position:relative; display:flex; flex-direction:column; animation: modal-zoom 0.3s cubic-bezier(0.16, 1, 0.3, 1);">\
-        <button onclick="document.getElementById(\'wedeazzy-quickview-modal\').style.display=\'none\'" style="position:absolute; top:18px; right:18px; width:36px; height:36px; border-radius:50%; border:none; background:#F1F5F9; color:#64748B; font-size:18px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10;">✕</button>\
-        \
-        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:24px; padding:28px; box-sizing:border-box;">\
-          \
-          <!-- Left Column (Photos & Basic Info) -->\
-          <div style="display:flex; flex-direction:column; gap:16px;">\
-            <div style="position:relative; border-radius:12px; overflow:hidden; aspect-ratio:16/10;">\
-              <img id="quickview-cover" src="' + imgs[0] + '" style="width:100%; height:100%; object-fit:cover;">\
-              ' + (v.subscriptionPlan === 'Featured' ? '<span style="position:absolute; top:12px; left:12px; background:#ea3b3b; color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px;">Featured</span>' : (v.subscriptionPlan === 'Premium' ? '<span style="position:absolute; top:12px; left:12px; background:#3b82f6; color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px;">Premium</span>' : '')) + '\
-            </div>\
-            \
-            <!-- Photo selection thumbnails -->\
-            <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;">\
-              ' + imgs.map(function(img, idx){
-                return '<img src="' + img + '" onclick="document.getElementById(\'quickview-cover\').src=\'' + img + '\'" style="width:55px; height:42px; object-fit:cover; border-radius:6px; cursor:pointer; border:2px solid transparent; transition:border-color 0.2s;" onmouseover="this.style.borderColor=\'#DC1F30\'" onmouseout="this.style.borderColor=\'transparent\'">';
-              }).join('') + '\
-            </div>\
-            \
-            <div>\
-              <h2 style="margin:0; font-family:var(--sans, inherit); font-size:24px; color:var(--navy, #1B1B1F); font-weight:800; letter-spacing:-0.3px;">' + esc(cleanName(v.name)) + '</h2>\
-              <p style="margin:6px 0 0; font-size:13.5px; color:#64748B;">' + esc(v.area || v.city) + ', ' + esc(v.city) + '</p>\
-              <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">\
-                <span style="background:#FFF0F2; color:#DC1F30; font-size:12px; font-weight:700; padding:3px 8px; border-radius:6px;">' + esc(v.category) + '</span>\
-                ' + (v.rating_count && parseInt(v.rating_count, 10) > 0 ? '<span style="background:#FEF3C7; color:#B45309; font-size:12px; font-weight:700; padding:3px 8px; border-radius:6px;">★ ' + ((parseFloat(v.rating)||0).toFixed(1)) + '</span>' : '<span style="background:#F1F5F9; color:#64748B; font-size:12px; font-weight:700; padding:3px 8px; border-radius:6px;">No reviews yet</span>') + '\
-              </div>\
-            </div>\
-            \
-            ' + highlightsHtml + '\
-          </div>\
-          \
-          <!-- Right Column (Stats, Timings & CTAs) -->\
-          <div style="display:flex; flex-direction:column; justify-content:space-between; border-left:1px solid #E2E8F0; padding-left:24px; box-sizing:border-box;">\
-            <div style="display:flex; flex-direction:column; gap:16px;">\
-              <div>\
-                <h3 style="margin:0 0 8px 0; font-size:14px; text-transform:uppercase; color:#64748B; letter-spacing:0.5px; font-weight:700;">Business Details</h3>\
-                <div style="display:grid; grid-template-columns:1fr; gap:8px;">\
-                  ' + (v.yearsExperience ? '<div class="quickview-info-block"><strong>Experience</strong><span>' + esc(v.yearsExperience) + ' Years</span></div>' : '') + '\
-                  ' + (v.teamSize ? '<div class="quickview-info-block"><strong>Team Size</strong><span>' + esc(v.teamSize) + ' People</span></div>' : '') + '\
-                  ' + (v.languagesSpoken ? '<div class="quickview-info-block"><strong>Languages</strong><span>' + esc(v.languagesSpoken) + '</span></div>' : '') + '\
-                  ' + (v.serviceAreas ? '<div class="quickview-info-block"><strong>Service Areas</strong><span>' + esc(v.serviceAreas) + '</span></div>' : '') + '\
-                  <div class="quickview-info-block"><strong>Destination Weddings</strong><span>' + (v.acceptsDestination ? 'Yes' : 'No') + '</span></div>\
-                </div>\
-              </div>\
-              \
-              <div>\
-                <h3 style="margin:0; font-size:13px; text-transform:uppercase; color:#64748B; letter-spacing:0.5px; font-weight:700;">Business Hours</h3>\
-                ' + timingsHtml + '\
-              </div>\
-            </div>\
-            \
-            <!-- Direct CTAs -->\
-            <div style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">\
-              <a href="' + waUrl + '" target="_blank" rel="noopener" style="background:#25D366; color:#fff; text-decoration:none; padding:12px; border-radius:10px; font-weight:700; font-size:14px; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow: 0 4px 12px rgba(37,211,102,0.25);">\
-                <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px; height:18px;"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/></svg>\
-                Inquire on WhatsApp\
-              </a>\
-              <a href="vendor.html?id=' + encodeURIComponent(v.id) + '" style="background:#DC1F30; color:#fff; text-decoration:none; padding:12px; border-radius:10px; font-weight:700; font-size:14px; text-align:center;">\
-                View Full Profile & Reviews\
-              </a>\
-            </div>\
-          </div>\
-          \
-        </div>\
-      </div>\
-    ';
-  }
-
-  function renderModalError(modalEl) {
-    modalEl.innerHTML = '\
-      <div style="background:#fff; width:100%; max-width:450px; border-radius:16px; padding:30px; text-align:center; position:relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">\
-        <button onclick="document.getElementById(\'wedeazzy-quickview-modal\').style.display=\'none\'" style="position:absolute; top:12px; right:12px; width:30px; height:30px; border-radius:50%; border:none; background:#F1F5F9; color:#64748B; font-size:14px; font-weight:700; cursor:pointer;">✕</button>\
-        <svg viewBox="0 0 24 24" fill="none" stroke="#DC1F30" stroke-width="1.6" style="width:40px; height:40px; display:block; margin:0 auto 12px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.2" r="0.9" fill="#DC1F30" stroke="none"/></svg>\
-        <h3 style="font-family:var(--serif); font-size:18px; color:var(--navy, #1B1B1F); margin-bottom:6px;">Failed to Load</h3>\
-        <p style="color:#64748B; font-size:13px; margin:0 0 16px 0; line-height:1.5;">Could not retrieve vendor profile. Please refresh or try again.</p>\
-      </div>\
-    ';
-  }
 })();

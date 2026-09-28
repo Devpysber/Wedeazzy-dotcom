@@ -654,7 +654,7 @@
           var res = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: el.email.value.trim(), password: el.pass.value })
+            body: JSON.stringify({ email: el.email.value.trim(), password: el.pass.value, role: "vendor" })
           });
           var data = await readJson(res);
           busy(false);
@@ -669,6 +669,16 @@
               showToast("Admins must log in through the Admin Portal. Redirecting to Admin Portal...", "info");
               setTimeout(function () { window.location.href = "/admin-panel/login.html"; }, 1200);
               return;
+            }
+            if (data && data.code === "ERR_ROLE_MISMATCH" && data.accountRole === "couple") {
+              // Couple credentials on the vendor page: point them at the couple sign-in.
+              el.subTitle.textContent = "This is a couple account, not a vendor account. ";
+              el.subTitle.style.color = "#c62030";
+              var coupleLink = document.createElement("a");
+              coupleLink.href = "/?auth=login&as=couple";
+              coupleLink.textContent = "Sign in as Couple →";
+              coupleLink.style.cssText = "color:#c62030;font-weight:700;text-decoration:underline;";
+              el.subTitle.appendChild(coupleLink);
             }
             showToast((data && data.message) || "Invalid email or password.", "danger");
             return;
@@ -765,7 +775,7 @@
           googleBtn.disabled = true;
           googleBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Opening Google…';
           // role=business maps to the vendor role in backend/src/config/passport.js
-          window.location.href = "/api/auth/google?role=business";
+          window.location.href = "/api/auth/google?role=vendor&from=vendor-login";
         });
       }
 
@@ -870,6 +880,44 @@
             el.subTitle.textContent = "Signing in to manage \"" + qBiz + "\". Enter your password to continue to your dashboard.";
           }
           showToast("Welcome back! Please enter your password to access your dashboard.", "info");
+        }
+      } catch (_) {}
+
+      // Google sign-in bounced back with an error code (see
+      // backend/src/controllers/googleOAuth.controller.js). Codes only — the
+      // wording lives here, so nothing from the URL is rendered as-is.
+      try {
+        var gParams = new URLSearchParams(window.location.search);
+        var gErr = gParams.get("google_error");
+        if (gErr) {
+          var gMessages = {
+            ERR_NO_ACCOUNT: "This account does not exist. No vendor account is registered with this Google email — please register your business first, or sign in with the email you registered with.",
+            ERR_ROLE_MISMATCH: gParams.get("account") === "couple"
+              ? "This Google account is registered as a couple account, not a vendor account. Use a different Google account or sign in with your business email."
+              : "This Google account cannot be used for vendor sign-in.",
+            ERR_GOOGLE_EMAIL_UNVERIFIED: "Your Google email is not verified. Please sign in with your password instead.",
+            ERR_GOOGLE_ACCOUNT_MISMATCH: "This email is linked to a different Google account. Use that Google account or your password.",
+            ERR_ACCOUNT_SUSPENDED: "Your account has been suspended. Contact support for assistance.",
+            ERR_GOOGLE_CANCELLED: "Google sign-in was cancelled."
+          };
+          var gMsg = gMessages[gErr] || "Google sign-in failed. Please try again.";
+          if (el.subTitle) {
+            el.subTitle.textContent = gMsg;
+            el.subTitle.style.color = "#c62030";
+            if (gErr === "ERR_NO_ACCOUNT") {
+              var reg = document.createElement("a");
+              reg.href = "/pages/claim.html?mode=register";
+              reg.textContent = "Register your business →";
+              reg.style.cssText = "display:inline-block;margin-top:10px;padding:8px 16px;border-radius:999px;background:#c62030;color:#fff;font-weight:600;text-decoration:none;";
+              el.subTitle.appendChild(document.createElement("br"));
+              el.subTitle.appendChild(reg);
+            }
+          }
+          showToast(gMsg, gErr === "ERR_GOOGLE_CANCELLED" ? "info" : "danger");
+          var cleanParams = new URLSearchParams(window.location.search);
+          cleanParams.delete("google_error");
+          cleanParams.delete("account");
+          history.replaceState(null, "", window.location.pathname + (cleanParams.toString() ? "?" + cleanParams : ""));
         }
       } catch (_) {}
 

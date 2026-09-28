@@ -42,7 +42,11 @@ function errorHandler(err, req, res, next) {
   res.status(status).json({
     ok: false,
     code: err.code || 'ERR_GENERIC',
-    message: status >= 500 ? 'Internal server error' : err.message,
+    // 5xx messages are hidden unless the thrower marked them safe to show (expose).
+    message: status >= 500 && !err.expose ? 'Internal server error' : err.message,
+    // ERR_ROLE_MISMATCH: which account type the credentials belong to, so the
+    // sign-in screen can offer to switch.
+    ...(status < 500 && err.accountRole ? { accountRole: err.accountRole } : {}),
   });
 }
 

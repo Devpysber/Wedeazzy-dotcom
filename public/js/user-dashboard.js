@@ -90,7 +90,7 @@ async function boot() {
     const dropdownUserEmail = document.getElementById('dropdownUserEmail');
     if (dropdownUserEmail) dropdownUserEmail.textContent = 'sonal.amit@wedeazzy.com';
 
-    initLiveGreetingAndClock();
+    fillIdentity();
     
     // Close dropdowns on outside clicks
     window.addEventListener('click', (e) => {
@@ -99,8 +99,7 @@ async function boot() {
       }
     });
 
-    switchTab('dashboard');
-    triggerToast('Demo sandbox mode authorized!');
+    switchTab('browse');
     return;
   }
 
@@ -139,7 +138,7 @@ async function boot() {
     const dropdownUserEmail = document.getElementById('dropdownUserEmail');
     if (dropdownUserEmail) dropdownUserEmail.textContent = state.user.email || 'couple@wedeazzy.com';
 
-    initLiveGreetingAndClock();
+    fillIdentity();
 
     window.addEventListener('click', (e) => {
       if (!e.target.closest('#profileDropdown')) {
@@ -147,53 +146,20 @@ async function boot() {
       }
     });
 
-    switchTab('dashboard');
-    triggerToast('Successfully authenticated!');
+    // Unread chat badge on the Messages nav item.
+    if (window.WZChat) {
+      WZChat.watchUnread(chatOpts(), setChatBadges);
+    }
+
+    // Couples land on Browse Vendors. Deep links: #inquiries (used after sending an
+    // enquiry), #messages, #favorites, #profile.
+    switchTab(TAB_ALIASES[location.hash.slice(1)] || 'browse');
 
   } catch (err) {
     localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
     window.location.href = '../index.html?auth=login';
   }
-}
-
-/* --- Live Clock Greeting --- */
-function initLiveGreetingAndClock() {
-  const headerLeft = document.querySelector('.header-left');
-  if (!headerLeft) return;
-
-  let greetBox = document.getElementById('headerGreeting');
-  if (!greetBox) {
-    greetBox = document.createElement('div');
-    greetBox.id = 'headerGreeting';
-    greetBox.className = 'header-greet';
-    greetBox.style.marginLeft = '20px';
-    greetBox.style.display = 'flex';
-    greetBox.style.flexDirection = 'column';
-    greetBox.style.justifyContent = 'center';
-    headerLeft.appendChild(greetBox);
-  }
-
-  const updateClock = () => {
-    const now = new Date();
-    const hrs = now.getHours();
-    let greet = 'Good Day';
-    let icon = '✨';
-
-    if (hrs < 12) { greet = 'Good Morning'; icon = '🌅'; }
-    else if (hrs < 17) { greet = 'Good Afternoon'; icon = '☀️'; }
-    else { greet = 'Good Evening'; icon = '🌙'; }
-
-    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-    
-    greetBox.innerHTML = `
-      <h2 style="font-size: 15px; font-weight: 700; color:var(--rose-primary); line-height:1.1;">${icon} ${greet}, ${esc(state.user ? state.user.name.split(' ')[0] : 'Planner')}</h2>
-      <span style="font-size: 10.5px; color:var(--text-secondary); margin-top:2px;">${timeStr} | Wedding ID #${state.user ? state.user.id.slice(-4).toUpperCase() : 'DEMO'}</span>
-    `;
-  };
-
-  updateClock();
-  setInterval(updateClock, 1000);
 }
 
 /* --- Dropdown Actions --- */
@@ -208,318 +174,61 @@ function closeAllDropdowns() {
   if (profileMenu) profileMenu.classList.remove('show');
 }
 
+/* --- Identity (header avatar, account menu, sidebar greeting) --- */
+function fillIdentity() {
+  const u = state.user || {};
+  const first = String(u.name || '').trim().split(' ')[0] || 'there';
+  const initial = (u.name || u.email || '?').trim().charAt(0).toUpperCase();
+  const set = (id, text) => { const n = document.getElementById(id); if (n) n.textContent = text; };
+  set('headerProfileAvatarLetter', initial);
+  set('dropdownAvatarLetter', initial);
+  set('dropdownUserTitle', u.name || 'My account');
+  set('dropdownUserEmail', u.email || '');
+  set('sidebarGreeting', 'Hi, ' + first);
+}
+
+/** Messages badge lives in both the sidebar and the mobile bottom bar. */
+function setChatBadges(n) {
+  if (!window.WZChat) return;
+  WZChat.setBadge(document.getElementById('chatNavBadge'), n);
+  WZChat.setBadge(document.getElementById('chatNavBadgeMobile'), n);
+}
+
 /* --- Dynamic Router Viewport --- */
+// Old tab names (bookmarks, deep links, the removed Dashboard/Planning pages).
+const TAB_ALIASES = {
+  browse: 'browse', inquiries: 'inquiries', messages: 'messages', favorites: 'favorites', profile: 'profile',
+  dashboard: 'browse', planning: 'browse', settings: 'profile',
+};
+
 function switchTab(tabName) {
-  state.activeTab = tabName;
-  
-  // Sidebar Highlights
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    if (btn.dataset.tab === tabName) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
+  const tab = TAB_ALIASES[tabName] || 'browse';
+  state.activeTab = tab;
+
+  document.querySelectorAll('.nav-item[data-tab], .bnav-item[data-tab]').forEach(btn => {
+    const on = btn.dataset.tab === tab;
+    btn.classList.toggle('active', on);
+    if (on) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current');
   });
 
   const container = document.getElementById('contentViewport');
-  
-  // Premium Multi-Element Skeleton
-  container.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:24px; animation: fade-step 0.3s ease;">
-      <div class="skeleton" style="height:32px; width:35%; border-radius:8px;"></div>
-      <div class="metrics-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
-        <div class="skeleton" style="height:240px; border-radius:14px;"></div>
-        <div class="skeleton" style="height:240px; border-radius:14px;"></div>
-        <div class="skeleton" style="height:240px; border-radius:14px;"></div>
-        <div class="skeleton" style="height:240px; border-radius:14px;"></div>
-      </div>
-      <div class="skeleton" style="height:320px; width:100%; border-radius:14px;"></div>
-    </div>
-  `;
-
-  setTimeout(() => {
-    renderTab(tabName, container);
-  }, 250);
-
-  // Close mobile navigation drawer
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  if (sidebar) sidebar.classList.remove('mobile-open');
-  if (overlay) overlay.classList.remove('mobile-open');
-}
-
-function toggleMobileSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  if (sidebar) sidebar.classList.toggle('mobile-open');
-  if (overlay) overlay.classList.toggle('mobile-open');
+  container.scrollTop = 0;
+  window.scrollTo(0, 0);
+  renderTab(tab, container);
+  if (location.hash.slice(1) !== tab) history.replaceState(null, '', '#' + tab);
 }
 
 function renderTab(tab, el) {
-  if (tab === 'dashboard')       renderDashboardTab(el);
-  else if (tab === 'browse')      renderBrowseTab(el);
+  if (tab === 'browse')           renderBrowseTab(el);
   else if (tab === 'inquiries')   renderInquiriesTab(el);
+  else if (tab === 'messages')    renderMessagesTab(el);
   else if (tab === 'favorites')   renderFavoritesTab(el);
-  else if (tab === 'planning')    renderPlanningTab(el);
-  else if (tab === 'settings')    renderSettingsTab(el);
+  else if (tab === 'profile')     renderProfileTab(el);
 }
 
 /* ============================================================================
  * VIEW BLOCKS & SaaS Modules
  * ========================================================================== */
-
-// 1. USER MAIN DASHBOARD TAB
-// 1. USER MAIN DASHBOARD TAB
-function renderDashboardTab(el) {
-  const inqs = state.mockData.inquiries || [];
-  const sl = state.mockData.shortlists || [];
-  const checklist = state.mockData.checklist || [];
-  const guests = state.mockData.guests || [];
-  
-  const totalInqCount = inqs.length;
-  const favCount = sl.length;
-  const doneTasks = checklist.filter(c => c.done).length;
-  const totalTasks = checklist.length;
-  const attendingGuests = guests.filter(g => g.rsvp === 'Attending').reduce((acc, curr) => acc + curr.count, 0);
-
-  el.innerHTML = `
-    <div class="hero-section">
-      <h1>Wedding Hub Dashboard</h1>
-      <p>Welcome back! Organize your inquiries, manage shortlist compare tables, and track checklist task progress.</p>
-    </div>
-
-    <!-- Statistics Cards Grid Section -->
-    <div class="metrics-grid">
-      <div class="metric-card orange">
-        <div class="metric-card-top">
-          <div class="metric-card-icon">⏳</div>
-          <div class="metric-card-meta">
-            <span class="metric-card-title">My Inquiries</span>
-            <span class="metric-card-desc">Active Queries</span>
-          </div>
-        </div>
-        <span class="metric-card-val" id="cnt-pending">0</span>
-        <span class="metric-card-sub">Inquiries Sent</span>
-      </div>
-      
-      <div class="metric-card pink">
-        <div class="metric-card-top">
-          <div class="metric-card-icon">💖</div>
-          <div class="metric-card-meta">
-            <span class="metric-card-title">Favorites</span>
-            <span class="metric-card-desc">Shortlisted Vendors</span>
-          </div>
-        </div>
-        <span class="metric-card-val" id="cnt-shortlisted">0</span>
-        <span class="metric-card-sub">Saved Vendors</span>
-      </div>
-
-      <div class="metric-card green">
-        <div class="metric-card-top">
-          <div class="metric-card-icon">📋</div>
-          <div class="metric-card-meta">
-            <span class="metric-card-title">Checklist Tasks</span>
-            <span class="metric-card-desc">Completion Ratio</span>
-          </div>
-        </div>
-        <span class="metric-card-val" id="cnt-tasks">${doneTasks} / ${totalTasks}</span>
-        <span class="metric-card-sub">Tasks Done</span>
-      </div>
-
-      <div class="metric-card blue">
-        <div class="metric-card-top">
-          <div class="metric-card-icon">👥</div>
-          <div class="metric-card-meta">
-            <span class="metric-card-title">Guest RSVPs</span>
-            <span class="metric-card-desc">Attending Guests</span>
-          </div>
-        </div>
-        <span class="metric-card-val" id="cnt-guests">0</span>
-        <span class="metric-card-sub">Guests Attending</span>
-      </div>
-    </div>
-
-    <!-- Dashboard Welcome Features split grid -->
-    <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:24px;">
-      <!-- Welcome Panel -->
-      <div class="card-premium" style="display:flex; flex-direction:column; justify-content:space-between;">
-        <div>
-          <h3 style="font-family:var(--sans); font-size:18px; margin-bottom:12px;">Let's design your dream wedding!</h3>
-          <p style="font-size:14px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px;">
-            ${(state.couple && state.couple.city)
-              ? `Your target destination is set as <strong>${esc(state.couple.city)}</strong>.`
-              : `Set your wedding city in <a href="#" onclick="switchTab('settings'); return false;" style="color:inherit; font-weight:600;">Profile Settings</a> to see vendors near you.`}
-            You can find top wedding photographers, bridal makeup artists, mehndi designs, catering packages, and banquets to make your event unforgettable.
-          </p>
-        </div>
-        <div style="display:flex; gap:12px;">
-          <button class="btn-premium btn-pink" onclick="switchTab('browse')">🔍 Browse Vendors</button>
-          <button class="btn-premium btn-outline" onclick="switchTab('planning')">📋 Open Planner</button>
-        </div>
-      </div>
-
-      <!-- Quick Tips Box -->
-      <div class="card-premium">
-        <h3 style="font-family:var(--sans); font-size:16px; margin-bottom:12px;">💡 Quick Checklist Tip</h3>
-        <div style="font-size:13.5px; color:var(--text-secondary); line-height:1.5;">
-          ${checklist.length > 0 && checklist.some(c => !c.done)
-            ? `Next pending task: <strong>${esc(checklist.find(c => !c.done).text)}</strong>.`
-            : `Hooray! All checklist planner items are marked completed.`
-          }
-          <br/><br/>
-          Need coordinator support? Shoot us a message on the support bubble below.
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Start animated counters
-  animateNumber('cnt-pending', totalInqCount);
-  animateNumber('cnt-shortlisted', favCount);
-  animateNumber('cnt-guests', attendingGuests);
-}
-
-async function toggleChecklistItem(id) {
-  const isPreview = location.search.includes('preview=true') || location.search.includes('demo=true');
-  const item = state.mockData.checklist.find(c => c.id === id);
-  if (!item) return;
-
-  if (isPreview) {
-    item.done = !item.done;
-    triggerToast(`Task "${item.text}" updated!`);
-    switchTab('planning');
-  } else {
-    const token = getStoredToken();
-    try {
-      const response = await fetch(`${API_BASE}/api/couple/me/tasks/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ done: !item.done })
-      });
-      if (response.ok) {
-        item.done = !item.done;
-        triggerToast(`Task "${item.text}" updated!`);
-        switchTab('planning');
-      } else {
-        triggerToast('Failed to update task', true);
-      }
-    } catch (err) {
-      triggerToast('Error updating task', true);
-    }
-  }
-}
-
-async function addChecklistItem() {
-  const input = document.getElementById('newTaskText');
-  if (!input || !input.value.trim()) return;
-  const title = input.value.trim();
-
-  try {
-    const token = getStoredToken();
-    const response = await fetch(`${API_BASE}/api/couple/me/tasks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ title })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.message || 'Failed to add task');
-
-    state.mockData.checklist.push({ id: data.task.id, text: data.task.title, category: data.task.category, done: data.task.done });
-    triggerToast('Task added!');
-    switchTab('planning');
-  } catch (err) {
-    triggerToast(err.message || 'Error adding task', true);
-  }
-}
-window.addChecklistItem = addChecklistItem;
-
-async function deleteChecklistItem(id) {
-  try {
-    const token = getStoredToken();
-    const response = await fetch(`${API_BASE}/api/couple/me/tasks/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.message || 'Failed to remove task');
-
-    state.mockData.checklist = state.mockData.checklist.filter(c => c.id !== id);
-    triggerToast('Task removed');
-    switchTab('planning');
-  } catch (err) {
-    triggerToast(err.message || 'Error removing task', true);
-  }
-}
-window.deleteChecklistItem = deleteChecklistItem;
-
-async function addGuestPlanner() {
-  const nameInput = document.getElementById('newGuestName');
-  const countInput = document.getElementById('newGuestCount');
-  if (!nameInput || !nameInput.value.trim()) return;
-
-  const name = nameInput.value.trim();
-  const count = parseInt(countInput.value, 10) || 1;
-
-  try {
-    const token = getStoredToken();
-    const response = await fetch(`${API_BASE}/api/couple/me/guests`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ name, count })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.message || 'Failed to add guest');
-
-    state.mockData.guests.push({ id: data.guest.id, name: data.guest.name, count: data.guest.count, rsvp: data.guest.rsvp, category: data.guest.category });
-    triggerToast('Guest added to the planner list!');
-    switchTab('planning');
-  } catch (err) {
-    triggerToast(err.message || 'Error adding guest', true);
-  }
-}
-window.addGuestPlanner = addGuestPlanner;
-
-async function updateGuestRsvp(id, rsvp) {
-  try {
-    const token = getStoredToken();
-    const response = await fetch(`${API_BASE}/api/couple/me/guests/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ rsvp })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.message || 'Failed to update RSVP');
-
-    const guest = state.mockData.guests.find(g => g.id === id);
-    if (guest) guest.rsvp = rsvp;
-    switchTab('planning');
-  } catch (err) {
-    triggerToast(err.message || 'Error updating RSVP', true);
-  }
-}
-window.updateGuestRsvp = updateGuestRsvp;
-
-async function deleteGuestPlanner(id) {
-  try {
-    const token = getStoredToken();
-    const response = await fetch(`${API_BASE}/api/couple/me/guests/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.message || 'Failed to remove guest');
-
-    state.mockData.guests = state.mockData.guests.filter(g => g.id !== id);
-    triggerToast('Guest removed');
-    switchTab('planning');
-  } catch (err) {
-    triggerToast(err.message || 'Error removing guest', true);
-  }
-}
-window.deleteGuestPlanner = deleteGuestPlanner;
 
 // ====== CATEGORY IMAGES FALLBACK FOR MARKETPLACE ======
 const CAT_IMG = {
@@ -548,45 +257,39 @@ function vendorImg(v) {
 // 2. BROWSE VENDORS TAB
 function renderBrowseTab(el) {
   el.innerHTML = `
-    <div class="hero-section">
-      <h1>Premium Vendor Marketplace</h1>
-      <p>Browse, shortlist, and connect with top-rated wedding venues and service professionals in your city.</p>
+    <div class="page-head">
+      <h1>Find your wedding vendors</h1>
+      <p>Browse verified venues and professionals, save favourites and send enquiries.</p>
     </div>
 
     <!-- Category Pills Navigation -->
     <div class="category-pills-scroll" id="browseCategoryPills"></div>
 
     <!-- Search Filters Bar -->
-    <div class="browse-filter-bar">
-      <div class="form-field-premium">
-        <label>Search Keyword</label>
-        <input type="text" id="browseSearchInput" placeholder="Search by name, area, address..." value="${esc(state.browseFilters.q)}" oninput="handleBrowseSearch(this.value)" />
-      </div>
-      <div class="form-field-premium">
-        <label>Wedding Destination</label>
-        <select id="browseCitySelect" onchange="handleBrowseCity(this.value)">
-          <option value="">All Cities</option>
-        </select>
-      </div>
-      <div class="form-field-premium">
-        <label>Sort By</label>
-        <select id="browseSortSelect" onchange="handleBrowseSort(this.value)">
-          <option value="rating" ${state.browseFilters.sort === 'rating' ? 'selected' : ''}>Top Rated ⭐</option>
-          <option value="name" ${state.browseFilters.sort === 'name' ? 'selected' : ''}>Name A-Z</option>
-        </select>
-      </div>
-      <button class="btn-premium btn-outline btn-filter-reset" onclick="resetBrowseFilters()">Reset Filters</button>
+    <div class="browse-bar">
+      <label class="browse-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="browseSearchInput" aria-label="Search vendors" placeholder="Search by name or area" value="${esc(state.browseFilters.q)}" oninput="handleBrowseSearch(this.value)" />
+      </label>
+      <select id="browseCitySelect" aria-label="City" onchange="handleBrowseCity(this.value)">
+        <option value="">All cities</option>
+      </select>
+      <select id="browseSortSelect" aria-label="Sort by" onchange="handleBrowseSort(this.value)">
+        <option value="rating" ${state.browseFilters.sort === 'rating' ? 'selected' : ''}>Top rated</option>
+        <option value="name" ${state.browseFilters.sort === 'name' ? 'selected' : ''}>Name A–Z</option>
+      </select>
+      <button type="button" class="browse-reset" onclick="resetBrowseFilters()">Reset</button>
     </div>
 
     <!-- Recommended Section (City-based) -->
     <div id="recommendedVendorsSection" style="display:none; margin-bottom:28px;">
-      <div class="marketplace-section-title" id="recommendedTitle">💖 Recommended in Your City</div>
+      <div class="marketplace-section-title" id="recommendedTitle">Recommended in your city</div>
       <div class="marketplace-grid" id="recommendedVendorsGrid"></div>
     </div>
 
     <!-- Main Results Grid -->
     <div>
-      <div class="marketplace-section-title">🕵️ Browse All Vendors (<span id="filteredVendorsCount">0</span> available)</div>
+      <div class="marketplace-section-title">All vendors <span class="section-count"><span id="filteredVendorsCount">0</span> found</span></div>
       <div class="marketplace-grid" id="filteredVendorsGrid"></div>
     </div>
   `;
@@ -762,7 +465,7 @@ async function filterAndRenderVendors() {
       if (recRes.ok && recData.ok && recData.vendors && recData.vendors.length > 0) {
         const recTitle = document.getElementById('recommendedTitle');
         if (recTitle) {
-          recTitle.textContent = `💖 Recommended Vendors in ${coupleCity}`;
+          recTitle.textContent = `Recommended in ${coupleCity}`;
         }
         recGrid.innerHTML = recData.vendors.map(v => renderVendorCardHtml(v, true)).join('');
         recSection.style.display = 'block';
@@ -1346,9 +1049,9 @@ function renderInquiriesTab(el) {
   const inqs = state.mockData.inquiries || [];
   
   el.innerHTML = `
-    <div style="margin-bottom: 24px;">
-      <h2 style="font-family: var(--serif); font-size: 24px; color: var(--navy); margin-bottom: 6px;">Sent Vendor Inquiries</h2>
-      <p style="font-size: 13.5px; color: var(--text-secondary); margin: 0;">Track status of quotes and leave reviews for your booked vendors.</p>
+    <div class="page-head">
+      <h1>My Inquiries</h1>
+      <p>Enquiries you've sent. Message a vendor, track status and leave a review.</p>
     </div>
 
     ${inqs.length === 0 ? `
@@ -1386,6 +1089,7 @@ function renderInquiriesTab(el) {
                 </div>
               </div>
 
+              <button class="btn-premium btn-pink" style="width: 100%; padding: 8px 12px; font-size: 12.5px; font-weight: 700; border-radius: 8px; margin-bottom: 10px;" onclick="window.openInquiryChat('${esc(inq.id)}')">💬 Message Vendor</button>
               <div style="display: flex; gap: 10px; margin-top: auto;">
                 <button class="btn-premium btn-outline" style="flex: 1; padding: 8px 12px; font-size: 12.5px; font-weight: 600; border-radius: 8px;" onclick="window.openInquiryDetailsModal('${inq.id}')">View Details</button>
                 ${isReviewed ? `
@@ -1402,14 +1106,340 @@ function renderInquiriesTab(el) {
   `;
 }
 
+// 3b. MESSAGES TAB (couple <-> vendor chat, see js/wz-chat.js)
+function chatOpts() {
+  return {
+    apiBase: API_BASE,
+    getToken: getStoredToken,
+    role: 'couple',
+    onUnreadChange: setChatBadges,
+  };
+}
+
+function renderMessagesTab(el) {
+  if (!window.WZChat) { el.innerHTML = '<p>Chat could not be loaded. Please refresh the page.</p>'; return; }
+  el.innerHTML = `
+    <div class="page-head page-head-tight">
+      <h1>Messages</h1>
+      <p>Chat with the vendors you've sent enquiries to.</p>
+    </div>
+    <div id="chatMount"></div>
+  `;
+  WZChat.mount(el.querySelector('#chatMount'), Object.assign(chatOpts(), { openConversationId: state.pendingChatId || null }));
+  state.pendingChatId = null;
+}
+
+// "Message Vendor" on an inquiry card: open (or create) that enquiry's chat.
+window.openInquiryChat = async function (inquiryId) {
+  try {
+    state.pendingChatId = await WZChat.openForEnquiry(inquiryId, chatOpts());
+    switchTab('messages');
+  } catch (err) {
+    triggerToast(err.message || 'Could not open the chat for this enquiry.', true);
+  }
+};
+
+// 5. PROFILE TAB — name/phone, and email/password changes confirmed by an emailed code.
+async function accountApi(method, path, body) {
+  const res = await fetch(`${API_BASE}/api/couple/me/account${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getStoredToken()}` },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = {};
+  try { data = await res.json(); } catch (_) {}
+  if (!res.ok || data.ok === false) throw new Error(data.message || 'Something went wrong. Please try again.');
+  return data;
+}
+
+/** Keep the new token (email/password changes re-issue it) where the old one lived. */
+function storeToken(token) {
+  if (!token) return;
+  if (localStorage.getItem(TOKEN_KEY)) localStorage.setItem(TOKEN_KEY, token);
+  else sessionStorage.setItem(TOKEN_KEY, token);
+}
+
+/** Password input with a Show/Hide button (wired by the delegated handler below). */
+function passwordFieldHtml(name, label) {
+  const id = 'pf-' + name;
+  return `
+    <div class="pf-field">
+      <span><label for="${id}">${label}</label></span>
+      <div class="pf-pw">
+        <input type="password" id="${id}" name="${name}" autocomplete="new-password" required />
+        <button type="button" class="pf-pw-toggle" data-pw-toggle aria-controls="${id}" aria-label="Show password" aria-pressed="false">Show</button>
+      </div>
+    </div>`;
+}
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-pw-toggle]');
+  if (!btn) return;
+  const input = document.getElementById(btn.getAttribute('aria-controls'));
+  if (!input) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.textContent = show ? 'Hide' : 'Show';
+  btn.setAttribute('aria-pressed', String(show));
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+});
+
+const PASSWORD_RULE ='At least 8 characters with an uppercase letter, a lowercase letter, a number and a symbol.';
+
+async function renderProfileTab(el) {
+  el.innerHTML = `
+    <div class="page-head">
+      <h1>My Profile</h1>
+      <p>Your account details and how you sign in.</p>
+    </div>
+    <div class="pf-loading">Loading your profile…</div>
+  `;
+  let account;
+  try {
+    account = (await accountApi('GET', '')).user;
+  } catch (err) {
+    el.querySelector('.pf-loading').textContent = err.message;
+    return;
+  }
+  if (state.activeTab !== 'profile') return;
+  state.user = Object.assign({}, state.user, account);
+  fillIdentity();
+
+  const initial = (account.name || account.email || '?').trim().charAt(0).toUpperCase();
+  el.innerHTML = `
+    <div class="page-head">
+      <h1>My Profile</h1>
+      <p>Your account details and how you sign in.</p>
+    </div>
+
+    <div class="pf-stack">
+      <section class="pf-card pf-identity">
+        <div class="pf-avatar">${esc(initial)}</div>
+        <div class="pf-identity-text">
+          <strong id="pfIdName">${esc(account.name || 'Add your name')}</strong>
+          <span id="pfIdEmail">${esc(account.email || '')}</span>
+        </div>
+      </section>
+
+      <section class="pf-card">
+        <div class="pf-card-head">
+          <h3>Personal details</h3>
+          <p>Vendors see your name and mobile number when you send an enquiry.</p>
+        </div>
+        <form id="pfDetailsForm" class="pf-form" novalidate>
+          <label class="pf-field">
+            <span>Full name</span>
+            <input type="text" id="pfName" autocomplete="name" maxlength="80" value="${esc(account.name || '')}" required />
+          </label>
+          <label class="pf-field">
+            <span>Mobile number</span>
+            <input type="tel" id="pfPhone" autocomplete="tel" inputmode="tel" placeholder="10-digit mobile, or +country code" value="${esc(account.phone ? '+' + account.phone : '')}" />
+          </label>
+          <div class="pf-actions">
+            <button type="submit" class="pf-btn pf-btn-primary">Save details</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="pf-card" id="pfEmailCard">
+        <div class="pf-card-head pf-row">
+          <div>
+            <h3>Email address</h3>
+            <p>Used to sign in and for booking updates.</p>
+          </div>
+        </div>
+        <div class="pf-current">
+          <span class="pf-current-value" id="pfEmailCurrent">${esc(account.email || 'No email on file')}</span>
+          <button type="button" class="pf-btn pf-btn-ghost" id="pfEmailStart">Change</button>
+        </div>
+        <div class="pf-flow" id="pfEmailFlow" hidden></div>
+      </section>
+
+      <section class="pf-card" id="pfPasswordCard">
+        <div class="pf-card-head">
+          <h3>Password</h3>
+          <p>${account.hasPassword ? 'For your security we email a code before changing it.' : 'You sign in with an email code today. Set a password to also sign in with it.'}</p>
+        </div>
+        <div class="pf-current">
+          <span class="pf-current-value">${account.hasPassword ? '••••••••••' : 'No password set'}</span>
+          <button type="button" class="pf-btn pf-btn-ghost" id="pfPasswordStart">${account.hasPassword ? 'Change' : 'Set password'}</button>
+        </div>
+        <div class="pf-flow" id="pfPasswordFlow" hidden></div>
+      </section>
+
+      <button type="button" class="pf-btn pf-btn-logout" onclick="handleLogout()">Log out</button>
+    </div>
+  `;
+
+  // ---- Personal details ----
+  el.querySelector('#pfDetailsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      const { user } = await accountApi('PATCH', '', { name: el.querySelector('#pfName').value, phone: el.querySelector('#pfPhone').value });
+      state.user = Object.assign({}, state.user, user);
+      el.querySelector('#pfIdName').textContent = user.name || 'Add your name';
+      el.querySelector('#pfPhone').value = user.phone ? '+' + user.phone : '';
+      fillIdentity();
+      triggerToast('Details saved');
+    } catch (err) {
+      triggerToast(err.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---- Email change: code to the CURRENT email (proves it's the owner) -> code + new email ----
+  const emailFlow = el.querySelector('#pfEmailFlow');
+  const emailStart = el.querySelector('#pfEmailStart');
+  const closeEmail = () => { emailFlow.hidden = true; emailFlow.innerHTML = ''; emailStart.hidden = false; };
+
+  async function sendEmailCode(btn) {
+    if (btn) btn.disabled = true;
+    try {
+      const r = await accountApi('POST', '/email/send-code');
+      emailStepTwo(r.sentTo, r.devCode);
+    } catch (err) {
+      triggerToast(err.message, true);
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function emailStepOne() {
+    emailStart.hidden = true;
+    emailFlow.hidden = false;
+    emailFlow.innerHTML = `
+      <div class="pf-form">
+        <p class="pf-hint">To keep your account safe, we'll first email a 6-digit code to your current address, <strong>${esc(state.user.email || '')}</strong>.</p>
+        <div class="pf-actions">
+          <button type="button" class="pf-btn pf-btn-ghost" data-cancel>Cancel</button>
+          <button type="button" class="pf-btn pf-btn-primary" data-send>Send code</button>
+        </div>
+      </div>`;
+    emailFlow.querySelector('[data-cancel]').onclick = closeEmail;
+    emailFlow.querySelector('[data-send]').onclick = (e) => sendEmailCode(e.currentTarget);
+  }
+
+  function emailStepTwo(sentTo, devCode) {
+    emailFlow.innerHTML = `
+      <form class="pf-form" novalidate>
+        <p class="pf-hint">Enter the code we sent to <strong>${esc(sentTo)}</strong>, then your new email address.</p>
+        <label class="pf-field">
+          <span>6-digit code</span>
+          <input type="text" name="code" class="pf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" value="${esc(devCode || '')}" required />
+        </label>
+        <label class="pf-field">
+          <span>New email address</span>
+          <input type="email" name="newEmail" autocomplete="email" inputmode="email" required />
+        </label>
+        <p class="pf-hint">You'll sign in with the new address from now on, so double-check it.</p>
+        <div class="pf-actions">
+          <button type="button" class="pf-btn pf-btn-link" data-resend>Resend code</button>
+          <button type="submit" class="pf-btn pf-btn-primary">Update email</button>
+        </div>
+      </form>`;
+    const form = emailFlow.querySelector('form');
+    (devCode ? form.newEmail : form.code).focus();
+    form.querySelector('[data-resend]').onclick = (e) => sendEmailCode(e.currentTarget);
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      try {
+        const r = await accountApi('POST', '/email/confirm', { newEmail: form.newEmail.value.trim(), code: form.code.value.trim() });
+        storeToken(r.token);
+        state.user = Object.assign({}, state.user, r.user);
+        el.querySelector('#pfEmailCurrent').textContent = r.user.email;
+        el.querySelector('#pfIdEmail').textContent = r.user.email;
+        fillIdentity();
+        closeEmail();
+        triggerToast('Email updated. Use ' + r.user.email + ' to sign in from now on.');
+      } catch (err) {
+        triggerToast(err.message, true);
+        btn.disabled = false;
+      }
+    };
+  }
+  emailStart.onclick = () => emailStepOne();
+
+  // ---- Password: code to the CURRENT email -> code + new password ----
+  const pwFlow = el.querySelector('#pfPasswordFlow');
+  const pwStart = el.querySelector('#pfPasswordStart');
+  const closePw = () => { pwFlow.hidden = true; pwFlow.innerHTML = ''; pwStart.hidden = false; };
+
+  async function sendPwCode(btn) {
+    if (btn) btn.disabled = true;
+    try {
+      const r = await accountApi('POST', '/password/send-code');
+      pwStepTwo(r.sentTo, r.devCode);
+    } catch (err) {
+      triggerToast(err.message, true);
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  pwStart.onclick = () => {
+    pwStart.hidden = true;
+    pwFlow.hidden = false;
+    pwFlow.innerHTML = `
+      <div class="pf-form">
+        <p class="pf-hint">We'll email a 6-digit code to <strong>${esc(state.user.email || '')}</strong>.</p>
+        <div class="pf-actions">
+          <button type="button" class="pf-btn pf-btn-ghost" data-cancel>Cancel</button>
+          <button type="button" class="pf-btn pf-btn-primary" data-send>Send code</button>
+        </div>
+      </div>`;
+    pwFlow.querySelector('[data-cancel]').onclick = closePw;
+    pwFlow.querySelector('[data-send]').onclick = (e) => sendPwCode(e.currentTarget);
+  };
+
+  function pwStepTwo(sentTo, devCode) {
+    pwFlow.innerHTML = `
+      <form class="pf-form" novalidate>
+        <p class="pf-hint">Enter the code we sent to <strong>${esc(sentTo)}</strong> and choose a new password.</p>
+        <label class="pf-field">
+          <span>6-digit code</span>
+          <input type="text" name="code" class="pf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" value="${esc(devCode || '')}" required />
+        </label>
+        ${passwordFieldHtml('pw1', 'New password')}
+        ${passwordFieldHtml('pw2', 'Confirm new password')}
+        <p class="pf-hint">${PASSWORD_RULE} Other devices will be signed out.</p>
+        <div class="pf-actions">
+          <button type="button" class="pf-btn pf-btn-link" data-resend>Resend code</button>
+          <button type="submit" class="pf-btn pf-btn-primary">Update password</button>
+        </div>
+      </form>`;
+    const form = pwFlow.querySelector('form');
+    form.code.focus();
+    form.querySelector('[data-resend]').onclick = (e) => sendPwCode(e.currentTarget);
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      if (form.pw1.value !== form.pw2.value) { triggerToast('The two passwords do not match.', true); return; }
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      try {
+        const r = await accountApi('POST', '/password/confirm', { code: form.code.value.trim(), newPassword: form.pw1.value });
+        storeToken(r.token);
+        state.user = Object.assign({}, state.user, r.user);
+        triggerToast('Password updated');
+        renderProfileTab(el);
+      } catch (err) {
+        triggerToast(err.message, true);
+        btn.disabled = false;
+      }
+    };
+  }
+}
+
 // 4. FAVORITES TAB
 function renderFavoritesTab(el) {
   const shortlists = state.mockData.shortlists || [];
   
   el.innerHTML = `
-    <div class="hero-section">
-      <h1>Favorite Shortlisted Vendors</h1>
-      <p>Compare and manage your saved wedding vendors.</p>
+    <div class="page-head">
+      <h1>Saved Vendors</h1>
+      <p>Vendors you've shortlisted. Compare them and send an enquiry.</p>
     </div>
     
     ${shortlists.length === 0 ? `
@@ -1454,277 +1484,6 @@ function renderFavoritesTab(el) {
   `;
 }
 
-// 5. WEDDING PLANNING TAB
-function renderPlanningTab(el) {
-  el.innerHTML = `
-    <div class="hero-section">
-      <h1>Wedding Planner Workspace</h1>
-      <p>Track tasks, monitor budget allocations, and manage your guest RSVPs.</p>
-    </div>
-
-    <!-- Planning Tools Split Widgets Grid -->
-    <div class="planning-grid">
-      <!-- Widget 1: Interactive Checklist -->
-      <div class="planner-widget">
-        <div class="planner-widget-header">
-          📋 Wedding Checklist Planner
-        </div>
-        <div id="checklistContainer">
-          ${state.mockData.checklist.length === 0 ? `<p style="font-size:12.5px; color:var(--text-secondary); padding:8px 0;">No tasks yet — add your first one below.</p>` : ''}
-          ${state.mockData.checklist.map(item => `
-            <div class="checklist-item" style="display:flex; align-items:center; gap:8px;">
-              <input type="checkbox" class="checklist-checkbox" ${item.done ? 'checked' : ''} onclick="toggleChecklistItem('${item.id}')" />
-              <span class="checklist-label" style="flex:1;${item.done ? ' text-decoration:line-through; opacity:0.6;' : ''}">${esc(item.text)}</span>
-              <button type="button" title="Remove task" onclick="deleteChecklistItem('${item.id}')" style="background:none; border:none; cursor:pointer; color:var(--text-secondary); font-size:14px; padding:2px 6px;">&times;</button>
-            </div>
-          `).join('')}
-        </div>
-        <div style="font-size:12.5px; margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px;">
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="newTaskText" placeholder="Add a task…" style="flex:1; padding:6px; border:1px solid var(--border-color); border-radius:6px; font-size:12px;" />
-            <button class="btn-premium btn-pink" style="padding:6px 10px; font-size:11px;" onclick="addChecklistItem()">Add</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Widget 2: Interactive Budget Calculator -->
-      <div class="planner-widget">
-        <div class="planner-widget-header">
-          💰 Budget Allocation Calculator
-        </div>
-        <canvas id="budgetPieChart" style="max-height: 180px; margin-bottom: 12px;"></canvas>
-        <div style="font-size: 13px; color: var(--text-secondary); display:flex; justify-content:space-between;">
-          <span>Allocated Spend: <strong>₹${state.mockData.budget.spent.toLocaleString('en-IN')}</strong></span>
-          <span>Target Budget: <strong>₹${state.mockData.budget.total.toLocaleString('en-IN')}</strong></span>
-        </div>
-      </div>
-
-      <!-- Widget 3: Guest List RSVP Planner -->
-      <div class="planner-widget">
-        <div class="planner-widget-header">
-          👥 Guest & RSVP Tracker
-        </div>
-        <div style="display:flex; justify-content:space-between; text-align:center; font-size:12.5px; margin-bottom:14px;">
-          <div style="background-color:rgba(16, 185, 129, 0.05); padding:8px; border-radius:6px; flex:1; margin-right:4px;">
-            <strong style="color:var(--success); font-size:18px;">${state.mockData.guests.filter(g => g.rsvp === 'Attending').reduce((acc, curr) => acc + curr.count, 0)}</strong>
-            <span style="display:block; font-size:10px;">Attending</span>
-          </div>
-          <div style="background-color:rgba(245, 158, 11, 0.05); padding:8px; border-radius:6px; flex:1; margin-right:4px;">
-            <strong style="color:var(--warning); font-size:18px;">${state.mockData.guests.filter(g => g.rsvp === 'Pending').reduce((acc, curr) => acc + curr.count, 0)}</strong>
-            <span style="display:block; font-size:10px;">Pending</span>
-          </div>
-          <div style="background-color:rgba(239, 68, 68, 0.05); padding:8px; border-radius:6px; flex:1;">
-            <strong style="color:var(--danger); font-size:18px;">${state.mockData.guests.filter(g => g.rsvp === 'Declined').reduce((acc, curr) => acc + curr.count, 0)}</strong>
-            <span style="display:block; font-size:10px;">Declined</span>
-          </div>
-        </div>
-        <div id="guestListContainer" style="max-height:150px; overflow-y:auto; margin-bottom:10px; font-size:12px;">
-          ${state.mockData.guests.length === 0 ? `<p style="color:var(--text-secondary);">No guests added yet.</p>` : ''}
-          ${state.mockData.guests.map(g => `
-            <div style="display:flex; align-items:center; gap:6px; padding:4px 0; border-bottom:1px solid var(--border-color);">
-              <span style="flex:1;">${esc(g.name)} <span style="color:var(--text-secondary);">(${g.count})</span></span>
-              <select onchange="updateGuestRsvp('${g.id}', this.value)" style="font-size:11px; padding:2px; border:1px solid var(--border-color); border-radius:4px;">
-                <option value="Pending" ${g.rsvp === 'Pending' ? 'selected' : ''}>Pending</option>
-                <option value="Attending" ${g.rsvp === 'Attending' ? 'selected' : ''}>Attending</option>
-                <option value="Declined" ${g.rsvp === 'Declined' ? 'selected' : ''}>Declined</option>
-              </select>
-              <button type="button" title="Remove guest" onclick="deleteGuestPlanner('${g.id}')" style="background:none; border:none; cursor:pointer; color:var(--text-secondary); font-size:14px; padding:2px 6px;">&times;</button>
-            </div>
-          `).join('')}
-        </div>
-        <div style="font-size:12.5px;">
-          <strong>Add Guest:</strong>
-          <div style="display:flex; gap:6px; margin-top:6px;">
-            <input type="text" id="newGuestName" placeholder="Guest Name" style="flex:2; padding:6px; border:1px solid var(--border-color); border-radius:6px; font-size:12px;" />
-            <input type="number" id="newGuestCount" value="1" min="1" style="width:50px; padding:6px; border:1px solid var(--border-color); border-radius:6px; font-size:12px;" />
-            <button class="btn-premium btn-pink" style="padding:6px 10px; font-size:11px;" onclick="addGuestPlanner()">Add</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  setTimeout(() => {
-    const canvas = document.getElementById('budgetPieChart');
-    if (!canvas) return;
-    if (typeof Chart === 'undefined') {
-      console.error('Chart.js failed to load — budget chart unavailable.');
-      return;
-    }
-    const ctx = canvas.getContext('2d');
-    const b = state.mockData.budget;
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Venue', 'Catering', 'Photo', 'Decor', 'Remaining'],
-        datasets: [{
-          data: [b.venueAlloc, b.cateringAlloc, b.photoAlloc, b.decorAlloc, Math.max(0, b.total - b.spent)],
-          backgroundColor: ['#D12653', '#F59E0B', '#3B82F6', '#10B981', '#E5E7EB'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false }
-        }
-      }
-    });
-  }, 100);
-}
-
-// 4. SETTINGS TAB
-function renderSettingsTab(el) {
-  el.innerHTML = `
-    <div class="card-premium">
-      <div class="card-header-premium">
-        <h3>Wedding Settings &amp; KYC</h3>
-      </div>
-      
-      <div class="form-grid-premium">
-        <div class="form-field-premium">
-          <label>Partner Name</label>
-          <input type="text" id="partnerName" value="${esc(state.couple ? state.couple.partnerName : 'Amit Verma')}" />
-        </div>
-        <div class="form-field-premium">
-          <label>Target Wedding Date</label>
-          <input type="date" id="weddingDate" value="${state.couple ? state.couple.weddingDate : '2026-12-12'}" />
-        </div>
-        <div class="form-field-premium">
-          <label>Destination City</label>
-          <input type="text" id="weddingCity" value="${esc(state.couple ? state.couple.city : 'Mumbai')}" />
-        </div>
-        <div class="form-field-premium">
-          <label>Max Budget Cap (₹)</label>
-          <input type="number" id="budgetCap" value="${state.couple ? state.couple.budgetMax : 800000}" />
-        </div>
-      </div>
-      
-      <div class="form-actions-premium">
-        <button class="btn-premium btn-navy" onclick="saveUserSettings()">Save Planner Settings</button>
-      </div>
-    </div>
-  `;
-}
-
-async function saveUserSettings() {
-  const partnerName = document.getElementById('partnerName').value;
-  const weddingDate = document.getElementById('weddingDate').value;
-  const city = document.getElementById('weddingCity').value;
-  const budgetMax = document.getElementById('budgetCap').value;
-
-  const payload = {
-    partnerName,
-    weddingDate: weddingDate ? new Date(weddingDate).toISOString() : null,
-    city,
-    budgetMax: parseInt(budgetMax) || null
-  };
-
-  const isPreview = location.search.includes('preview=true') || location.search.includes('demo=true');
-  
-  if (isPreview) {
-    state.couple = {
-      ...state.couple,
-      partnerName,
-      weddingDate,
-      city,
-      budgetMax: parseInt(budgetMax) || 800000
-    };
-    triggerToast('Settings updated (Demo Mode)!');
-    return;
-  }
-
-  const token = getStoredToken();
-  try {
-    const res = await fetch(`${API_BASE}/api/couple/me`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (res.ok && data.ok) {
-      state.couple = data.couple;
-      triggerToast('Planner settings saved to database!');
-    } else {
-      triggerToast(data.message || 'Failed to save settings.', true);
-    }
-  } catch (err) {
-    triggerToast('Network error, please check connection.', true);
-  }
-}
-
-/* ============================================================================
- * EXPORTS AND INTERACTIVE SUPPORT CHAT WIDGET
- * ========================================================================== */
-
-function toggleChatBubble() {
-  const bubble = document.getElementById('chatSpeechBubble');
-  if (bubble) bubble.classList.toggle('show');
-}
-
-function triggerSupportRedirect(type) {
-  triggerToast(`Initiating direct E.164 WhatsApp redirect for: ${type} help!`);
-  setTimeout(() => {
-    window.open('https://wa.me/+917498987620?text=Hi%20WedEazzy%20Support!%20I%20need%20help%20coordinating%20a%20wedding...', '_blank');
-  }, 1000);
-}
-
-function exportUserBookingsExcel() {
-  if (typeof XLSX === 'undefined') {
-    triggerToast('Export is temporarily unavailable — please try again in a moment.');
-    return;
-  }
-  const list = state.mockData.bookings.map(b => ({
-    'Booking ID': b.id,
-    'Vendor Name': b.vendorName,
-    'Category': b.category,
-    'Target Event Date': b.date,
-    'Booking Status': b.status.toUpperCase(),
-    'Payment Status': b.payment,
-    'Contract Amount (INR)': b.amount
-  }));
-  
-  const ws = XLSX.utils.json_to_sheet(list);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'My Bookings');
-  XLSX.writeFile(wb, 'my_bookings_report.xlsx');
-  triggerToast('Excel sheet downloaded!');
-}
-
-/* --- Animated Increments --- */
-function animateNumber(id, endValue, prefix = '') {
-  const el = document.getElementById(id);
-  if (!el) return;
-  
-  let start = 0;
-  const duration = 1000;
-  const stepTime = Math.abs(Math.floor(duration / endValue)) || 20;
-
-  if (endValue === 0) {
-    el.textContent = prefix + '0';
-    return;
-  }
-
-  const timer = setInterval(() => {
-    if (endValue > 1000) {
-      start += Math.ceil(endValue / 40);
-    } else {
-      start += 1;
-    }
-    
-    if (start >= endValue) {
-      clearInterval(timer);
-      el.textContent = prefix + endValue.toLocaleString('en-IN');
-    } else {
-      el.textContent = prefix + start.toLocaleString('en-IN');
-    }
-  }, stepTime);
-}
-
-/* --- Toast Notification Triggers --- */
 function triggerToast(msg, isErr = false) {
   const container = document.getElementById('toastContainer');
   if (!container) return;

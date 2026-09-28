@@ -1,7 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const passport = require('passport');
 const ctrl = require('../controllers/auth.controller');
+const googleOAuth = require('../controllers/googleOAuth.controller');
 const { requireAuth } = require('../middleware/auth');
 const env = require('../config/env');
 const { rateLimitHandler } = require('../utils/rateLimitLogger');
@@ -47,6 +47,8 @@ router.post('/login', loginRateLimiter, ctrl.login);
 // 3. Password Reset System (Single-Use Secure Token System)
 router.post('/forgot-password', otpRateLimiter, ctrl.forgotPassword);
 router.post('/reset-password', otpRateLimiter, ctrl.resetPassword);
+router.post('/password-reset/send-otp', otpRateLimiter, ctrl.sendPasswordResetOtp);
+router.post('/password-reset/verify', otpRateLimiter, ctrl.resetPasswordWithOtp);
 router.post('/change-password', requireAuth, otpRateLimiter, ctrl.changeOwnPassword);
 
 // 4. Session Verification & JWT Denylist Logouts
@@ -69,43 +71,10 @@ router.get('/consume-oauth-token', (req, res) => {
   res.json({ ok: true, token, role });
 });
 
-// 5. Google OAuth via /api/auth/google — same logic as root /google route
-// The server.js root-level /api/auth/google handler is the primary entry point.
-// These routes in auth.router also work as a fallback for API consumers.
-router.get('/google', (req, res, next) => {
-  const { role } = req.query || {};
-  const validRoles = ['couple', 'vendor', 'admin', 'user', 'business'];
-  const safeRole = validRoles.includes(role) ? role : 'couple';
-  const state = Buffer.from(safeRole).toString('base64');
-  passport.authenticate('google', { scope: ['profile', 'email'], state })(req, res, next);
-});
-
-// Google OAuth Callback — called by Google after user grants permission
-router.get(
-  '/google/callback',
-  passport.authenticate('google', { failureRedirect: '/pages/admin-login.html?error=google_auth_failed', failureMessage: true }),
-  async (req, res, next) => {
-    try {
-      const user = req.user;
-      if (!user) return res.redirect('/pages/admin-login.html?error=google_auth_failed');
-
-      const { signToken } = require('../middleware/auth');
-      const token = signToken(user);
-      const finalRole = user.role;
-
-      if (req.session) {
-        req.session.oauthToken = token;
-        req.session.oauthRole = finalRole;
-        req.session.loginAt = Date.now();
-      }
-
-      // Token is intentionally NOT included in the redirect URL — it would leak via
-      // browser history, server access logs, and Referer headers. The frontend
-      // retrieves it via the one-time /api/auth/consume-oauth-token session exchange.
-      res.redirect(`/pages/admin-login.html?auth=success&provider=google&role=${finalRole}`);
-    } catch (err) { next(err); }
-  }
-);
+// 5. Google OAuth via /api/auth/google?role=vendor|couple|admin[&intent=signup]
+// Mounted before server.js's root-level aliases, so these are the live handlers.
+router.get('/google', googleOAuth.start);
+router.get('/google/callback', googleOAuth.callback);
 
 // 6. Google One Tap Authentication Popup Identity Token verification
 router.post('/google/onetap', ctrl.googleOneTap);

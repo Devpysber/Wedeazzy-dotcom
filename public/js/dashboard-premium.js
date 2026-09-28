@@ -305,7 +305,12 @@ async function boot() {
     // Render Tab Viewport (#grow-business / #subscriptions deep links from the
     // /grow marketing page). A Google sign-in cannot carry the hash through the
     // OAuth callback, so vendor-login parks the same intent in sessionStorage.
-    let deepLinkTab = { '#grow-business': 'grow-business', '#subscriptions': 'subscriptions' }[location.hash];
+    // Unread chat badge on the Messages nav item.
+    if (window.WZChat) {
+      WZChat.watchUnread(chatOpts(), (n) => WZChat.setBadge(document.getElementById('chatNavBadge'), n));
+    }
+
+    let deepLinkTab = { '#grow-business': 'grow-business', '#subscriptions': 'subscriptions', '#messages': 'messages' }[location.hash];
     if (!deepLinkTab) {
       try {
         const parked = sessionStorage.getItem('wedeazzy_next_tab');
@@ -858,6 +863,7 @@ function renderTab(tab, el) {
   else if (tab === 'insights')        renderInsightsTab(el);
   else if (tab === 'grow-business')   renderGrowBusinessTab(el);
   else if (tab === 'leads')           renderLeadsTab(el);
+  else if (tab === 'messages')        renderMessagesTab(el);
   else if (tab === 'reviews')         renderReviewsTab(el);
   else if (tab === 'whatsapp-campaigns') renderComingSoonTab(el, 'WhatsApp Campaigns');
   else if (tab === 'marketing-campaigns') renderComingSoonTab(el, 'Marketing Campaigns');
@@ -3961,6 +3967,39 @@ function calculateEstimates(spend) {
 }
 
 // ALL LEADS
+/* --- Messages: couple <-> vendor chat (js/wz-chat.js). Lists conversations
+ * across every listing this account owns. --- */
+function chatOpts() {
+  return {
+    apiBase: API_BASE,
+    getToken: getStoredToken,
+    role: 'vendor',
+    onUnreadChange: (n) => window.WZChat && WZChat.setBadge(document.getElementById('chatNavBadge'), n),
+  };
+}
+
+function renderMessagesTab(el) {
+  if (!window.WZChat) { el.innerHTML = '<p>Chat could not be loaded. Please refresh the page.</p>'; return; }
+  el.innerHTML = `
+    <div style="margin-bottom: 16px;">
+      <h2 style="font-family: var(--serif); font-size: 24px; color: var(--navy); margin-bottom: 6px;">Messages</h2>
+      <p style="font-size: 13.5px; color: var(--text-secondary); margin: 0;">Chat with couples who sent enquiries to your listings.</p>
+    </div>
+    <div id="chatMount"></div>
+  `;
+  WZChat.mount(el.querySelector('#chatMount'), Object.assign(chatOpts(), { openConversationId: state.pendingChatId || null }));
+  state.pendingChatId = null;
+}
+
+window.openInquiryChat = async function (inquiryId) {
+  try {
+    state.pendingChatId = await WZChat.openForEnquiry(inquiryId, chatOpts());
+    switchTab('messages');
+  } catch (err) {
+    triggerToast(err.message || 'Chat is not available for this enquiry.', true);
+  }
+};
+
 function renderLeadsTab(el) {
   const inquiries = state.mockData.inquiries;
 
@@ -3994,6 +4033,7 @@ function renderLeadsTab(el) {
                 <td>
                   <div style="display:flex; gap:6px; align-items:center;">
                     <button onclick="openInquiryDetailModal('${i.id}')" class="btn-premium btn-outline" style="padding:6px 12px; font-size:11px; font-weight:700; border: 1px solid var(--pink-border); color: #DC1F30; background: transparent; cursor: pointer; border-radius: 6px;">👁️ View</button>
+                    ${(i.source === 'couple_dashboard' || i.source === 'shortlist') && i.realId ? `<button onclick="openInquiryChat('${esc(i.realId)}')" class="btn-premium btn-outline" style="padding:6px 12px; font-size:11px; font-weight:700; border: 1px solid var(--pink-border); color: #DC1F30; background: transparent; cursor: pointer; border-radius: 6px;">✉️ Chat</button>` : ''}
                     <a href="tel:${i.phone}" class="btn-premium btn-pink" style="padding:6px 12px; font-size:11px; text-decoration:none; display:inline-flex; align-items:center;">📞 Call</a>
                     <a href="https://wa.me/${i.phone.replace(/[^0-9]/g, '')}?text=Hi%20${esc(i.name)},%20thanks%20for%20inquiring%20with%20us%20on%20WedEazzy!%20" target="_blank" class="btn-premium btn-pink" style="padding:6px 12px; font-size:11px; background-color:#25D366; color:white; border-color:#25D366; text-decoration:none; display:inline-flex; align-items:center;">💬 WhatsApp</a>
                   </div>
@@ -4172,43 +4212,6 @@ function renderReviewsTab(el) {
         </div>
       </div>
 
-    </div>
-  `;
-}
-
-// 10. MESSAGES TAB
-function renderMessagesTab(el) {
-  el.innerHTML = `
-    <div class="card-premium">
-      <div class="card-header-premium">
-        <h3>Inbox & Client Messages</h3>
-      </div>
-      
-      <div style="display:grid; grid-template-columns: 240px 1fr; border: 1px solid var(--border-color); border-radius: var(--radius-sm); min-height:400px; overflow:hidden; background-color:var(--bg-primary);">
-        <div style="border-right: 1px solid var(--border-color); background-color: var(--bg-card); padding:12px;">
-          <div style="padding:10px; background-color: var(--pink-blush); border-radius: 6px; font-weight:600; font-size:13px; color:var(--navy);">
-            💬 Sneha Patel
-            <span style="display:block; font-size:10px; font-weight:normal; color:var(--text-secondary); margin-top:2px;">Dec 12 request...</span>
-          </div>
-        </div>
-        <div style="display:flex; flex-direction:column; justify-between; background-color: var(--bg-card);">
-          <div style="padding:16px; border-bottom: 1px solid var(--border-color); font-weight:600;">
-            Sneha Patel
-          </div>
-          <div style="flex-grow:1; padding:20px; font-size:13.5px; display:flex; flex-direction:column; gap:12px; overflow-y:auto;">
-            <div style="background-color: var(--bg-primary); padding:10px 14px; border-radius:10px; max-width:80%; align-self:flex-start;">
-              Hi, is the lawn available for sunset mandap setups on Dec 12, 2026? What is your catering starting price?
-            </div>
-            <div style="background-color: var(--pink-blush); color: var(--navy); padding:10px 14px; border-radius:10px; max-width:80%; align-self:flex-end;">
-              Hello Sneha! Yes, Dec 12 is available. Our premium starting package price is ₹1,500/plate. Can we schedule a brief tour?
-            </div>
-          </div>
-          <div style="padding:12px; border-top:1px solid var(--border-color); display:flex; gap:8px;">
-            <input type="text" placeholder="Type a response..." style="flex-grow:1; border:1px solid var(--border-color); padding:10px; font-size:13px; border-radius:6px;" />
-            <button class="btn-premium btn-navy" onclick="triggerToast('Reply sent successfully')">Send</button>
-          </div>
-        </div>
-      </div>
     </div>
   `;
 }

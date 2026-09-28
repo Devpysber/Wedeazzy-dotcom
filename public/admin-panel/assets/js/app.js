@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "claimed-listings", "city", "regions", "venues-category", "vendors-category",
     "send-emails", "email-templates", "blogs", "contact-inquiries", "whatsapp-status", "grow-campaigns",
     "grow-pricing", "vendor-crm-dashboard", "invitations", "blacklisted",
-    "import-listings", "countries", "locations", "grow-purchases", "subscription-purchases"
+    "import-listings", "countries", "locations", "grow-purchases", "subscription-purchases", "chats"
   ];
 
   function tabFromHash() {
@@ -911,6 +911,8 @@ document.addEventListener("DOMContentLoaded", () => {
       renderBlogs(store);
     } else if (state.activeTab === "contact-inquiries") {
       renderContactInquiries(store);
+    } else if (state.activeTab === "chats") {
+      renderChats();
     } else if (state.activeTab === "whatsapp-status") {
       renderWhatsAppStatus(store);
     } else if (state.activeTab === "grow-campaigns") {
@@ -5039,6 +5041,108 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     window.loadAdminInquiries();
+  }
+
+  // Couple <-> vendor chats: read-only oversight. The admin endpoints never
+  // mark messages read, and nothing here is visible to couples or vendors.
+  function renderChats() {
+    el.portalBody.innerHTML = `
+      <div class="spa-tab-wrapper">
+        <div class="locator-breadcrumb">
+          <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>Couple–Vendor Chats</span>
+        </div>
+        <div class="panel-card" style="margin-top: 15px;">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <h3>Couple–Vendor Chats</h3>
+              <p>Read-only view of every enquiry conversation. Viewing here does not mark messages as read.</p>
+            </div>
+            <input type="text" id="chatSearch" class="premium-input" placeholder="Search couple or vendor..." />
+          </div>
+          <div id="adminChatWrap" style="display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:0;border:1px solid var(--border-color,#E5E7EB);border-radius:12px;overflow:hidden;min-height:480px;">
+            <div id="adminChatList" style="border-right:1px solid var(--border-color,#E5E7EB);overflow-y:auto;max-height:70vh;"></div>
+            <div id="adminChatThread" style="overflow-y:auto;max-height:70vh;padding:16px;">
+              <div style="text-align:center;padding:48px;color:var(--text-muted);">Select a conversation to read it.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <style>
+        @media (max-width: 820px) { #adminChatWrap { grid-template-columns: 1fr !important; } #adminChatList { max-height: 40vh !important; border-right: 0 !important; border-bottom: 1px solid var(--border-color,#E5E7EB); } }
+        .adm-chat-item { display:block; width:100%; text-align:left; padding:12px 14px; border:0; border-bottom:1px solid var(--border-color,#E5E7EB); background:transparent; cursor:pointer; color:inherit; font:inherit; }
+        .adm-chat-item:hover, .adm-chat-item.active { background: rgba(220,31,48,.06); }
+        .adm-msg { max-width: 75%; padding: 8px 12px; border-radius: 12px; margin: 6px 0; font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .adm-msg.couple { background: var(--bg-primary,#F3F4F6); border:1px solid var(--border-color,#E5E7EB); }
+        .adm-msg.vendor { background: rgba(220,31,48,.08); border:1px solid rgba(220,31,48,.2); margin-left: auto; }
+      </style>
+    `;
+    let timer;
+    document.getElementById('chatSearch').addEventListener('input', (e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => loadAdminChats(e.target.value), 300);
+    });
+    loadAdminChats('');
+  }
+
+  async function adminChatFetch(path) {
+    const auth = window.WedEazzyAuth;
+    const res = auth ? await auth.apiFetch(path) : await fetch(path);
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.message || 'Request failed');
+    return data;
+  }
+
+  async function loadAdminChats(q) {
+    const list = document.getElementById('adminChatList');
+    if (!list) return;
+    list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>`;
+    try {
+      const data = await adminChatFetch('/api/admin/chat/conversations' + (q ? '?q=' + encodeURIComponent(q) : ''));
+      const convs = data.conversations || [];
+      if (!convs.length) {
+        list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);">No conversations${q ? ' match your search' : ' yet'}.</div>`;
+        return;
+      }
+      list.innerHTML = convs.map((c) => `
+        <button type="button" class="adm-chat-item" data-id="${escHtml(c.id)}">
+          <div style="font-weight:700;font-size:13.5px;">${escHtml(c.couple.name || 'Couple')} <span style="color:var(--text-muted);font-weight:400;">→</span> ${escHtml(c.vendor.businessName)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${escHtml([c.vendor.category, c.vendor.city].filter(Boolean).join(' · '))} · ${c.messageCount} message${c.messageCount === 1 ? '' : 's'}</div>
+          <div style="font-size:12.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.lastMessage ? escHtml(c.lastMessage.message) : '<em style="color:var(--text-muted);">No messages yet</em>'}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${new Date(c.updatedAt).toLocaleString('en-IN')}</div>
+        </button>`).join('');
+      list.querySelectorAll('.adm-chat-item').forEach((b) => b.addEventListener('click', () => {
+        list.querySelectorAll('.adm-chat-item').forEach((x) => x.classList.toggle('active', x === b));
+        openAdminChat(b.getAttribute('data-id'));
+      }));
+    } catch (err) {
+      list.innerHTML = `<div style="padding:24px;color:#B91C1C;">${escHtml(err.message)}</div>`;
+    }
+  }
+
+  async function openAdminChat(id) {
+    const box = document.getElementById('adminChatThread');
+    if (!box) return;
+    box.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i></div>`;
+    try {
+      const { conversation: c, messages } = await adminChatFetch('/api/admin/chat/conversations/' + encodeURIComponent(id));
+      const enq = c.enquiry || {};
+      box.innerHTML = `
+        <div style="border-bottom:1px solid var(--border-color,#E5E7EB);padding-bottom:10px;margin-bottom:10px;">
+          <div style="font-weight:700;">${escHtml(c.couple.name || 'Couple')} <span style="color:var(--text-muted);font-weight:400;">(${escHtml(c.couple.email || '—')})</span></div>
+          <div style="font-size:12.5px;color:var(--text-muted);">with ${escHtml(c.vendor.businessName)} · ${escHtml([c.vendor.category, c.vendor.city].filter(Boolean).join(' · '))}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Enquiry ${escHtml(String(c.enquiryId).slice(-8).toUpperCase())}${enq.eventDate ? ' · Event ' + new Date(enq.eventDate).toLocaleDateString('en-IN') : ''}${enq.budget ? ' · Budget ' + escHtml(enq.budget) : ''}</div>
+          ${enq.notes ? `<div style="font-size:12.5px;margin-top:6px;white-space:pre-wrap;">${escHtml(enq.notes)}</div>` : ''}
+        </div>
+        ${messages.length ? messages.map((m) => `
+          <div class="adm-msg ${m.from === 'vendor' ? 'vendor' : 'couple'}">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:2px;">${m.from === 'vendor' ? escHtml(c.vendor.businessName) : m.from === 'couple' ? escHtml(c.couple.name || 'Couple') : 'Former participant'}</div>
+            ${escHtml(m.message)}
+            <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;text-align:right;">${new Date(m.createdAt).toLocaleString('en-IN')}${m.readAt ? ' · read' : ' · unread'}</div>
+          </div>`).join('') : '<div style="text-align:center;padding:32px;color:var(--text-muted);">No messages in this conversation yet.</div>'}
+      `;
+    } catch (err) {
+      box.innerHTML = `<div style="padding:24px;color:#B91C1C;">${escHtml(err.message)}</div>`;
+    }
   }
 
   function inquiryStatusPillClass(status) {

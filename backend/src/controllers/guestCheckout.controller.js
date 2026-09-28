@@ -656,6 +656,14 @@ async function handleWebhookFailed(orderId) {
 async function testPayment(req, res, next) {
   try {
     const body = req.body || {};
+    // This marks an order paid with a made-up payment id: it emails a real tax
+    // invoice and management alerts, and the plan is activated as soon as the
+    // listing is claimed. It was reachable by anyone, so it is now held to the
+    // same TEST_CHECKOUT_TOKEN gate as the 1-unit live test payment.
+    const gateToken = process.env.TEST_CHECKOUT_TOKEN;
+    if (!gateToken || String(body.testToken || '') !== gateToken) {
+      throw new HttpError(403, 'Test checkout is not available.', 'ERR_TEST_DISABLED');
+    }
     const countryCode = COUNTRY_CURRENCIES[String(body.countryCode || '').toUpperCase()] ? String(body.countryCode).toUpperCase() : 'IN';
     const currency = COUNTRY_CURRENCIES[countryCode];
     const planType = String(body.planType || 'grow');

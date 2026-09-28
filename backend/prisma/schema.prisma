@@ -78,6 +78,7 @@ model User {
   txns              Transaction[]
   waMessages        WaMessage[]   @relation("WaMessagesToUser")
   inquiriesAsCouple Inquiry[]     @relation("CoupleInquiries")
+  messagesSent      Message[]     @relation("MessageSender")
 
   @@index([role])
 }
@@ -224,6 +225,7 @@ model Vendor {
   campaigns  AdCampaign[]
   lock       PincodeLock?
   reviews    Review[]
+  conversations Conversation[]
 
   @@index([categorySlug, citySlug])
   @@index([pincode, categorySlug])
@@ -283,6 +285,7 @@ model Couple {
   shortlists    Shortlist[]
   bookings      Booking[]
   guests        Guest[]
+  conversations Conversation[]
 }
 
 model Shortlist {
@@ -346,11 +349,46 @@ model Inquiry {
   vendor      Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   coupleUser  User?          @relation("CoupleInquiries", fields: [coupleUserId], references: [id])
   review      Review?
+  conversation Conversation?
 
   @@index([vendorId, status, createdAt])
 }
 
 // ---------- BOOKINGS & PAYMENTS ----------
+// ---------- CHAT (couple <-> vendor, one conversation per signed-in couple's enquiry) ----------
+// Admin reads these from the admin panel but is never a participant, and
+// admin reads never touch readAt.
+model Conversation {
+  id        String   @id @default(cuid())
+  enquiryId String   @unique
+  coupleId  String
+  vendorId  String
+  createdAt DateTime @default(now())
+
+  enquiry   Inquiry   @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  couple    Couple    @relation(fields: [coupleId], references: [id], onDelete: Cascade)
+  vendor    Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([coupleId])
+  @@index([vendorId])
+}
+
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String
+  message        String    @db.Text
+  createdAt      DateTime  @default(now())
+  readAt         DateTime?                                  // set when the other participant opens the chat
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, readAt])
+}
+
 model Booking {
   id         String        @id @default(cuid())
   coupleId   String

@@ -20,7 +20,7 @@ const { normalisePhone, isValidPhone } = require('../utils/phone');
 const { generateOtp, hashOtp, compareOtp } = require('../utils/otp');
 const { signToken } = require('../middleware/auth');
 const { sendOtp } = require('./whatsapp.service');
-const { sendOtpEmail, sendBusinessLoginOtpEmail } = require('./email.service');
+const { sendOtpEmail, sendBusinessLoginOtpEmail, sendAdminLoginOtpEmail } = require('./email.service');
 const { HttpError } = require('../middleware/error');
 const { slugify, uniqueSlug } = require('../utils/slug');
 
@@ -47,6 +47,40 @@ function assertStrongPassword(pw) {
       'ERR_WEAK_PASSWORD'
     );
   }
+}
+
+/**
+ * One-time codes may be echoed back in an API response ONLY on a local
+ * development server (non-production AND PUBLIC_BASE_URL is localhost), and
+ * only for debug builds or when delivery failed with the fallback flag on.
+ * Anywhere else, returning the code lets anyone who asks for a code for
+ * someone else's email sign in as them (or skip admin 2FA).
+ */
+function isLocalDevServer() {
+  if (env.NODE_ENV === 'production') return false;
+  try {
+    return ['localhost', '127.0.0.1', '::1', '[::1]'].includes(new URL(env.PUBLIC_BASE_URL).hostname);
+  } catch (_) { return false; }
+}
+/**
+ * Sign-up phone: Indian mobiles normalise to 91XXXXXXXXXX as everywhere else;
+ * other countries are accepted in international form (+44…, 0044…) and stored
+ * as digits with the country code. Returns null when it isn't a phone number.
+ */
+function normaliseSignupPhone(mobile) {
+  const indian = normalisePhone(mobile);
+  if (indian) return indian;
+  const raw = String(mobile || '').trim();
+  if (!raw.startsWith('+') && !raw.startsWith('00')) return null;
+  let digits = raw.replace(/\D/g, '');
+  if (raw.startsWith('00')) digits = digits.slice(2);
+  if (digits.startsWith('91')) return null; // Indian numbers must pass the Indian rules above
+  return digits.length >= 8 && digits.length <= 15 ? digits : null;
+}
+
+function devCodeFor(code, delivered) {
+  if (!isLocalDevServer()) return undefined;
+  return (env.OTP_DEBUG_LOG || (env.OTP_FALLBACK_ENABLED && !delivered)) ? code : undefined;
 }
 
 /** Throws ERR_OTP_RATE if this phone/email has requested too many OTPs in the last hour. */
@@ -139,7 +173,7 @@ async function startOtp({ phone, purpose = 'login' }) {
     ok: true,
     phone: p,
     // Only when delivery FAILED — echoing a successfully-sent code back to the caller lets anyone request an OTP for any address and read it out of the response.
-    devCode: ((env.OTP_FALLBACK_ENABLED && !r.ok) || env.OTP_DEBUG_LOG) ? code : undefined,
+    devCode: devCodeFor(code, !!r.ok),
     waDelivered: !!r.ok,
     expiresIn: env.OTP_TTL_MIN * 60,
   };
@@ -300,8 +334,13 @@ async function signup(payload) {
 
   // Automatically trigger email OTP send
   let emailSent = true;
+  let devCode;
   try {
-    await startEmailOtp(normalizedEmail);
+    // startEmailOtp reports a failed send in its result rather than throwing,
+    // so the catch alone left this saying "OTP sent" with SMTP down.
+    const otp = await startEmailOtp(normalizedEmail);
+    emailSent = !!(otp && otp.emailSent);
+    devCode = otp && otp.devCode;
   } catch (err) {
     logger.error({ err, email: normalizedEmail }, 'Failed to automatically send verification OTP email on signup');
     emailSent = false;
@@ -313,14 +352,15 @@ async function signup(payload) {
       ? 'Registration successful! Verification OTP sent to email.' 
       : 'Registration successful! However, the verification code email could not be delivered. Please try to log in to request a code.',
     email: normalizedEmail,
-    emailSent
+    emailSent,
+    devCode, // local dev only — startEmailOtp gates it via devCodeFor()
   };
 }
 
 /**
  * Standard Email/Password and Admin Unified Login
  */
-async function login({ emailOrPhone, password }) {
+async function login({ emailOrPhone, password, role }) {
   if (!emailOrPhone || !password) {
     throw new HttpError(400, 'Email/Phone and password are required', 'ERR_BAD_INPUT');
   }
@@ -357,6 +397,23 @@ async function login({ emailOrPhone, password }) {
   const isMatch = await bcrypt.compare(String(password), user.passwordHash);
   if (!isMatch) {
     throw new HttpError(401, 'Invalid email/phone or password', 'ERR_INVALID_CREDENTIALS');
+  }
+
+  // The sign-in screen asks "Couple or Vendor?" first. Only after the password
+  // checks out (so this can't be used to probe account types) refuse a sign-in
+  // for the wrong type, so a vendor never lands in the couple dashboard or
+  // vice versa. Callers that don't send a role keep the old behaviour.
+  const ROLE_ALIASES = { couple: 'couple', user: 'couple', vendor: 'vendor', business: 'vendor' };
+  const expectedRole = ROLE_ALIASES[String(role || '').toLowerCase()];
+  if (expectedRole && user.role !== expectedRole) {
+    const label = { couple: 'Couple', vendor: 'Vendor' };
+    const err = new HttpError(
+      403,
+      `This account is registered as a ${label[user.role] || user.role} account. Please sign in as ${label[user.role] || user.role}.`,
+      'ERR_ROLE_MISMATCH'
+    );
+    err.accountRole = user.role;
+    throw err;
   }
 
   // Unverified accounts do NOT get a session — dispatch a fresh verification
@@ -418,7 +475,7 @@ async function login({ emailOrPhone, password }) {
       // auto-fill it — same pattern as admin 2FA.
       // The send above is fire-and-forget, so there is no delivery result to
       // gate on here. Never echo the code on this path outside debug builds.
-      devCode: env.OTP_DEBUG_LOG ? code : undefined,
+      devCode: devCodeFor(code, true),
     };
   }
 
@@ -502,7 +559,7 @@ async function startEmailOtp(email) {
     email: normalizedEmail,
     emailSent,
     // Only when delivery FAILED — echoing a successfully-sent code back to the caller lets anyone request an OTP for any address and read it out of the response.
-    devCode: ((env.OTP_FALLBACK_ENABLED && !emailSent) || env.OTP_DEBUG_LOG) ? code : undefined,
+    devCode: devCodeFor(code, emailSent),
     expiresIn: env.OTP_TTL_MIN * 60,
   };
 }
@@ -687,6 +744,12 @@ async function checkUser(email) {
     return { userExists: false };
   }
 
+  // Admin accounts sign in through the Admin Portal (password + 2FA) only;
+  // an emailed code alone must never open an admin session.
+  if (user.role === 'admin') {
+    throw new HttpError(403, 'Admins must log in through the Admin Portal', 'ERR_ADMIN_ONLY');
+  }
+
   await rateLimitCheckUserOtp(normalizedEmail);
 
   // Generate 6-digit OTP and hash it before storage
@@ -726,7 +789,7 @@ async function checkUser(email) {
     userExists: true, 
     emailSent,
     // Only when delivery FAILED — echoing a successfully-sent code back to the caller lets anyone request an OTP for any address and read it out of the response.
-    devCode: ((env.OTP_FALLBACK_ENABLED && !emailSent) || env.OTP_DEBUG_LOG) ? otp : undefined
+    devCode: devCodeFor(otp, emailSent)
   };
 }
 
@@ -738,10 +801,10 @@ async function registerAndSendOtp({ email, name, mobile }) {
     throw new HttpError(400, 'Email and Name are required', 'ERR_BAD_INPUT');
   }
   const normalizedEmail = String(email).trim().toLowerCase();
-  const phone = mobile ? normalisePhone(mobile) : null;
-  
-  if (phone && !isValidPhone(phone)) {
-    throw new HttpError(400, 'Enter a valid Indian mobile number', 'ERR_BAD_PHONE');
+  const phone = mobile ? normaliseSignupPhone(mobile) : null;
+
+  if (mobile && !phone) {
+    throw new HttpError(400, 'Enter a valid mobile number. Outside India, include the country code (e.g. +44 7700 900123).', 'ERR_BAD_PHONE');
   }
   
   // Check if email or phone already exists
@@ -820,7 +883,7 @@ async function registerAndSendOtp({ email, name, mobile }) {
     email: normalizedEmail,
     emailSent,
     // Only when delivery FAILED — echoing a successfully-sent code back to the caller lets anyone request an OTP for any address and read it out of the response.
-    devCode: ((env.OTP_FALLBACK_ENABLED && !emailSent) || env.OTP_DEBUG_LOG) ? otp : undefined
+    devCode: devCodeFor(otp, emailSent)
   };
 }
 
@@ -875,7 +938,12 @@ async function verifyOtpLogin({ email, otp }) {
   if (user.suspendedAt) {
     throw new HttpError(403, 'Your account has been suspended. Contact support for assistance.', 'ERR_ACCOUNT_SUSPENDED');
   }
+  if (user.role === 'admin') {
+    throw new HttpError(403, 'Admins must log in through the Admin Portal', 'ERR_ADMIN_ONLY');
+  }
   
+  const firstVerification = !user.verifiedAt;
+
   // Update verification status and last login
   user = await prisma.user.update({
     where: { id: user.id },
@@ -885,7 +953,16 @@ async function verifyOtpLogin({ email, otp }) {
     },
     include: { vendor: true, couple: true }
   });
-  
+
+  // Passwordless sign-up (registerAndSendOtp) is verified here, not in
+  // verifyEmailOtp, so these couples never got the welcome email.
+  if (firstVerification && user.role === 'couple') {
+    const { sendCoupleWelcomeEmail } = require('./email.service');
+    sendCoupleWelcomeEmail(normalizedEmail, user.name || '').catch(e => {
+      logger.error({ err: e, to: normalizedEmail }, 'Failed to send couple welcome email');
+    });
+  }
+
   const token = signToken(user);
   
   // Store db session
@@ -979,12 +1056,12 @@ async function loginWithPassword({ email, role, password }) {
     // it's at least loud in the logs, since the client-facing response
     // can't safely reveal SMTP configuration state without help an
     // attacker probing this endpoint doesn't need.
-    const emailResult = await sendOtpEmail(normalizedEmail, code);
+    const emailResult = await sendAdminLoginOtpEmail(normalizedEmail, code);
     const emailError = emailResult && (emailResult.error || emailResult.smtpError || null);
     let fallbackCode = null;
 
     if (!emailResult || !emailResult.ok || emailResult.fallback) {
-      if (env.OTP_FALLBACK_ENABLED) {
+      if (env.OTP_FALLBACK_ENABLED && isLocalDevServer()) {
         fallbackCode = code;
         logger.warn(
           { email: normalizedEmail, emailError, fallbackCode },
@@ -1007,7 +1084,7 @@ async function loginWithPassword({ email, role, password }) {
       email: normalizedEmail,
       emailDelivered: !!(emailResult && emailResult.ok && !emailResult.fallback),
       emailError: emailError || undefined,
-      devCode: fallbackCode || (env.OTP_DEBUG_LOG ? code : undefined),
+      devCode: fallbackCode || devCodeFor(code, true),
     };
   }
   
@@ -1139,6 +1216,110 @@ async function resetPasswordSecure({ token, newPassword }) {
   };
 }
 
+const RESET_OTP_TTL_MIN = 15; // matches the wording in sendPasswordResetEmail
+
+/**
+ * Forgot password, step 1: email a 6-digit reset code.
+ * Always answers the same way whether or not the email is registered, so the
+ * endpoint can't be used to discover accounts. Unlike the email-verification
+ * OTP, the code is NEVER returned in the response (not even as a delivery
+ * fallback) — that would let anyone reset any account's password.
+ */
+async function sendPasswordResetOtp({ email, localDev = false }) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    throw new HttpError(400, 'Enter a valid email address', 'ERR_BAD_INPUT');
+  }
+  const generic = { ok: true, message: 'If an account exists for this email, we have sent a 6-digit code to it.', expiresIn: RESET_OTP_TTL_MIN * 60 };
+
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  // Admin passwords are managed through the Admin Portal, never this public flow.
+  if (!user || user.role === 'admin' || user.suspendedAt) return generic;
+
+  await rateLimitCheck(normalizedEmail);
+  await prisma.otpCode.updateMany({
+    where: { phone: normalizedEmail, purpose: 'password_reset', consumedAt: null },
+    data: { consumedAt: new Date() },
+  });
+
+  const code = generateOtp();
+  await prisma.otpCode.create({
+    data: {
+      phone: normalizedEmail, // OtpCode stores the email in `phone`, as startEmailOtp does
+      codeHash: await hashOtp(code),
+      purpose: 'password_reset',
+      expiresAt: new Date(Date.now() + RESET_OTP_TTL_MIN * 60 * 1000),
+    },
+  });
+
+  const { sendPasswordResetEmail } = require('./email.service');
+  const result = await sendPasswordResetEmail(normalizedEmail, code).catch((err) => ({ ok: false, err }));
+  const delivered = !!(result && result.ok && !result.fallback);
+  if (!delivered) {
+    logger.error({ email: normalizedEmail, result }, 'Password reset code email was not delivered');
+  }
+  if (env.OTP_DEBUG_LOG) {
+    logger.warn({ email: normalizedEmail, code }, '[DEV] Password reset OTP generated');
+  }
+  // LOCAL DEVELOPMENT ONLY: when email can't be sent, hand the code back so the
+  // flow can still be tested. Requires ALL of: not production, the fallback
+  // flag on, and the request coming to localhost (checked by the controller).
+  // On a real site returning the code would let anyone reset any password.
+  if (!delivered && localDev && isLocalDevServer() && env.OTP_FALLBACK_ENABLED) {
+    return { ...generic, devCode: code, emailFailed: true };
+  }
+  return generic;
+}
+
+/**
+ * Forgot password, step 2: check the emailed code and set the new password.
+ * Signs out every existing session, and clears mustChangePassword since the
+ * owner has now chosen their own password.
+ */
+async function resetPasswordWithOtp({ email, code, newPassword }) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail || !/^[0-9]{6}$/.test(String(code || ''))) {
+    throw new HttpError(400, 'Enter the 6-digit code from your email', 'ERR_BAD_CODE');
+  }
+  assertStrongPassword(newPassword);
+
+  const row = await prisma.otpCode.findFirst({
+    where: { phone: normalizedEmail, purpose: 'password_reset', consumedAt: null, expiresAt: { gte: new Date() } },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!row) throw new HttpError(400, 'This code has expired. Please request a new one.', 'ERR_OTP_EXPIRED');
+  if (row.attempts >= 5) throw new HttpError(429, 'Too many wrong attempts. Please request a new code.', 'ERR_OTP_LOCKED');
+
+  const ok = await compareOtp(String(code), row.codeHash);
+  if (!ok) {
+    await prisma.otpCode.update({ where: { id: row.id }, data: { attempts: { increment: 1 } } });
+    throw new HttpError(400, 'Wrong code — please check your email and try again.', 'ERR_OTP_WRONG');
+  }
+
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (!user || user.role === 'admin' || user.suspendedAt) {
+    throw new HttpError(400, 'This code has expired. Please request a new one.', 'ERR_OTP_EXPIRED');
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, await bcrypt.genSalt(10));
+  await prisma.$transaction([
+    prisma.otpCode.update({ where: { id: row.id }, data: { consumedAt: new Date() } }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+        revokedBefore: new Date(),
+        verifiedAt: user.verifiedAt || new Date(), // proving the inbox also verifies the email
+      },
+    }),
+    prisma.session.deleteMany({ where: { userId: user.id } }),
+  ]);
+
+  logger.info({ userId: user.id }, 'Password reset via email code');
+  return { ok: true, role: user.role, message: 'Your password has been reset. Please sign in with your new password.' };
+}
+
 /**
  * Authenticated self-service password change - used both for a normal
  * "change my password" action and for the forced first-login flow when an
@@ -1186,8 +1367,13 @@ module.exports = {
   registerAndSendOtp,
   verifyOtpLogin,
   loginWithPassword,
+  sendPasswordResetOtp,
+  resetPasswordWithOtp,
   forgotPasswordSecure,
   resetPasswordSecure,
   changeOwnPassword,
   assertStrongPassword,
+  normaliseSignupPhone,
+  devCodeFor,
+  rateLimitCheck,
 };

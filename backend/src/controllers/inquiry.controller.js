@@ -103,4 +103,65 @@ async function patchStatus(req, res, next) {
   } catch (e) { next(e); }
 }
 
-module.exports = { postPublic, postAsCouple, listForVendor, patchStatus, publicLimiter };
+/**
+ * Home-page enquiry (not tied to a vendor) from a signed-in couple. Sent to
+ * the enquiry WhatsApp number. sendWa() stores the message in WaMessage before sending, so
+ * if WhatsApp is disconnected it stays queued and retries, and is also emailed
+ * to the admin as a fallback. The enquiry is therefore never silently dropped.
+ */
+async function postHomeEnquiry(req, res, next) {
+  try {
+    const body = req.body || {};
+    sanitizeFields(body, ['service', 'city', 'country', 'name', 'phone', 'email', 'date', 'budget', 'notes'], 500);
+    const str = (v, max) => String(v || '').trim().slice(0, max);
+    const d = {
+      service: str(body.service, 80), city: str(body.city, 80), country: str(body.country, 40),
+      // Contact details default to the signed-in account's.
+      name: str(body.name || req.user.name, 80), phone: str(body.phone || req.user.phone, 30), email: str(body.email || req.user.email, 120).toLowerCase(),
+      date: str(body.date, 20), budget: str(body.budget, 40), notes: str(body.notes, 500),
+    };
+
+    const phoneDigits = d.phone.replace(/\D/g, '');
+    if (!d.service || !d.city || d.name.length < 2) {
+      return res.status(400).json({ ok: false, code: 'ERR_INPUT', message: 'Please fill in the service, city and your name.' });
+    }
+    if (phoneDigits.length < 8 || phoneDigits.length > 15) {
+      return res.status(400).json({ ok: false, code: 'ERR_BAD_PHONE', message: 'Please enter a valid phone / WhatsApp number.' });
+    }
+    if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) {
+      return res.status(400).json({ ok: false, code: 'ERR_INPUT', message: 'Please enter a valid email address.' });
+    }
+
+    const text = [
+      '*New wedding enquiry — WedEazzy home page*',
+      `*Service:* ${d.service}`,
+      `*City:* ${d.city}${d.country ? ', ' + d.country : ''}`,
+      `*Name:* ${d.name}`,
+      `*Phone/WhatsApp:* ${d.phone}`,
+      d.email ? `*Email:* ${d.email}` : null,
+      `*Account:* ${req.user.email || req.user.id} (signed in)`,
+      d.date ? `*Wedding date:* ${d.date}` : null,
+      d.budget ? `*Budget:* ${d.budget}` : null,
+      d.notes ? `*Notes:* ${d.notes}` : null,
+    ].filter(Boolean).join('\n');
+
+    const { sendWa } = require('../services/whatsapp.service');
+    const result = await sendWa({
+      to: env.ENQUIRY_WHATSAPP,
+      body: text,
+      template: 'home_enquiry',
+      fallbackEmail: env.ADMIN_EMAIL || null,
+      subjectHint: `Wedding enquiry: ${d.service} in ${d.city}`,
+    });
+
+    // Delivered, or safely queued in WaMessage for automatic retry.
+    if (result && (result.ok || result.id)) {
+      logger.info({ id: result.id, delivered: !!result.ok, service: d.service, city: d.city }, 'Home enquiry received');
+      return res.json({ ok: true, delivered: !!result.ok });
+    }
+    logger.error({ result }, 'Home enquiry could not be recorded');
+    return res.status(502).json({ ok: false, code: 'ERR_DELIVERY_FAILED', message: 'We could not send your enquiry right now. Please try again in a few minutes.' });
+  } catch (e) { next(e); }
+}
+
+module.exports = { postPublic, postAsCouple, postHomeEnquiry, listForVendor, patchStatus, publicLimiter };

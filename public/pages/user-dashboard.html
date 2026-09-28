@@ -13,7 +13,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#FFF0F2">
-  <title>User Dashboard | WedEazzy Wedding Planning Portal</title>
+  <title>My WedEazzy | Browse vendors, inquiries &amp; messages</title>
   <meta name="description" content="WedEazzy Couple Planning Portal. Manage your wedding checklist, guest RSVP lists, budget allocation, vendor inquiries, and shortlist favorites." />
   <meta name="robots" content="noindex,nofollow" />
   <link rel="icon" type="image/png" href="../assets/images/logo.png" />
@@ -24,27 +24,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Custom Premium Stylesheet -->
-  <link rel="stylesheet" href="../css/user-dashboard.css?v=2">
+  <link rel="stylesheet" href="../css/user-dashboard.css?v=4">
 
-  <!-- ChartJS and SheetJS (XLSX) CDNs -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <link rel="stylesheet" href="../css/enhance.css?v=1" />
   <script src="/js/wedeazzy-notify.js"></script>
 </head>
-<body>
+<body class="couple-portal">
 
-  <!-- Top Navigation Toolbar Header (Fixed Top Navbar) -->
   <header class="header">
     <div class="header-left">
       <a href="../index.html" class="logo-area" aria-label="WedEazzy home">
-        <img src="../assets/images/logo.png" alt="WedEazzy" class="logo-img" onerror="this.src='https://raw.githubusercontent.com/HiteshD/WedeazzyAssets/main/logo.png'">
+        <img src="../assets/images/logo.png" alt="WedEazzy" class="logo-img">
       </a>
-      <span class="menu-toggle" onclick="toggleMobileSidebar()">☰</span>
     </div>
 
     <div class="header-right">
-      <!-- Navbar Navigation Links -->
       <nav class="navbar-links">
         <a href="../index.html?tab=venues" class="navbar-link">Venues</a>
         <a href="../index.html?tab=vendors" class="navbar-link">Vendors</a>
@@ -52,87 +46,86 @@
         <a href="../index.html?tab=blogs" class="navbar-link">Blogs</a>
       </nav>
 
-      <!-- User dropdown context avatar -->
-      <div class="header-profile-dropdown" id="profileDropdown" title="User Menu" onclick="toggleProfileDropdown(event)">
+      <div class="header-profile-dropdown" id="profileDropdown" title="Account" onclick="toggleProfileDropdown(event)">
         <div class="header-profile-trigger">
-          <div class="header-avatar-circle" id="headerProfileAvatarLetter">C</div>
+          <div class="header-avatar-circle" id="headerProfileAvatarLetter">·</div>
         </div>
-        
-        <!-- Profile Actions Dropdown (Premium Glassmorphic) -->
         <div class="profile-dropdown-menu" id="profileDropdownMenu">
           <div class="profile-dropdown-header">
-            <div class="profile-dropdown-avatar" id="dropdownAvatarLetter">C</div>
+            <div class="profile-dropdown-avatar" id="dropdownAvatarLetter">·</div>
             <div class="profile-dropdown-meta">
-              <h4 id="dropdownUserTitle">Couple Planner</h4>
-              <p id="dropdownUserEmail">couple@wedeazzy.com</p>
+              <h4 id="dropdownUserTitle"></h4>
+              <p id="dropdownUserEmail"></p>
             </div>
           </div>
           <div class="profile-dropdown-divider"></div>
-          <a href="#" onclick="switchTab('profile'); closeAllDropdowns(); event.preventDefault();" class="dropdown-menu-item">
-            <span>👤</span> Edit Profile
-          </a>
-          <a href="#" onclick="switchTab('settings'); closeAllDropdowns(); event.preventDefault();" class="dropdown-menu-item">
-            <span>⚙️</span> Security Settings
-          </a>
+          <a href="#" onclick="switchTab('profile'); closeAllDropdowns(); event.preventDefault();" class="dropdown-menu-item">My Profile</a>
           <div class="profile-dropdown-divider"></div>
-          <a href="#" onclick="handleLogout(); event.preventDefault();" class="dropdown-menu-item logout text-danger">
-            <span>🚪</span> Log Out
-          </a>
+          <a href="#" onclick="handleLogout(); event.preventDefault();" class="dropdown-menu-item logout text-danger">Log Out</a>
         </div>
       </div>
     </div>
   </header>
 
   <div class="dashboard-wrapper">
-    <!-- Glowing background accent lights (Premium SaaS aesthetics) -->
-    <div class="dashboard-glow glow-1"></div>
-    <div class="dashboard-glow glow-2"></div>
-    
-    <!-- Mobile Sidebar Drawer Overlay -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
-
-    <!-- 1. Left Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
+      <div class="sidebar-greet">
+        <span class="sidebar-greet-hi" id="sidebarGreeting">Welcome</span>
+        <span class="sidebar-greet-sub">Plan your wedding with WedEazzy</span>
+      </div>
       <nav class="sidebar-nav">
-        <button onclick="switchTab('dashboard')" data-tab="dashboard" class="nav-item active">
-          <span class="nav-icon">🧭</span> Dashboard Home
+        <button type="button" onclick="switchTab('browse')" data-tab="browse" class="nav-item">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><span class="nav-label">Browse Vendors</span>
         </button>
-        <button onclick="switchTab('browse')" data-tab="browse" class="nav-item">
-          <span class="nav-icon">🔍</span> Browse Vendors
+        <button type="button" onclick="switchTab('inquiries')" data-tab="inquiries" class="nav-item">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg></span><span class="nav-label">My Inquiries</span>
         </button>
-        <button onclick="switchTab('inquiries')" data-tab="inquiries" class="nav-item">
-          <span class="nav-icon">📩</span> My Inquiries
+        <button type="button" onclick="switchTab('messages')" data-tab="messages" class="nav-item">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg></span><span class="nav-label">Messages</span> <span class="wzc-nav-badge" id="chatNavBadge" style="display:none"></span>
         </button>
-        <button onclick="switchTab('favorites')" data-tab="favorites" class="nav-item">
-          <span class="nav-icon">💖</span> Favorite Vendors
+        <button type="button" onclick="switchTab('favorites')" data-tab="favorites" class="nav-item">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span><span class="nav-label">Saved Vendors</span>
         </button>
-        <button onclick="switchTab('planning')" data-tab="planning" class="nav-item">
-          <span class="nav-icon">📋</span> Wedding Planning
-        </button>
-        <button onclick="switchTab('settings')" data-tab="settings" class="nav-item">
-          <span class="nav-icon">⚙️</span> Profile Settings
-        </button>
-        <button onclick="handleLogout()" class="nav-item">
-          <span class="nav-icon">🚪</span> Logout
+        <button type="button" onclick="switchTab('profile')" data-tab="profile" class="nav-item">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span class="nav-label">My Profile</span>
         </button>
       </nav>
+      <button type="button" onclick="handleLogout()" class="nav-item nav-logout">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/></svg></span><span class="nav-label">Log Out</span>
+      </button>
     </aside>
 
-    <!-- Main Working Panel -->
     <main class="main-panel">
-      <!-- Dynamic Scrollable Viewport Content -->
-      <section class="content-viewport" id="contentViewport">
-        <!-- RENDERED DYNAMICALLY BY CLIENT SPA ENGINE -->
-      </section>
+      <section class="content-viewport" id="contentViewport"></section>
     </main>
   </div>
+
+  <!-- Mobile bottom tab bar (replaces the sidebar under 768px) -->
+  <nav class="bottom-nav" aria-label="Main">
+    <button type="button" onclick="switchTab('browse')" data-tab="browse" class="bnav-item">
+      <span class="bnav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><span>Browse</span>
+    </button>
+    <button type="button" onclick="switchTab('inquiries')" data-tab="inquiries" class="bnav-item">
+      <span class="bnav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg></span><span>Inquiries</span>
+    </button>
+    <button type="button" onclick="switchTab('messages')" data-tab="messages" class="bnav-item">
+      <span class="bnav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg><span class="wzc-nav-badge" id="chatNavBadgeMobile" style="display:none"></span></span><span>Messages</span>
+    </button>
+    <button type="button" onclick="switchTab('favorites')" data-tab="favorites" class="bnav-item">
+      <span class="bnav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span><span>Saved</span>
+    </button>
+    <button type="button" onclick="switchTab('profile')" data-tab="profile" class="bnav-item">
+      <span class="bnav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span>Profile</span>
+    </button>
+  </nav>
 
   <!-- Premium Glassmorphic Support Concierge Chat -->
   <!-- Real-time dynamic toast tray container -->
   <div id="toastContainer"></div>
 
   <!-- Custom Premium Dashboard JS Engine -->
-  <script src="../js/user-dashboard.js?v=3"></script>
+  <script src="../js/wz-chat.js?v=1"></script>
+  <script src="../js/user-dashboard.js?v=6"></script>
   <script src="../js/nav-loader.js"></script>
   <script src="../js/wedeazzy-enhance.js?v=1"></script>
 </body>

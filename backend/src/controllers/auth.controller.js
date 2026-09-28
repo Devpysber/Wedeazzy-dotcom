@@ -64,10 +64,10 @@ async function tryLinkPendingOrders(userId, vendorData) {
  * Password-based Authenticated Login (Only Admins, Vendors, Venues, Business portal dashboard users)
  */
 async function login(req, res, next) {
-  const { emailOrPhone, email, password } = req.body || {};
+  const { emailOrPhone, email, password, role } = req.body || {};
   const identity = emailOrPhone || email;
   try {
-    const r = await service.login({ emailOrPhone: identity, password });
+    const r = await service.login({ emailOrPhone: identity, password, role });
 
     // Save login timestamp inside cookie session
     if (req.session) {
@@ -185,6 +185,30 @@ async function forgotPassword(req, res, next) {
 }
 
 /**
+ * Forgot password with an emailed 6-digit code: step 1 sends the code,
+ * step 2 checks it and sets the new password.
+ */
+async function sendPasswordResetOtp(req, res, next) {
+  try {
+    // The dev-only code fallback also requires this server to be configured as
+    // a local one (PUBLIC_BASE_URL) and the request to be for localhost. The
+    // Host header alone can be forged, the configured base URL cannot.
+    const isLocal = (host) => ['localhost', '127.0.0.1', '::1', '[::1]'].includes(host);
+    let baseHost = '';
+    try { baseHost = new URL(env.PUBLIC_BASE_URL).hostname; } catch (_) {}
+    const localDev = isLocal(baseHost) && isLocal(req.hostname);
+    res.json(await service.sendPasswordResetOtp({ email: (req.body || {}).email, localDev }));
+  } catch (e) { next(e); }
+}
+
+async function resetPasswordWithOtp(req, res, next) {
+  try {
+    const { email, code, newPassword } = req.body || {};
+    res.json(await service.resetPasswordWithOtp({ email, code, newPassword }));
+  } catch (e) { next(e); }
+}
+
+/**
  * Single-Use token reset password execute
  */
 async function resetPassword(req, res, next) {
@@ -213,7 +237,7 @@ async function changeOwnPassword(req, res, next) {
  */
 async function googleOneTap(req, res, next) {
   try {
-    const { token, role } = req.body || {};
+    const { token, role, intent } = req.body || {};
 
     const ticket = await googleAuth.verifyIdToken(token);
     const user = await googleAuth.handleGoogleUser({
@@ -221,7 +245,8 @@ async function googleOneTap(req, res, next) {
       name: ticket.name,
       googleId: ticket.googleId,
       imageUrl: ticket.imageUrl,
-      requestedRole: role || 'couple',
+      requestedRole: role,
+      intent,
       verifiedEmail: ticket.verified
     });
 
@@ -384,6 +409,8 @@ async function adminLogin(req, res, next) {
 }
 
 module.exports = {
+  sendPasswordResetOtp,
+  resetPasswordWithOtp,
   sendOtp,
   verifyOtp,
   signup,

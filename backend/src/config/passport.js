@@ -20,25 +20,19 @@ passport.use(
           return done(new Error('Google Account does not share email address.'));
         }
 
-        // Decode requested role from state
-        const { state } = req.query || {};
-        let role = 'couple';
-        if (state) {
-          try {
-            const decoded = Buffer.from(String(state), 'base64').toString('utf8');
-            const map = { user: 'couple', business: 'vendor', couple: 'couple', vendor: 'vendor', admin: 'admin' };
-            role = map[decoded] || 'couple';
-          } catch (_) {}
-        }
+        // Account type (couple/vendor/admin) and intent (login/signup) the
+        // user chose, carried through Google's redirect in `state`.
+        const { handleGoogleUser, decodeOAuthState } = require('../services/googleAuth');
+        const { role, intent } = decodeOAuthState((req.query || {}).state);
 
-        const { handleGoogleUser } = require('../services/googleAuth');
         const user = await handleGoogleUser({
           email,
           name: profile.displayName || 'Wedding User',
           googleId: profile.id,
           imageUrl: (profile.photos && profile.photos[0] && profile.photos[0].value) || null,
           requestedRole: role,
-          verifiedEmail: profile.emails[0].verified,
+          intent,
+          verifiedEmail: profile.emails[0].verified === true || profile.emails[0].verified === 'true',
         });
 
         return done(null, user);

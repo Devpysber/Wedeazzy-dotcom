@@ -38,6 +38,7 @@ const paymentRoutes = require('./routes/payment.routes');
 const publicRoutes = require('./routes/public.routes');
 const campaignRoutes = require('./routes/campaign.routes');
 const claimRoutes = require('./routes/claim.routes');
+const chatRoutes = require('./routes/chat.routes');
 
 
 const app = express();
@@ -135,7 +136,9 @@ app.use(helmet({
       'base-uri': ["'self'"],
       'form-action': ["'self'"],
       'frame-ancestors': ["'self'"],
-      'upgrade-insecure-requests': [],
+      // Production only: in local dev this would force https on http://<LAN-IP>:4000
+      // and break testing from a phone on the same Wi-Fi.
+      ...(env.NODE_ENV === 'production' ? { 'upgrade-insecure-requests': [] } : {}),
     },
   },
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -162,10 +165,18 @@ const allowedOrigins = [
   env.PUBLIC_BASE_URL,
 ].map(origin => origin ? origin.replace(/\/$/, '') : ''); // normalize by stripping trailing slashes
 
+// Local development only: also accept this dev server opened from another
+// device on the same private network (e.g. http://192.168.1.20:4000 on a phone).
+const PRIVATE_LAN_ORIGIN = /^http:\/\/(10\.\d+|192\.168|172\.(1[6-9]|2\d|3[01]))\.\d+\.\d+:\d+$/;
+function isAllowedOrigin(origin) {
+  if (allowedOrigins.includes(origin)) return true;
+  return env.NODE_ENV !== 'production' && PRIVATE_LAN_ORIGIN.test(origin);
+}
+
 app.use(cors({
   origin(origin, cb) {
     // Allow non-browser requests (Postman, curl, server-to-server), null origin (redirects), and listed origins
-    if (!origin || origin === 'null' || allowedOrigins.includes(origin)) return cb(null, true);
+    if (!origin || origin === 'null' || isAllowedOrigin(origin)) return cb(null, true);
     logger.warn(`CORS blocked: ${origin}`);
     cb(new Error(`CORS policy does not allow origin: ${origin}`));
   },
@@ -209,7 +220,7 @@ const csrfProtection = (req, res, next) => {
     } catch (_) {}
   }
 
-  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+  if (requestOrigin && isAllowedOrigin(requestOrigin)) {
     return next();
   }
 
@@ -450,6 +461,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/claim', claimRoutes);
+app.use('/api/chat', chatRoutes);
 
 // --- Google OAuth routes ---
 // IMPORTANT: do NOT add session:false here – Passport needs the session to
@@ -457,70 +469,13 @@ app.use('/api/claim', claimRoutes);
 // The JWT we issue at the end is stateless; the cookie session only lives
 // during the handshake (seconds).
 
-/** Initiate Google OAuth — supports optional ?role=couple|vendor|admin */
-function googleInit(req, res, next) {
-  const { role } = req.query || {};
-  const validRoles = ['couple', 'vendor', 'admin', 'user', 'business'];
-  const safeRole = validRoles.includes(role) ? role : 'couple';
-  const state = Buffer.from(safeRole).toString('base64');
-  passport.authenticate('google', { scope: ['profile', 'email'], state })(req, res, next);
-}
-
-/** Handle Google OAuth callback and redirect with JWT */
-async function googleCallback(req, res, next) {
-  try {
-    const user = req.user;
-    if (!user) {
-      return res.redirect('/pages/admin-login.html?error=google_auth_failed');
-    }
-
-    const { signToken } = require('./middleware/auth');
-    const token = signToken(user);
-    const finalRole = user.role;
-
-    // Store token in server-side session for one-time retrieval via
-    // /api/auth/consume-oauth-token — the token is intentionally NOT placed
-    // in the redirect URL, where it would leak via browser history, server
-    // access logs, and Referer headers.
-    if (req.session) {
-      req.session.oauthToken = token;
-      req.session.oauthRole = finalRole;
-      req.session.loginAt = Date.now();
-    }
-
-    res.redirect(`/pages/admin-login.html?auth=success&provider=google&role=${finalRole}`);
-  } catch (err) { next(err); }
-}
-
 // Root-level routes matching GOOGLE_CALLBACK_URL=http://localhost:4000/google/callback
-app.get('/google', googleInit);
-app.get('/google/callback', (req, res, next) => {
-  // Guard: passport's OAuth2 strategy treats a callback carrying neither `code`
-  // nor `error` as a fresh authorization request and redirects back to Google,
-  // which immediately returns here � an infinite bounce the browser reports as
-  // ERR_TOO_MANY_REDIRECTS. Fail it as an auth error instead.
-  if (!req.query.code && !req.query.error) {
-    logger.warn({ query: req.query }, 'Google OAuth callback hit without a code � refusing to re-initiate');
-    return res.redirect('/pages/admin-login.html?error=google_auth_failed&reason=missing_code');
-  }
-  passport.authenticate('google', (err, user, info) => {
-    if (err || !user) {
-      const errMsg = err ? (err.message || err.code || 'auth_failed') : (info ? (info.message || 'user_not_found') : 'auth_failed');
-      logger.error({ err: err ? err.message : null, info, msg: errMsg }, 'Google OAuth Strategy callback failed');
-      return res.redirect('/pages/admin-login.html?error=google_auth_failed&reason=' + encodeURIComponent(errMsg));
-    }
-    req.user = user;
-    return googleCallback(req, res, next);
-  })(req, res, next);
-});
+const googleOAuth = require('./controllers/googleOAuth.controller');
+app.get('/google', googleOAuth.start);
+app.get('/google/callback', googleOAuth.callback);
 
-// /api/auth/google mirrors the root-level route so the frontend button
-// (onclick="...API_BASE + '/api/auth/google'") also works.
-// The callback ALWAYS goes to GOOGLE_CALLBACK_URL (/google/callback).
-app.get('/api/auth/google', googleInit);
-app.get('/api/auth/google/callback', (req, res, next) => {
-  res.redirect('/google/callback?' + new URLSearchParams(req.query).toString());
-});
+// /api/auth/google and /api/auth/google/callback are served by
+// routes/auth.routes.js (mounted above) with the same handlers.
 
 // Alias: /auth/google/callback → /google/callback (keeps backward compat)
 app.get('/auth/google/callback', (req, res) =>

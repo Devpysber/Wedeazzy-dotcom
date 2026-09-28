@@ -63,18 +63,21 @@ function initCron() {
           </tr>
         </table>
 
-        <p>Your database schema matches production indexes perfectly, and WebSocket gateways remain online.</p>
         <p>Best regards,<br>WedEazzy Automation Core</p>
       `;
 
-      await emailService.sendMail({
+      const sent = await emailService.sendMail({
         to: adminEmail,
         subject,
         html: htmlContent,
         text: `Weekly Performance Summary: Total Vendors: ${analytics.counters.vendorsCount}, Couples: ${analytics.counters.couplesCount}, Inquiries: ${analytics.counters.totalInquiries}, Revenue: INR ${revenue.aggregates.totalRevenue}`
       });
       
-      logger.info('[CRON] Weekly Analytics Performance Report completed successfully.');
+      if (sent && sent.ok && !sent.fallback) {
+        logger.info('[CRON] Weekly Analytics Performance Report emailed successfully.');
+      } else {
+        logger.error({ to: adminEmail, result: sent }, '[CRON] Weekly Analytics Performance Report email was NOT delivered');
+      }
     } catch (err) {
       logger.error({ err }, '[CRON] Weekly Analytics Performance Report failed');
     }

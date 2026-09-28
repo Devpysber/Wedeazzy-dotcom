@@ -60,6 +60,12 @@ function formatVendor(v) {
 /**
  * Paginated public vendor search and filtering
  */
+/** Accept only a 2-letter country code (e.g. 'GB'); anything else means no filter. */
+function countryFilter(value) {
+  const code = String(value || '').trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(code) ? code : null;
+}
+
 async function getVendors(req, res, next) {
   try {
     const { category, city, rating, search, sortBy, pincode } = req.query;
@@ -109,6 +115,13 @@ async function getVendors(req, res, next) {
         sqlWhere += ` AND citySlug IN (${citiesList.map(() => '?').join(',')})`;
         params.push(...citiesList);
       }
+    }
+
+    // Country marketplace: ?country=GB shows only that country's vendors.
+    const country = countryFilter(req.query.country);
+    if (country) {
+      sqlWhere += ' AND countryCode = ?';
+      params.push(country);
     }
 
     if (pincode) {
@@ -249,7 +262,8 @@ async function getMetadata(req, res, next) {
   try {
     const categoryScope = (req.query.category || '').trim();
     const cityScope = (req.query.city || '').trim();
-    const cacheKey = 'category:' + categoryScope + '|city:' + cityScope;
+    const countryScope = countryFilter(req.query.country);
+    const cacheKey = 'category:' + categoryScope + '|city:' + cityScope + '|country:' + (countryScope || '');
 
     const cached = metadataCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
@@ -260,8 +274,9 @@ async function getMetadata(req, res, next) {
     if (categoryScope) cityWhere.categorySlug = categoryScope;
     const categoryWhere = { isActive: true };
     if (cityScope) categoryWhere.citySlug = cityScope;
+    if (countryScope) { cityWhere.countryCode = countryScope; categoryWhere.countryCode = countryScope; }
 
-    const [cities, categories] = await Promise.all([
+    const [cities, categories, countries] = await Promise.all([
       prisma.vendor.groupBy({
         by: ['city', 'citySlug'],
         where: cityWhere,
@@ -273,6 +288,12 @@ async function getMetadata(req, res, next) {
         where: categoryWhere,
         _count: { id: true },
         orderBy: { category: 'asc' },
+      }),
+      // Vendor totals per country (unscoped), for the country switcher.
+      prisma.vendor.groupBy({
+        by: ['countryCode'],
+        where: { isActive: true },
+        _count: { id: true },
       }),
     ]);
 
@@ -291,6 +312,7 @@ async function getMetadata(req, res, next) {
         slug: c.categorySlug,
         count: c._count.id,
       })),
+      countries: countries.map((c) => ({ code: c.countryCode, count: c._count.id })),
     };
 
     metadataCache.set(cacheKey, { data: payload, expiresAt: Date.now() + METADATA_CACHE_TTL_MS });
