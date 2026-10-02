@@ -255,6 +255,11 @@ function vendorImg(v) {
 }
 
 // 2. BROWSE VENDORS TAB
+/** Country the Browse tab shows: chosen here, else the saved site-wide choice, else India. */
+function browseCountry() {
+  return state.browseFilters.country || (window.WZCountry ? WZCountry.get() : 'IN');
+}
+
 function renderBrowseTab(el) {
   el.innerHTML = `
     <div class="page-head">
@@ -267,6 +272,7 @@ function renderBrowseTab(el) {
 
     <!-- Search Filters Bar -->
     <div class="browse-bar">
+      <button type="button" id="browseCountry" class="browse-country"></button>
       <label class="browse-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input type="search" id="browseSearchInput" aria-label="Search vendors" placeholder="Search by name or area" value="${esc(state.browseFilters.q)}" oninput="handleBrowseSearch(this.value)" />
@@ -296,8 +302,20 @@ function renderBrowseTab(el) {
 
   renderCategoryPills();
   
+  // Country picker (js/wz-country.js): India by default, shared with the homepage.
+  if (window.WZCountry) {
+    WZCountry.pill(document.getElementById('browseCountry'), {
+      current: browseCountry(),
+      onSelect: (code) => {
+        state.browseFilters.country = code;
+        state.browseFilters.city = '';
+        renderBrowseTab(document.getElementById('contentViewport'));
+      },
+    });
+  }
+
   // Load dynamic cities from public API
-  fetch(`${API_BASE}/api/public/meta`)
+  fetch(`${API_BASE}/api/public/meta?country=${encodeURIComponent(browseCountry())}`)
     .then(r => r.json())
     .then(res => {
       if (res.ok && res.cities) {
@@ -364,7 +382,7 @@ function handleBrowseSort(value) {
 }
 
 function resetBrowseFilters() {
-  state.browseFilters = { q: '', cat: '', city: '', sort: 'rating', limit: 20 };
+  state.browseFilters = { q: '', cat: '', city: '', sort: 'rating', limit: 20, country: browseCountry() };
   
   const searchInput = document.getElementById('browseSearchInput');
   const citySelect = document.getElementById('browseCitySelect');
@@ -405,6 +423,7 @@ async function filterAndRenderVendors() {
     if (q) params.append('search', q);
     if (cat) params.append('category', cat);
     if (city) params.append('city', city);
+    else params.append('country', browseCountry());
 
     const res = await fetch(`${API_BASE}/api/public/vendors?${params.toString()}`);
     const data = await res.json();

@@ -91,6 +91,13 @@ router.use(adminLimiter);
 router.use(requireAuth);
 router.use(requireRole('admin'));
 
+// Admin's own account (Settings page): one code, emailed to the CURRENT admin
+// address, authorises a new email and/or a new password.
+const accountCtrl = require('../controllers/account.controller');
+router.get('/account', accountCtrl.get);
+router.post('/account/credentials/send-code', accountCtrl.sendCredentialsCode);
+router.post('/account/credentials/confirm', accountCtrl.confirmCredentials);
+
 // Admin Management APIs
 router.get('/analytics', ctrl.getAnalytics);
 router.get('/analytics/country-performance', ctrl.getCountryPerformanceReport);

@@ -5,6 +5,8 @@
 // reads config at module load.
 process.env.SMTP_USER = 'test@example.com';
 process.env.SMTP_PASS = 'test-password';
+// Force the SMTP path even when a real BREVO_API_KEY is in .env (dotenv won't override this).
+process.env.BREVO_API_KEY = '';
 
 jest.mock('nodemailer', () => {
   return {

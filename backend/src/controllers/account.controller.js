@@ -12,4 +12,6 @@ module.exports = {
   confirmEmail: wrap((req) => service.confirmEmailChange(req.user, (req.body || {}).newEmail, (req.body || {}).code)),
   sendPasswordCode: wrap((req) => service.sendPasswordCode(req.user)),
   confirmPassword: wrap((req) => service.confirmPasswordChange(req.user, (req.body || {}).code, (req.body || {}).newPassword)),
+  sendCredentialsCode: wrap((req) => service.sendCredentialsCode(req.user)),
+  confirmCredentials: wrap((req) => service.confirmCredentialsChange(req.user, req.body || {})),
 };

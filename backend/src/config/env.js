@@ -48,6 +48,9 @@ const env = {
   UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads',
   MAX_UPLOAD_MB: parseInt(process.env.MAX_UPLOAD_MB || '5', 10),
 
+  // --- Brevo transactional email API (preferred; SMTP below is the fallback) ---
+  BREVO_API_KEY: process.env.BREVO_API_KEY || '',
+
   // --- SMTP Email ---
   SMTP: {
     host: process.env.SMTP_HOST || 'smtp.hostinger.com',
@@ -125,8 +128,8 @@ if (env.NODE_ENV === 'production') {
     throw new Error(`Refusing to boot in production with GOOGLE_CALLBACK_URL still set to "${env.GOOGLE.callbackUrl}" while Google OAuth is configured. Set it to the real deployed domain's callback URL and register that same URL in Google Cloud Console.`);
   }
 }
-if (!env.SMTP.user && env.NODE_ENV === 'production') {
-  getLogger().warn('[env] SMTP_USER is not set — email OTP and notification flows will use console fallback.');
+if (!env.BREVO_API_KEY && !env.SMTP.user && env.NODE_ENV === 'production') {
+  getLogger().warn('[env] Neither BREVO_API_KEY nor SMTP_USER is set — email OTP and notification flows will use console fallback.');
 }
 if (env.ADMIN_PHONES.length === 0) {
   getLogger().warn('[env] ADMIN_PHONES is empty — no admin WhatsApp notifications will be sent for new inquiries.');

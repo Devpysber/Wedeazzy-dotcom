@@ -11,6 +11,7 @@ router.get('/vendors', ctrl.getVendors);
 router.get('/vendors/:idOrSlug', ctrl.getVendorByIdOrSlug);
 router.post('/vendors/:idOrSlug/reviews', ctrl.addVendorReview);
 router.get('/meta', ctrl.getMetadata);
+router.get('/countries', ctrl.getCountries);
 router.post('/analytics/event', ctrl.logAnalyticsEvent);
 router.get('/plans', ctrl.getPlans);
 router.get('/blogs', ctrl.getBlogs);

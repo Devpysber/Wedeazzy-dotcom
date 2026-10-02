@@ -160,8 +160,66 @@ async function confirmPasswordChange(user, code, newPassword) {
   return { ok: true, user: publicUser(updated), token: signToken(updated) };
 }
 
+/**
+ * Admin Settings: one code, sent to the CURRENT account email, authorises a
+ * new email, a new password, or both at once.
+ */
+async function sendCredentialsCode(user) {
+  if (!user.email) throw new HttpError(400, 'There is no email on this account to verify. Please contact support.', 'ERR_NO_EMAIL');
+  const code = await issueCode(`credentials_change:${user.id}`, 'credentials_change');
+  const result = await email.sendCredentialsChangeOtpEmail(user.email, code).catch((err) => ({ ok: false, error: err.message }));
+  if (!delivered(result)) {
+    logger.error({ userId: user.id, result }, 'Credentials-change code was not delivered');
+    const devCode = auth.devCodeFor(code, false);
+    if (!devCode) throw Object.assign(new HttpError(502, 'We could not send the code to your email right now. Please try again shortly.', 'ERR_DELIVERY_FAILED'), { expose: true });
+    return { ok: true, sentTo: user.email, expiresIn: env.OTP_TTL_MIN * 60, devCode };
+  }
+  return { ok: true, sentTo: user.email, expiresIn: env.OTP_TTL_MIN * 60, devCode: auth.devCodeFor(code, true) };
+}
+
+async function confirmCredentialsChange(user, { code, newEmail: newEmailRaw, newPassword } = {}) {
+  const newEmail = String(newEmailRaw || '').trim().toLowerCase();
+  const changeEmail = !!newEmail;
+  const changePassword = !!newPassword;
+  if (!changeEmail && !changePassword) throw new HttpError(400, 'Enter a new email, a new password, or both.', 'ERR_INPUT');
+
+  // Validate everything before spending the code, so a typo doesn't burn it.
+  if (changeEmail) {
+    if (!EMAIL_RE.test(newEmail)) throw new HttpError(400, 'Enter a valid new email address.', 'ERR_INPUT');
+    if (newEmail === String(user.email || '').toLowerCase()) throw new HttpError(400, 'That is already your email address.', 'ERR_INPUT');
+    const clash = await prisma.user.findUnique({ where: { email: newEmail }, select: { id: true } });
+    if (clash) throw new HttpError(409, 'That email address is already used by another account.', 'ERR_EMAIL_TAKEN');
+  }
+  if (changePassword) auth.assertStrongPassword(newPassword);
+
+  await redeemCode(`credentials_change:${user.id}`, 'credentials_change', code);
+
+  const data = {};
+  if (changeEmail) {
+    data.email = newEmail;
+    data.verifiedAt = user.verifiedAt || new Date();
+  }
+  if (changePassword) {
+    data.passwordHash = await bcrypt.hash(String(newPassword), await bcrypt.genSalt(10));
+    data.mustChangePassword = false;
+    // Sign out every other device; this one gets a fresh token below.
+    data.revokedBefore = new Date(Date.now() - 1000);
+  }
+  const updated = await prisma.user.update({ where: { id: user.id }, data });
+  if (changePassword) await prisma.session.deleteMany({ where: { userId: user.id } });
+  logger.info({ userId: user.id, changeEmail, changePassword }, 'Login details changed via emailed code');
+
+  if (changeEmail && user.email) {
+    email.sendEmailChangedNoticeEmail(user.email, newEmail)
+      .catch((err) => logger.error({ err, userId: user.id }, 'Email-changed notice failed'));
+  }
+  return { ok: true, user: publicUser(updated), token: signToken(updated), changed: { email: changeEmail, password: changePassword } };
+}
+
 module.exports = {
   publicUser,
+  sendCredentialsCode,
+  confirmCredentialsChange,
   updateProfile,
   sendEmailChangeCode,
   confirmEmailChange,

@@ -83,50 +83,72 @@ const WedEazzyAuth = {
     }
   },
 
-  // Step 1: Credentials Check against backend API
-  // On success, backend sends OTP to the admin's registered email.
+  // Save a signed-in admin session. sessionStorage only: it is cleared when
+  // the tab closes and never persisted to disk, shrinking the window and
+  // surface for token theft compared with localStorage.
+  storeSession(email, token) {
+    localStorage.removeItem('wedeazzy_token');
+    sessionStorage.removeItem('wedeazzy_token');
+    localStorage.removeItem('wedeazzy_admin_token');
+    sessionStorage.removeItem('wedeazzy_admin_token');
+    sessionStorage.setItem("wedeazzy_admin_session", JSON.stringify({
+      email,
+      loginTime: Date.now(),
+      role: "Administrator",
+      avatarLetter: email.charAt(0).toUpperCase()
+    }));
+    sessionStorage.setItem("wedeazzy_admin_token", token);
+    sessionStorage.removeItem("wedeazzy_temp_auth");
+  },
+
+  // Sign-in option 1 (default): email + password signs in directly.
   async validateCredentials(email, password) {
+    const normalized = email.trim().toLowerCase();
     try {
       const response = await fetch(`${API_BASE}/api/auth/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), password })
+        body: JSON.stringify({ email: normalized, password })
       });
       const data = await response.json();
 
-      if (!response.ok || (!data.token && !data.require2fa)) {
+      if (!response.ok || !data.token) {
         return { success: false, error: data.message || "Invalid administrator credentials." };
       }
-
-      // Save temporary details (email, and token if returned) to be used on MFA confirmation step
-      sessionStorage.setItem("wedeazzy_temp_auth", JSON.stringify({
-        email: email.trim().toLowerCase(),
-        token: data.token || null,
-        timestamp: Date.now()
-      }));
-      // emailDelivered: false means the backend's SMTP send failed or isn't
-      // configured — the OTP screen will still show, but no code is coming.
-      // Surface this instead of leaving the admin to wonder why no email
-      // ever arrives.
-      return {
-        success: true,
-        emailDelivered: data.emailDelivered !== false,
-        emailError: data.emailError || null,
-        devCode: data.devCode || null,
-      };
+      this.storeSession(normalized, data.token);
+      return { success: true };
     } catch (err) {
       return { success: false, error: "Authentication pipeline currently offline. Please ensure the server is running." };
     }
   },
 
-  // Step 2: 2FA OTP Check against backend email OTP endpoint
-  async verifyOTP(otpCode, rememberMe = false) {
+  // Sign-in option 2: email a 6-digit code to the admin address.
+  async requestLoginCode(email) {
+    const normalized = email.trim().toLowerCase();
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/admin/send-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalized })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.require2fa) {
+        return { success: false, error: data.message || "Could not send a sign-in code. Please try again." };
+      }
+      sessionStorage.setItem("wedeazzy_temp_auth", JSON.stringify({ email: normalized, timestamp: Date.now() }));
+      return { success: true, devCode: data.devCode || null };
+    } catch (err) {
+      return { success: false, error: "Authentication pipeline currently offline. Please ensure the server is running." };
+    }
+  },
+
+  // Sign-in option 2, step 2: redeem the emailed code.
+  async verifyOTP(otpCode) {
     const tempAuth = sessionStorage.getItem("wedeazzy_temp_auth");
     if (!tempAuth) {
-      return { success: false, error: "Authentication session expired. Please log in again." };
+      return { success: false, error: "Sign-in session expired. Please request a new code." };
     }
-
-    const { email, token } = JSON.parse(tempAuth);
+    const { email } = JSON.parse(tempAuth);
 
     try {
       const response = await fetch(`${API_BASE}/api/auth/admin/verify-2fa`, {
@@ -136,34 +158,10 @@ const WedEazzyAuth = {
       });
       const data = await response.json();
 
-      if (!response.ok || !data.ok) {
+      if (!response.ok || !data.ok || !data.token) {
         return { success: false, error: data.message || "Invalid verification code. Please check your email." };
       }
-
-      // Use the fresh token from OTP verify if available, otherwise use the one from step 1
-      const finalToken = data.token || token;
-
-      const sessionData = {
-        email: email,
-        loginTime: Date.now(),
-        role: "Administrator",
-        avatarLetter: email.charAt(0).toUpperCase()
-      };
-
-      // Store session AND token in sessionStorage only. sessionStorage is
-      // cleared when the tab closes and is not persisted to disk, shrinking the
-      // window and surface for token theft compared with localStorage.
-      localStorage.removeItem('wedeazzy_token');
-      sessionStorage.removeItem('wedeazzy_token');
-      localStorage.removeItem('wedeazzy_admin_token');
-      sessionStorage.removeItem('wedeazzy_admin_token');
-
-      sessionStorage.setItem("wedeazzy_admin_session", JSON.stringify(sessionData));
-      sessionStorage.setItem("wedeazzy_admin_token", finalToken);
-
-      // Cleanup temp states
-      sessionStorage.removeItem("wedeazzy_temp_auth");
-
+      this.storeSession(email, data.token);
       return { success: true };
     } catch (err) {
       return { success: false, error: "Verification server is unreachable. Please try again." };
@@ -240,6 +238,18 @@ const WedEazzyAuth = {
       return response;
     }
     return response;
+  },
+
+  // After an email/password change the server signs out older tokens and
+  // returns a fresh one; store it (and the new email) in place of the old.
+  replaceSession(token, email) {
+    if (token) sessionStorage.setItem("wedeazzy_admin_token", token);
+    const session = this.getSession() || { role: "Administrator", loginTime: Date.now() };
+    if (email) {
+      session.email = email;
+      session.avatarLetter = email.charAt(0).toUpperCase();
+    }
+    sessionStorage.setItem("wedeazzy_admin_session", JSON.stringify(session));
   },
 
   // Check if current user is admin

@@ -64,8 +64,12 @@
   var catSlug = (qs('cat') || '').toLowerCase();
   if (MODE === 'city' && !citySlug) citySlug = 'mumbai';
   if (MODE === 'category' && !catSlug) catSlug = 'banquet-halls';
+  // Country marketplace: ?country=, else the visitor's saved choice (shared with
+  // the homepage), else India. A city page is already scoped by its city.
   var countryCode = (qs('country') || '').toUpperCase();
   if (!/^[A-Z]{2}$/.test(countryCode)) countryCode = '';
+  if (countryCode && window.WZCountry) WZCountry.set(countryCode);
+  if (!countryCode && !citySlug) countryCode = window.WZCountry ? WZCountry.get() : 'IN';
   var COUNTRY_NAMES = { IN: 'India', AE: 'the UAE', GB: 'the UK', US: 'the USA', CA: 'Canada', AU: 'Australia' };
 
   var CATS = [
@@ -286,7 +290,7 @@
   function setDesc(total) {
     var el = $('hDesc'); if (!el) return;
     var n = total ? total.toLocaleString('en-IN') + ' ' : '';
-    var where = citySlug ? 'in ' + cityName : 'across ' + (COUNTRY_NAMES[countryCode] || 'India');
+    var where = citySlug ? 'in ' + cityName : 'across ' + (COUNTRY_NAMES[countryCode] || countryCode || 'India');
     el.textContent = MODE === 'city'
       ? 'Compare ' + n + (catSlug ? catLabel(catSlug).toLowerCase() : 'wedding vendors') + ' in ' + cityName + '. See their work and reviews, then contact them directly. No booking fees, ever.'
       : 'Compare ' + n + catLabel(catSlug).toLowerCase() + ' ' + where + '. See their work and reviews, then contact them directly. No booking fees, ever.';
@@ -319,7 +323,7 @@
   }
 
   function setHeadings() {
-    var where = citySlug ? 'in ' + cityName : 'across ' + (COUNTRY_NAMES[countryCode] || 'India');
+    var where = citySlug ? 'in ' + cityName : 'across ' + (COUNTRY_NAMES[countryCode] || countryCode || 'India');
     var h1Html, plain;
     if (MODE === 'city') {
       var what = catSlug ? catLabel(catSlug) : 'Wedding vendors';
@@ -372,6 +376,16 @@
     $('yr').textContent = new Date().getFullYear();
     setHeadings();
     buildRail();
+
+    // Country picker: switching country reopens this category for that country's vendors.
+    if (window.WZCountry && $('fCountry')) {
+      WZCountry.pill($('fCountry'), {
+        current: countryCode || WZCountry.get(),
+        onSelect: function (code) {
+          location.href = 'category.html?cat=' + encodeURIComponent(catSlug || 'banquet-halls') + '&country=' + code;
+        },
+      });
+    }
 
     var metaUrl = API_BASE + '/api/public/meta' + (MODE === 'category'
       ? '?category=' + encodeURIComponent(catSlug) + (countryCode ? '&country=' + countryCode : '')

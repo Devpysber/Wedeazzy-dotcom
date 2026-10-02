@@ -114,8 +114,21 @@ async function verifyEmailOtp(req, res, next) {
   } catch (e) { next(e); }
 }
 
+/** Admin sign-in by emailed code, step 1: send the code. */
+async function startAdminCodeLogin(req, res, next) {
+  const { email } = req.body || {};
+  try {
+    const r = await service.startAdminCodeLogin({ email });
+    logger.info({ ip: req.ip, email }, 'admin login: sign-in code requested');
+    res.json(r);
+  } catch (e) {
+    logger.warn({ ip: req.ip, email, code: e.code }, 'admin login: sign-in code request failed');
+    next(e);
+  }
+}
+
 /**
- * Admin 2FA — completes the second step of loginWithPassword's admin branch.
+ * Admin sign-in by emailed code, step 2: redeem it for a session.
  * Deliberately separate from verifyEmailOtp (see auth.service.js comment).
  */
 async function verifyAdmin2Fa(req, res, next) {
@@ -400,7 +413,7 @@ async function adminLogin(req, res, next) {
 
     // Admin login is the highest-value target on the platform — always log
     // both outcomes with IP.
-    logger.info({ ip: req.ip, email, require2fa: !!r.require2fa }, 'admin login: password step succeeded');
+    logger.info({ ip: req.ip, email }, 'admin login: password sign-in succeeded');
     res.json(r);
   } catch (e) {
     logger.warn({ ip: req.ip, email, code: e.code }, 'admin login: failed');
@@ -418,6 +431,7 @@ module.exports = {
   startEmailOtp,
   verifyEmailOtp,
   verifyAdmin2Fa,
+  startAdminCodeLogin,
   checkUser,
   registerAndSendOtp,
   verifyOtpLogin,

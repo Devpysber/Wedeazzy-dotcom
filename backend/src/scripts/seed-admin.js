@@ -32,9 +32,13 @@ async function main() {
     console.log(`Checking if admin user exists...`);
     const existing = await prisma.user.findFirst({
       where: {
+        // Any existing admin counts: once the admin changes their email from
+        // the Settings page, ADMIN_EMAIL no longer matches, and seeding must
+        // not recreate a second admin with the old email + ADMIN_PASSWORD.
         OR: [
+          { role: 'admin' },
           { email: adminEmail },
-          { phone: adminPhone }
+          ...(adminPhone ? [{ phone: adminPhone }] : [])
         ]
       }
     });

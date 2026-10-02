@@ -87,6 +87,7 @@ router.post('/signup', otpRateLimiter, ctrl.signup);
 router.post('/email/send-otp', otpRateLimiter, ctrl.startEmailOtp);
 router.post('/email/verify-otp', otpRateLimiter, ctrl.verifyEmailOtp);
 router.post('/admin/login', loginRateLimiter, ctrl.adminLogin);
+router.post('/admin/send-code', otpRateLimiter, ctrl.startAdminCodeLogin);
 router.post('/admin/verify-2fa', otpRateLimiter, ctrl.verifyAdmin2Fa);
 
 module.exports = router;

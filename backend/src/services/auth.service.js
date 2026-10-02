@@ -660,12 +660,11 @@ async function verifyEmailOtp({ email, code }) {
 }
 
 /**
- * Completes admin 2FA: the second step of loginWithPassword's admin branch.
+ * Completes admin sign-in by emailed code (step 2 of startAdminCodeLogin).
  * Deliberately a SEPARATE function/endpoint from verifyEmailOtp, scoped to
- * purpose: 'admin_2fa' only — that purpose value is only ever written to
- * OtpCode after loginWithPassword's bcrypt.compare has already succeeded
- * (see loginWithPassword above), so completing this step genuinely proves
- * both factors (password AND email OTP), unlike the old shared endpoint.
+ * purpose: 'admin_2fa' only — that purpose value is only ever written by
+ * startAdminCodeLogin(), for an existing admin account, so a code requested
+ * through any other flow can never sign someone in as admin.
  */
 async function verifyAdmin2Fa({ email, code }) {
   const normalizedEmail = String(email).trim().toLowerCase();
@@ -992,6 +991,84 @@ async function verifyOtpLogin({ email, otp }) {
 }
 
 /**
+ * Admin sign-in by emailed code (the login page's "Email code" option; the
+ * default option is email + password, which signs in directly). Step 1: email
+ * a code to the admin address. To avoid revealing which emails are admin
+ * accounts, a non-admin email gets the same response with nothing sent.
+ * Step 2 is verifyAdmin2Fa(), which redeems the 'admin_2fa' code.
+ */
+async function startAdminCodeLogin({ email }) {
+  if (!email) throw new HttpError(400, 'Email is required', 'ERR_BAD_INPUT');
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const generic = { require2fa: true, email: normalizedEmail, emailDelivered: true };
+
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (!user || user.role !== 'admin') return generic;
+  if (user.suspendedAt) {
+    throw new HttpError(403, 'Your account has been suspended. Contact support for assistance.', 'ERR_ACCOUNT_SUSPENDED');
+  }
+  await rateLimitCheck(normalizedEmail);
+
+  const code = generateOtp();
+  const codeHash = await hashOtp(code);
+  const expiresAt = new Date(Date.now() + env.OTP_TTL_MIN * 60 * 1000);
+
+  // Invalidate previous OTPs for this admin email
+  await prisma.otpCode.updateMany({
+    where: { phone: normalizedEmail, consumedAt: null, expiresAt: { gte: new Date() } },
+    data: { consumedAt: new Date() }
+  });
+
+  // Create the OTP code entry in the database (email mapped to phone column for OTP unification)
+  await prisma.otpCode.create({
+    data: {
+      phone: normalizedEmail,
+      codeHash,
+      purpose: 'admin_2fa',
+      expiresAt
+    }
+  });
+
+  // Send the OTP via email. sendMail() (underneath sendOtpEmail) never
+  // rejects — it catches SMTP errors internally and always resolves with
+  // { ok, fallback? }, logging server-side only. The old code discarded
+  // this return value entirely, so an admin whose SMTP was misconfigured
+  // (or simply not set in .env) would sail through to "check your email"
+  // with an OTP that was never actually sent and no way to tell why —
+  // this is the "OTP not being sent to my email" report. Check it here so
+  // it's at least loud in the logs, since the client-facing response
+  // can't safely reveal SMTP configuration state without help an
+  // attacker probing this endpoint doesn't need.
+  const emailResult = await sendAdminLoginOtpEmail(normalizedEmail, code);
+  const emailError = emailResult && (emailResult.error || emailResult.smtpError || null);
+  let fallbackCode = null;
+
+  if (!emailResult || !emailResult.ok || emailResult.fallback) {
+    if (env.OTP_FALLBACK_ENABLED && isLocalDevServer()) {
+      fallbackCode = code;
+      logger.warn(
+        { email: normalizedEmail, emailError, fallbackCode },
+        'Admin sign-in code email delivery failed; returning fallback code because OTP_FALLBACK_ENABLED is on.'
+      );
+    } else {
+      logger.error(
+        { email: normalizedEmail, emailResult, emailError },
+        'Admin sign-in code email was NOT delivered — SMTP is not configured or the send failed. The admin cannot sign in by code until email works.'
+      );
+    }
+  }
+
+  if (env.OTP_DEBUG_LOG) {
+    logger.warn({ email: normalizedEmail, code }, '[DEV] Admin sign-in code generated');
+  }
+
+  // Same shape as the non-admin response: delivery problems are logged above,
+  // never returned, so this unauthenticated endpoint can't be used to probe
+  // which emails are admin accounts. devCode only ever appears on localhost.
+  return { ...generic, devCode: fallbackCode || devCodeFor(code, true) };
+}
+
+/**
  * PASSWORD AUTHENTICATION SYSTEM (ONLY for Admins, Vendors, Venue users, Business dashboard users)
  */
 async function loginWithPassword({ email, role, password }) {
@@ -1024,69 +1101,6 @@ async function loginWithPassword({ email, role, password }) {
     data: { lastLogin: new Date() }
   });
 
-  // If user role is 'admin', generate and dispatch 2FA OTP
-  if (user.role === 'admin') {
-    const code = generateOtp();
-    const codeHash = await hashOtp(code);
-    const expiresAt = new Date(Date.now() + env.OTP_TTL_MIN * 60 * 1000);
-
-    // Invalidate previous OTPs for this admin email
-    await prisma.otpCode.updateMany({
-      where: { phone: normalizedEmail, consumedAt: null, expiresAt: { gte: new Date() } },
-      data: { consumedAt: new Date() }
-    });
-
-    // Create the OTP code entry in the database (email mapped to phone column for OTP unification)
-    await prisma.otpCode.create({
-      data: {
-        phone: normalizedEmail,
-        codeHash,
-        purpose: 'admin_2fa',
-        expiresAt
-      }
-    });
-
-    // Send the OTP via email. sendMail() (underneath sendOtpEmail) never
-    // rejects — it catches SMTP errors internally and always resolves with
-    // { ok, fallback? }, logging server-side only. The old code discarded
-    // this return value entirely, so an admin whose SMTP was misconfigured
-    // (or simply not set in .env) would sail through to "check your email"
-    // with an OTP that was never actually sent and no way to tell why —
-    // this is the "OTP not being sent to my email" report. Check it here so
-    // it's at least loud in the logs, since the client-facing response
-    // can't safely reveal SMTP configuration state without help an
-    // attacker probing this endpoint doesn't need.
-    const emailResult = await sendAdminLoginOtpEmail(normalizedEmail, code);
-    const emailError = emailResult && (emailResult.error || emailResult.smtpError || null);
-    let fallbackCode = null;
-
-    if (!emailResult || !emailResult.ok || emailResult.fallback) {
-      if (env.OTP_FALLBACK_ENABLED && isLocalDevServer()) {
-        fallbackCode = code;
-        logger.warn(
-          { email: normalizedEmail, emailError, fallbackCode },
-          'Admin 2FA OTP email delivery failed; returning fallback code because OTP_FALLBACK_ENABLED is on.'
-        );
-      } else {
-        logger.error(
-          { email: normalizedEmail, emailResult, emailError },
-          'Admin 2FA OTP email was NOT delivered — SMTP is not configured or the send failed. The admin will be stuck on the OTP screen with no code to enter.'
-        );
-      }
-    }
-
-    if (env.OTP_DEBUG_LOG) {
-      logger.warn({ email: normalizedEmail, code }, '[DEV] Admin 2FA Email verification OTP generated');
-    }
-
-    return {
-      require2fa: true,
-      email: normalizedEmail,
-      emailDelivered: !!(emailResult && emailResult.ok && !emailResult.fallback),
-      emailError: emailError || undefined,
-      devCode: fallbackCode || devCodeFor(code, true),
-    };
-  }
   
   const jwt = require('jsonwebtoken');
   // Use the same JWT lifetime as every other login flow (signToken uses
@@ -1361,6 +1375,7 @@ module.exports = {
   startEmailOtp,
   verifyEmailOtp,
   verifyAdmin2Fa,
+  startAdminCodeLogin,
 
   // Unified Secure Authentication System additions
   checkUser,

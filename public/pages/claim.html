@@ -157,11 +157,11 @@
     <form id="searchForm" autocomplete="off">
       <div class="field">
         <label for="fBiz">Business Name <span style="color:#DC1F30;">*</span></label>
-        <input type="text" id="fBiz" placeholder="Enter your business name (e.g. Royal Palace Banquet)" required minlength="2" />
+        <input type="text" id="fBiz" name="wz-q-listing" autocomplete="wz-listing-lookup" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="Enter your business name (e.g. Royal Palace Banquet)" required minlength="2" />
       </div>
       <div class="field">
         <label for="fCity">City (optional)</label>
-        <input type="text" id="fCity" placeholder="Select or enter city (e.g. Mumbai)" />
+        <input type="text" id="fCity" name="wz-q-listing-area" autocomplete="wz-listing-lookup" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="Select or enter city (e.g. Mumbai)" />
       </div>
       <button type="submit" class="btn btn-primary btn-full" id="searchBtn">Find My Business</button>
     </form>

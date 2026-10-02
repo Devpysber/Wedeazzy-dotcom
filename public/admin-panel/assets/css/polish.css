@@ -1,0 +1,216 @@
+/**
+ * WedEazzy Admin — consistency & mobile polish layer.
+ *
+ * Loaded LAST. It changes no behaviour and hides no component: it only
+ * normalises the visual system (tables, buttons, inputs, cards, headings)
+ * that the render functions in app.js / crm.js style inline, and makes those
+ * inline layouts reflow on phones. !important is used only where an inline
+ * style attribute would otherwise win.
+ */
+
+/* Email previews (#emailRenderedContent) are excluded from the layout rules
+   below so they keep rendering exactly as the email will. */
+
+/* `hidden` must always hide — several components (e.g. .modal-form-group)
+   set display:flex, which silently overrides the attribute. */
+[hidden] { display: none !important; }
+
+/* ------------------------------------------------------------------ */
+/* 1. Headings                                                         */
+/* ------------------------------------------------------------------ */
+.portal-body h2:not(#emailRenderedContent *) {
+  font-family: var(--font-head);
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.portal-body .panel-title-group h3,
+.portal-body .panel-card > h3,
+.portal-body .panel-header h3 {
+  font-family: var(--font-head);
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  line-height: 1.3;
+}
+
+/* ------------------------------------------------------------------ */
+/* 2. Cards                                                            */
+/* ------------------------------------------------------------------ */
+.portal-body .panel-card {
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-box);
+  min-width: 0; /* lets cards shrink inside grid/flex parents */
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. Tables — four table classes, one look                            */
+/* ------------------------------------------------------------------ */
+.portal-body :is(.grid-table, .crm-table, .data-table, .premium-table) {
+  width: 100%;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  font-size: 0.82rem;
+}
+.portal-body :is(.grid-table, .crm-table, .data-table, .premium-table) th {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em;
+  color: var(--text-sub) !important;
+  background: var(--canvas-bg) !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  white-space: nowrap;
+  text-align: left;
+}
+.portal-body :is(.grid-table, .crm-table, .data-table, .premium-table) td {
+  font-size: 0.82rem !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+.portal-body :is(.grid-table, .crm-table, .data-table, .premium-table) tbody tr:last-child td {
+  border-bottom: none;
+}
+.portal-body :is(.grid-table, .crm-table, .data-table, .premium-table) tbody tr:hover td {
+  background: var(--canvas-bg);
+}
+/* Any table wrapper scrolls sideways rather than clipping columns. */
+.portal-body :is(.table-responsive, .table-wrapper, .grid-table-wrap, .crm-table-wrap) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ------------------------------------------------------------------ */
+/* 4. Buttons & inputs                                                 */
+/* ------------------------------------------------------------------ */
+.portal-body .btn-premium {
+  min-height: 36px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  gap: 6px;
+}
+.portal-body .row-action-icon-btn {
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 8px;
+}
+.portal-body :is(.premium-input, .premium-select, .wz-input),
+.portal-body input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),
+.portal-body select {
+  min-height: 38px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+}
+.portal-body textarea { border-radius: 10px; font-size: 0.84rem; }
+.portal-body :is(input, select, textarea, button):focus-visible {
+  outline: 2px solid var(--brand-rose);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. Top bar never pushes its buttons off-screen                      */
+/* ------------------------------------------------------------------ */
+.top-header { grid-template-columns: auto minmax(0, 1fr) auto; }
+.header-greeting-widget { min-width: 0; overflow: hidden; }
+.header-greeting-top { min-width: 0; }
+.header-greeting-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .header-right-cluster { gap: 6px; }
+  .global-country-select { max-width: 112px; padding: 6px 8px !important; font-size: 0.76rem !important; }
+  .hdr-icon-btn, .hdr-avatar-btn { width: 34px; height: 34px; }
+  .profile-dropdown-menu { max-width: calc(100vw - 24px); }
+}
+@media (max-width: 480px) {
+  /* The greeting is decorative; on phones it yields its room to the
+     controls, leaving the weather emoji and the live clock. */
+  .header-greeting-text,
+  .header-greeting-sub .hdr-divider-pipe,
+  .header-greeting-sub .partner-id-segment { display: none !important; }
+  .header-greeting-widget { align-items: flex-start; }
+}
+
+/* ------------------------------------------------------------------ */
+/* 6. Phones & small tablets: inline layouts reflow                    */
+/* ------------------------------------------------------------------ */
+@media (max-width: 768px) {
+  /* Fixed multi-column grids (1fr 1fr, 1.15fr 0.85fr, repeat(3,1fr)…)
+     stack into one column. auto-fit/auto-fill grids adapt on their own. */
+  .portal-body [style*="grid-template-columns"]:not([style*="auto-fit"]):not([style*="auto-fill"]):not(#emailRenderedContent *) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  /* Rows of controls wrap instead of overflowing. */
+  .portal-body [style*="display: flex"]:not(td):not(th):not(#emailRenderedContent *),
+  .portal-body [style*="display:flex"]:not(td):not(th):not(#emailRenderedContent *) {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  /* Sticky side panels (e.g. Send Emails preview) flow normally once stacked. */
+  .portal-body [style*="position: sticky"] { position: static !important; }
+}
+
+@media (max-width: 640px) {
+  .portal-body h2:not(#emailRenderedContent *) { font-size: 1.25rem !important; }
+
+  /* auto-fit grids with a large minimum (320px+) can't fit a phone; one column. */
+  .portal-body [style*="minmax(2"][style*="auto-fit"]:not(.wz-kpi-deck),
+  .portal-body [style*="minmax(3"][style*="auto-fit"]:not(.wz-kpi-deck),
+  .portal-body [style*="minmax(4"][style*="auto-fit"]:not(.wz-kpi-deck) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  /* …except KPI/stat decks, which read best two-up. */
+  .portal-body .wz-kpi-deck {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  .portal-body .wz-kpi-deck > .panel-card { padding: 14px !important; margin: 0 !important; min-width: 0; }
+  .portal-body .wz-kpi-deck > .panel-card > div:nth-child(2) { font-size: 1.35rem !important; }
+  /* Keep each card's label + icon on one row; the label wraps, not the icon. */
+  .portal-body .wz-kpi-deck > .panel-card > [style*="display: flex"]:first-child {
+    flex-wrap: nowrap !important;
+    gap: 8px;
+  }
+  .portal-body .wz-kpi-deck > .panel-card > [style*="display: flex"]:first-child > :first-child { min-width: 0; }
+
+  .portal-body .panel-card { padding: 16px; }
+  .portal-body :is(.grid-table, .crm-table, .data-table, .premium-table) :is(th, td) {
+    padding: 10px 12px !important;
+  }
+  /* Full-width primary actions are easier to hit. */
+  .portal-body form .btn-premium[type="submit"] { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 340px) {
+  .portal-body .wz-kpi-deck { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ------------------------------------------------------------------ */
+/* 7. Show/hide password toggle (same look as the login page)          */
+/* ------------------------------------------------------------------ */
+.wz-pw-wrap { position: relative; display: flex; align-items: center; }
+.wz-pw-wrap > input { width: 100%; padding-right: 42px !important; }
+.wz-pw-toggle {
+  position: absolute;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.15s ease;
+}
+.wz-pw-toggle:hover { color: var(--text-main); }

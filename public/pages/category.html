@@ -240,7 +240,9 @@
 
   .toolbar { background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; padding: 16px 0 12px; transition: box-shadow .2s, border-color .2s; border-bottom: 1px solid transparent; }
   .toolbar.stuck { box-shadow: 0 12px 24px -20px rgba(31,26,23,.45); border-bottom-color: var(--line); }
-  .tb { grid-template-columns: minmax(0, 1.7fr) repeat(2, minmax(0, 1fr)); }
+  .tb { grid-template-columns: auto minmax(0, 1.7fr) repeat(2, minmax(0, 1fr)); }
+  /* Country picker (js/wz-country.js), styled like the other toolbar fields */
+  .tb-country.wzct-pill { height: auto; min-height: 48px; background: var(--surface); border-color: var(--line); color: var(--ink); }
   .tb-meta { margin-top: 12px; }
   .tb-right { display: inline-flex; align-items: center; gap: 16px; }
   .sort-inline { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
@@ -291,7 +293,8 @@
 
   @media (max-width: 980px) {
     .tb { grid-template-columns: 1fr 1fr; }
-    .tb .field-search { grid-column: 1 / -1; }
+    .tb .field-search { grid-column: 1 / -1; order: -1; }
+    .tb-country.wzct-pill { min-height: 46px; justify-content: flex-start; }
     .site-footer .foot-top { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 760px) {
@@ -369,6 +372,7 @@
   <div class="toolbar">
     <div class="wrap">
       <div class="tb">
+        <button type="button" id="fCountry" class="tb-country"></button>
         <label class="field field-search"><span class="sr">Search vendors</span><svg><use href="#i-search"/></svg><input id="fSearch" type="search" placeholder="Search by name or area" autocomplete="off" /></label>
         <label class="field"><span class="sr" id="fPlaceLabel">Filter</span><svg><use href="#i-pin"/></svg><select id="fPlace" aria-labelledby="fPlaceLabel"><option value="">Loading…</option></select><svg class="chev"><use href="#i-chev"/></svg></label>
         <label class="field"><span class="sr">Minimum rating</span><svg><use href="#i-star"/></svg><select id="fRating"><option value="0">Any rating</option><option value="4.5">4.5 and above</option><option value="4">4.0 and above</option><option value="3.5">3.5 and above</option></select><svg class="chev"><use href="#i-chev"/></svg></label>
@@ -440,7 +444,8 @@
 
 <script>window.BROWSE_MODE = 'category';</script>
 <script src="../js/wz-couple-auth.js"></script>
-<script src="../js/browse.js"></script>
+<script src="../js/wz-country.js?v=1"></script>
+<script src="../js/browse.js?v=2"></script>
 <script src="/js/auth-session.js" defer></script>
 </body>
 </html>

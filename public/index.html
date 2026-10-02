@@ -202,9 +202,15 @@
   .cty-btn:hover { border-color: var(--rose); }
   .cty-btn svg { width: 12px; height: 12px; transform: rotate(90deg); color: var(--muted); }
   .cty-btn .fl { width: 20px; height: 14px; border-radius: 3px; object-fit: cover; box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
+  .cty-search { position: relative; display: block; margin-bottom: 12px; }
+  .cty-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--muted, #8C8380); pointer-events: none; }
+  .cty-search input { width: 100%; height: 48px; border: 1.5px solid var(--line); border-radius: 14px; padding: 0 14px 0 42px; font: inherit; font-size: 16px; background: #fff; outline: none; }
+  .cty-search input:focus { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(178,74,91,.12); }
+  .cty-empty { text-align: center; color: var(--muted, #8C8380); font-size: 14px; padding: 16px 0; margin: 0; }
   .cty-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .cty-list button { display: flex; align-items: center; gap: 12px; text-align: left; border: 1.5px solid var(--line); background: #fff; border-radius: 16px; padding: 14px; cursor: pointer; font: inherit; min-height: 64px; transition: border-color .2s, box-shadow .2s; }
   .cty-list button:hover { border-color: var(--rose-soft); }
+  .cty-list button[hidden] { display: none; }
   .cty-list button[aria-checked="true"] { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(178,74,91,.12); }
   .cty-list .fl { width: 30px; height: 21px; border-radius: 4px; object-fit: cover; box-shadow: 0 0 0 1px rgba(0,0,0,.08); flex: none; }
   .cty-list b { display: block; color: var(--ink); font-size: 14.5px; }
@@ -1721,7 +1727,9 @@
 <div class="sheet enq-sheet" id="countrySheet" role="dialog" aria-modal="true" aria-labelledby="ctyTitle">
   <div class="grab"></div>
   <div class="sheet-head"><h3 id="ctyTitle">Choose your country</h3><button type="button" class="x" data-close aria-label="Close"><svg><use href="#i-x"/></svg></button></div>
+  <label class="cty-search"><svg><use href="#i-search"/></svg><input type="search" id="ctySearch" placeholder="Search countries" aria-label="Search countries" autocomplete="off" /></label>
   <div class="cty-list" id="ctyList" role="radiogroup" aria-label="Country"></div>
+  <p class="cty-empty" id="ctyEmpty" hidden>No country matches your search.</p>
   <p class="cty-note">You'll see wedding vendors, cities and prices for the country you choose.</p>
 </div>
 
@@ -2189,28 +2197,14 @@
   };
   var countryTotals = {}, globalTotal = 0;
 
-  // ?country=GB, then the visitor's saved choice, then a guess from the
-  // browser's time zone / language (no third-party lookup), else India.
+  // ?country=GB, then the visitor's saved choice (shared with the Browse pages
+  // and the couple dashboard via js/wz-country.js), else India. No guessing
+  // from time zone or language: India is the default until the visitor picks.
   function detectCountry() {
     var q = (new URLSearchParams(location.search).get('country') || '').toUpperCase();
     if (COUNTRIES[q]) return q;
     var saved = store.get('wz_country');
     if (COUNTRIES[saved]) return saved;
-    try {
-      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      if (/^Asia\/(Kolkata|Calcutta)$/.test(tz)) return 'IN';
-      if (tz === 'Asia/Dubai') return 'AE';
-      if (tz === 'Europe/London') return 'GB';
-      if (/^Australia\//.test(tz)) return 'AU';
-      if (/^America\/(Toronto|Vancouver|Montreal|Edmonton|Winnipeg|Halifax|Regina|St_Johns|Moncton|Whitehorse|Yellowknife)$/.test(tz)) return 'CA';
-      if (/^(America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Detroit|Boise|Indiana|Kentucky|North_Dakota)|Pacific\/Honolulu)/.test(tz)) return 'US';
-    } catch (_) {}
-    var langs = navigator.languages || [navigator.language || ''];
-    for (var i = 0; i < langs.length; i++) {
-      var region = (String(langs[i]).split('-')[1] || '').toUpperCase();
-      if (region === 'UK') region = 'GB';
-      if (COUNTRIES[region]) return region;
-    }
     return 'IN';
   }
 
@@ -2228,6 +2222,30 @@
     }).join('');
     $$('#ctyList [data-country]').forEach(function (b) {
       b.addEventListener('click', function () { applyCountry(b.getAttribute('data-country'), true); close(); });
+    });
+    filterCountryList();
+  }
+
+  // Search box in the country sheet: filter by name or code.
+  function filterCountryList() {
+    var input = $('#ctySearch');
+    var q = input ? input.value.trim().toLowerCase() : '';
+    var shown = 0;
+    $$('#ctyList [data-country]').forEach(function (b) {
+      var code = b.getAttribute('data-country');
+      var match = !q || COUNTRIES[code].name.toLowerCase().indexOf(q) >= 0 || code.toLowerCase() === q;
+      b.hidden = !match;
+      if (match) shown++;
+    });
+    var empty = $('#ctyEmpty');
+    if (empty) empty.hidden = shown > 0;
+  }
+  if ($('#ctySearch')) {
+    $('#ctySearch').addEventListener('input', filterCountryList);
+    $('#ctySearch').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      var first = $$('#ctyList [data-country]').filter(function (b) { return !b.hidden; })[0];
+      if (first) first.click();
     });
   }
 
@@ -2336,5 +2354,6 @@
 <script src="/js/nav-loader.js"></script>
 <script src="/js/wz-auth-modal.js?v=1"></script>
 <script src="/js/auth-session.js" defer></script>
+  <script src="/js/wz-password-toggle.js" defer></script>
 </body>
 </html>

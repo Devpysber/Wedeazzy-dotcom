@@ -139,6 +139,44 @@
       color: var(--text-main);
     }
 
+    /* The generic .input-icon-wrapper i rule (left-side field icons) must not
+       also shift the eye icon inside the toggle button. */
+    .password-toggle-btn i { position: static; }
+
+    /* Sign-in method switch: Password (default) | Email Code */
+    .login-method-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      margin-bottom: 18px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: var(--canvas-bg);
+    }
+    .login-method-btn {
+      height: 36px;
+      border: none;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--text-sub);
+      font-family: var(--font-head);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .login-method-btn.active {
+      background: var(--surface-bg);
+      color: var(--brand-rose);
+      box-shadow: var(--shadow-box);
+    }
+    .login-method-hidden { display: none !important; }
+
     .form-utils {
       display: flex;
       justify-content: space-between;
@@ -325,6 +363,15 @@
 
     <!-- STAGE 1: Standard Credentials Forms -->
     <form id="formCredentials" class="form-stage active">
+      <div class="login-method-switch" role="tablist" aria-label="Sign-in method">
+        <button type="button" class="login-method-btn active" data-method="password" role="tab" aria-selected="true">
+          <i class="fa-solid fa-key"></i> Password
+        </button>
+        <button type="button" class="login-method-btn" data-method="code" role="tab" aria-selected="false">
+          <i class="fa-regular fa-envelope"></i> Email Code
+        </button>
+      </div>
+
       <div class="input-group">
         <label for="adminEmail">Email Address</label>
         <div class="input-icon-wrapper">
@@ -333,7 +380,7 @@
         </div>
       </div>
 
-      <div class="input-group">
+      <div class="input-group" id="passwordGroup">
         <label for="adminPassword">Password</label>
         <div class="input-icon-wrapper">
           <i class="fa-solid fa-lock"></i>
@@ -344,7 +391,7 @@
         </div>
       </div>
 
-      <div class="form-utils">
+      <div class="form-utils" id="passwordUtils">
         <label class="remember-me-wrap">
           <input type="checkbox" id="rememberMe" checked>
           <span>Keep session logged-in</span>
@@ -353,7 +400,7 @@
       </div>
 
       <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem;">
-        <i class="fa-solid fa-right-to-bracket"></i> Sign In to Account
+        <i class="fa-solid fa-right-to-bracket" id="credsSubmitIcon"></i> <span id="credsSubmitText">Sign In to Account</span>
       </button>
     </form>
 
@@ -362,7 +409,7 @@
       <div class="input-group" style="text-align: center;">
         <label style="margin-bottom: 2px;">Enter 6-Digit Verification Code</label>
         <div style="font-size: 0.77rem; color: var(--text-sub); margin-bottom: 8px;" id="otpHelperText">
-          A verification code has been dispatched to your registered email address. If mail delivery fails, the fallback code from the previous step will appear here.
+          A 6-digit sign-in code has been sent to your admin email address.
         </div>
         
         <div class="otp-blocks-container" id="otpBlocks">
@@ -375,15 +422,15 @@
         </div>
 
         <div class="otp-timer-info">
-          Passcode expires in: <strong id="otpTimer">02:00</strong>
+          Code expires in: <strong id="otpTimer">05:00</strong>
         </div>
       </div>
 
       <button type="submit" class="btn-premium btn-premium-rose" style="width: 100%; height: 44px; justify-content: center; font-size: 0.88rem; margin-top: 10px;">
-        <i class="fa-solid fa-key"></i> Verify Security OTP
+        <i class="fa-solid fa-key"></i> Verify &amp; Sign In
       </button>
 
-      <a href="#" class="back-to-login" id="backFromOTP"><i class="fa-solid fa-angle-left"></i> Modify Credentials</a>
+      <a href="#" class="back-to-login" id="backFromOTP"><i class="fa-solid fa-angle-left"></i> Back to sign in</a>
     </form>
 
     <!-- STAGE 3: Password Recovery Support -->
@@ -559,7 +606,7 @@
       // 7. OTP Timer routines
       function startOTPTimer() {
         if (timerInterval) clearInterval(timerInterval);
-        let seconds = 120;
+        let seconds = 300;
         
         function updateTimer() {
           const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -567,8 +614,8 @@
           el.otpTimer.textContent = `${m}:${s}`;
           if (seconds <= 0) {
             clearInterval(timerInterval);
-            showToast("MFA Passcode expired. Please request another session.", "warning");
-            switchStage(el.formCreds, "MFA Session expired. Please log in again.");
+            showToast("Sign-in code expired. Please request a new one.", "warning");
+            switchStage(el.formCreds, "Your code expired. Request a new one to sign in.");
           }
           seconds--;
         }
@@ -612,34 +659,79 @@
 
       // 9. FORM SUBMISSIONS
       
-      // Step 1 Submission: Credential check
+      // Sign-in method: "password" (default) signs in directly; "code" emails
+      // a 6-digit code to the admin address instead.
+      const DEFAULT_SUBTITLE = el.subTitle.textContent;
+      const CODE_SUBTITLE = "Enter your admin email and we'll send you a 6-digit sign-in code.";
+      let loginMethod = "password";
+      const methodBtns = document.querySelectorAll(".login-method-btn");
+      const passwordGroup = document.getElementById("passwordGroup");
+      const passwordUtils = document.getElementById("passwordUtils");
+      const credsSubmitText = document.getElementById("credsSubmitText");
+      const credsSubmitIcon = document.getElementById("credsSubmitIcon");
+
+      function setLoginMethod(method) {
+        loginMethod = method;
+        const isCode = method === "code";
+        methodBtns.forEach((b) => {
+          const on = b.dataset.method === method;
+          b.classList.toggle("active", on);
+          b.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        passwordGroup.classList.toggle("login-method-hidden", isCode);
+        passwordUtils.classList.toggle("login-method-hidden", isCode);
+        el.pass.required = !isCode;
+        credsSubmitText.textContent = isCode ? "Send Sign-in Code" : "Sign In to Account";
+        credsSubmitIcon.className = isCode ? "fa-solid fa-paper-plane" : "fa-solid fa-right-to-bracket";
+        el.subTitle.textContent = isCode ? CODE_SUBTITLE : DEFAULT_SUBTITLE;
+      }
+      methodBtns.forEach((b) => b.addEventListener("click", () => setLoginMethod(b.dataset.method)));
+
+      async function goToPanel() {
+        const saved = sessionStorage.getItem("auth_redirect_target");
+        sessionStorage.removeItem("auth_redirect_target");
+        // panelHome() resolves the panel's real path, which differs from
+        // this page's when ADMIN_PANEL_PATH is set in production.
+        window.location.href = saved || await window.WedEazzyAuth.panelHome();
+      }
+
+      // Step 1 Submission: password sign-in, or request an emailed code
       el.formCreds.addEventListener("submit", async (e) => {
         e.preventDefault();
-        
-        el.loaderText.textContent = "Authenticating Credentials...";
-        el.loader.style.display = "flex";
 
-        try {
-          // Direct Admin / Staff 2FA authentication pipeline
-          const response = await window.WedEazzyAuth.validateCredentials(el.email.value, el.pass.value);
-          el.loader.style.display = "none";
-
-          if (response.success) {
-            switchStage(el.formOTP, "Enter the 6-digit verification code to complete sign-in.");
-            // Reset OTP inputs
+        if (loginMethod === "code") {
+          el.loaderText.textContent = "Sending sign-in code...";
+          el.loader.style.display = "flex";
+          try {
+            const response = await window.WedEazzyAuth.requestLoginCode(el.email.value);
+            el.loader.style.display = "none";
+            if (!response.success) return showToast(response.error, "danger");
+            switchStage(el.formOTP, "Enter the 6-digit code from your email to sign in.");
             el.otpInputs.forEach(i => i.value = "");
             if (response.devCode) {
               populateOtpCode(response.devCode);
-              showToast(`Development Mode: Security OTP (${response.devCode}) auto-filled. Click Verify to continue.`, "info");
-            } else if (response.emailDelivered === false) {
-              const detail = response.emailError ? ` SMTP error: ${response.emailError}` : '';
-              showToast(`Credentials valid, but the verification email could not be sent.${detail} Check server logs or contact administrator.`, "danger");
+              showToast(`Local testing: code ${response.devCode} auto-filled.`, "info");
             } else {
-              showToast("Credentials validated! 6-digit verification code sent to your email (" + el.email.value.trim() + ").", "success");
+              showToast("If " + el.email.value.trim() + " is an admin account, a sign-in code is on its way.", "success");
               el.otpInputs[0].focus();
             }
             startOTPTimer();
+          } catch (err) {
+            el.loader.style.display = "none";
+            showToast("Could not reach the server. Please try again.", "danger");
+          }
+          return;
+        }
+
+        el.loaderText.textContent = "Signing in...";
+        el.loader.style.display = "flex";
+        try {
+          const response = await window.WedEazzyAuth.validateCredentials(el.email.value, el.pass.value);
+          if (response.success) {
+            showToast("Signed in! Redirecting to Dashboard...", "success");
+            setTimeout(goToPanel, 400);
           } else {
+            el.loader.style.display = "none";
             showToast(response.error || "Invalid email or password.", "danger");
           }
         } catch (err) {
@@ -665,20 +757,13 @@
         el.loader.style.display = "flex";
 
         try {
-          const response = await window.WedEazzyAuth.verifyOTP(otpCode, el.rememberMe.checked);
+          const response = await window.WedEazzyAuth.verifyOTP(otpCode);
           el.loader.style.display = "none";
 
           if (response.success) {
-            showToast("OTP verified! Redirecting to Dashboard...", "success");
-            
-            // Redirect cleanly
-            setTimeout(async () => {
-              const saved = sessionStorage.getItem("auth_redirect_target");
-              sessionStorage.removeItem("auth_redirect_target");
-              // panelHome() resolves the panel's real path, which differs from
-              // this page's when ADMIN_PANEL_PATH is set in production.
-              window.location.href = saved || await window.WedEazzyAuth.panelHome();
-            }, 600);
+            if (timerInterval) clearInterval(timerInterval);
+            showToast("Code verified! Redirecting to Dashboard...", "success");
+            setTimeout(goToPanel, 600);
           } else {
             showToast(response.error, "danger");
             // Clear code inputs
@@ -756,7 +841,7 @@
               if (resetRole === 'vendor' || resetRole === 'couple') {
                 window.location.href = '../index.html?auth=login';
               } else {
-                switchStage(el.formCreds, "Enter credentials to moderate services.");
+                switchStage(el.formCreds, ""); setLoginMethod(loginMethod);
               }
             }, 2000);
           } else {
@@ -777,18 +862,18 @@
       el.btnBackFromOTP.addEventListener("click", (e) => {
         e.preventDefault();
         if (timerInterval) clearInterval(timerInterval);
-        switchStage(el.formCreds, "Enter credentials to moderate services.");
+        switchStage(el.formCreds, ""); setLoginMethod(loginMethod);
       });
 
       el.btnBackFromRec.addEventListener("click", (e) => {
         e.preventDefault();
-        switchStage(el.formCreds, "Enter credentials to moderate services.");
+        switchStage(el.formCreds, ""); setLoginMethod(loginMethod);
       });
 
       el.btnBackFromReset.addEventListener("click", (e) => {
         e.preventDefault();
         window.history.replaceState({}, document.title, window.location.pathname);
-        switchStage(el.formCreds, "Enter credentials to moderate services.");
+        switchStage(el.formCreds, ""); setLoginMethod(loginMethod);
       });
 
       // Check for reset action and token in URL query
@@ -804,5 +889,6 @@
       }
     });
   </script>
+  <script src="/js/wz-password-toggle.js" defer></script>
 </body>
 </html>

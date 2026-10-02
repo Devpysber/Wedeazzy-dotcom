@@ -153,7 +153,13 @@ async function getPlatformOverview({ range, from, to, countryCode, countryId, ci
       select: { amount: true, purpose: true, createdAt: true, meta: true }
     }),
     prisma.adCampaign.findMany({
-      where: { ...campaignWhere, paymentStatus: 'paid' },
+      // Test-mode checkouts (guestCheckout testToken) record a `pay_test_` ref;
+      // they are not real money and must not count as revenue.
+      where: {
+        ...campaignWhere,
+        paymentStatus: 'paid',
+        OR: [{ paymentRef: null }, { NOT: { paymentRef: { startsWith: 'pay_test_' } } }],
+      },
       select: { totalAmount: true, createdAt: true, packageType: true }
     })
   ]);
@@ -424,13 +430,8 @@ async function getPlatformOverview({ range, from, to, countryCode, countryId, ci
     prisma.booking.count({ where: { ...bookingWhere, status: 'confirmed' } })
   ]);
 
-  const effectiveTotalBookings = Math.max(
-    totalBookingsCount,
-    totalListings > 0 ? Math.max(1, Math.ceil(totalListings * 0.01)) : 0
-  );
-
   const bookingsOverview = {
-    total: effectiveTotalBookings,
+    total: totalBookingsCount,
     pending: pendingBookingsCount,
     confirmed: confirmedBookingsCount
   };

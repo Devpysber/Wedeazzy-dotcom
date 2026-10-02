@@ -1472,15 +1472,18 @@
         <div class="co-grid">
           <div class="co-full co-bizwrap">
             <label for="coBiz">Find your business</label>
+            <!-- Search boxes, not address fields: the non-standard autocomplete value
+                 and neutral names stop Chrome/password managers offering saved
+                 addresses over the results list (Chrome ignores autocomplete="off"). -->
             <div class="co-search" id="coAc">
               <div class="co-ac">
                 <svg class="co-ac-ic" aria-hidden="true"><use href="#i-search-sm"/></svg>
-                <input id="coBiz" name="wz-business-search" type="text" autocomplete="off" autocapitalize="words" spellcheck="false" required minlength="2" maxlength="160" placeholder="Business name" aria-label="Business name" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="coBizList" />
+                <input id="coBiz" name="wz-q-listing" type="text" autocomplete="wz-listing-lookup" data-lpignore="true" data-1p-ignore data-form-type="other" autocapitalize="words" spellcheck="false" required minlength="2" maxlength="160" placeholder="Business name" aria-label="Business name" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="coBizList" />
                 <span class="co-ac-spin" id="coAcSpin" hidden></span>
               </div>
               <div class="co-ac">
                 <svg class="co-ac-ic" aria-hidden="true"><use href="#i-pin-sm"/></svg>
-                <input id="coBizCity" name="wz-business-search-city" type="text" autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="80" placeholder="City (optional)" aria-label="City to search in" aria-controls="coBizList" />
+                <input id="coBizCity" name="wz-q-listing-area" type="text" autocomplete="wz-listing-lookup" data-lpignore="true" data-1p-ignore data-form-type="other" autocapitalize="words" spellcheck="false" maxlength="80" placeholder="City (optional)" aria-label="City to search in" aria-controls="coBizList" />
               </div>
               <ul class="co-list" id="coBizList" role="listbox" hidden></ul>
             </div>
@@ -2436,5 +2439,6 @@
   loadPricing(guess);
 })();
 </script>
+  <script src="/js/wz-password-toggle.js" defer></script>
 </body>
 </html>

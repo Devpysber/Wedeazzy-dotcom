@@ -732,7 +732,7 @@
         ${renderCrmCountryScopeHeader()}
 
         <!-- Dynamic Stat Cards Deck -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 20px;">
+        <div class="wz-kpi-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 20px;">
           <!-- Card 1: Total Listings -->
           <div class="panel-card" style="padding: 18px 20px; background: var(--surface-bg); border-top: 4px solid var(--brand-rose); border-radius: 14px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center;">

@@ -119,12 +119,72 @@ function renderHtmlFrame(title, heading, content) {
   `;
 }
 
+const BREVO_SEND_URL = 'https://api.brevo.com/v3/smtp/email';
+
+/** "WedEazzy <info@wedeazzy.com>" -> { name: 'WedEazzy', email: 'info@wedeazzy.com' } */
+function parseAddress(addr) {
+  const match = String(addr || '').match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+  if (match) return match[1] ? { name: match[1], email: match[2].trim() } : { email: match[2].trim() };
+  return { email: String(addr || '').trim() };
+}
+
+/** Accepts a single address, a comma-separated list, or an array. */
+function toRecipientList(to) {
+  const list = Array.isArray(to) ? to : String(to || '').split(',');
+  return list.map(a => String(a).trim()).filter(Boolean).map(parseAddress);
+}
+
 /**
- * Sends a transactional email with retry logic and console logging fallback.
+ * Sends through Brevo's transactional API. Resolves to the same
+ * { ok, messageId } / { ok: false, error } shape as the SMTP path.
+ */
+async function sendViaBrevo({ to, subject, html, text }) {
+  const payload = {
+    sender: parseAddress(env.SMTP.from),
+    to: toRecipientList(to),
+    subject,
+  };
+  if (html) payload.htmlContent = html;
+  if (text) payload.textContent = text;
+  // Brevo requires at least one body; fall back to the subject for text-only callers.
+  if (!payload.htmlContent && !payload.textContent) payload.textContent = subject;
+
+  try {
+    const res = await fetch(BREVO_SEND_URL, {
+      method: 'POST',
+      headers: {
+        'api-key': env.BREVO_API_KEY,
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+      // Same intent as the SMTP timeouts: never hang the HTTP request on a slow mail provider.
+      signal: AbortSignal.timeout(15000),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const errorMessage = body.message || `Brevo API responded ${res.status}`;
+      logger.error({ to, status: res.status, code: body.code }, 'Failed to send Brevo email');
+      return { ok: false, error: errorMessage, smtpError: errorMessage };
+    }
+    logger.info({ to, messageId: body.messageId }, 'Email sent successfully via Brevo');
+    return { ok: true, messageId: body.messageId };
+  } catch (err) {
+    const errorMessage = err && (err.message || String(err));
+    logger.error({ err, to }, 'Failed to send Brevo email');
+    return { ok: false, error: errorMessage, smtpError: errorMessage };
+  }
+}
+
+/**
+ * Sends a transactional email: Brevo API when BREVO_API_KEY is set, else SMTP,
+ * else a console-logging dev fallback. Never throws.
  */
 async function sendMail({ to, subject, html, text }) {
+  if (env.BREVO_API_KEY) return sendViaBrevo({ to, subject, html, text });
+
   const client = getTransporter();
-  
+
   if (!client) {
     logger.warn({ to, subject, text }, '[SMTP DEV-FALLBACK] E-mail created (but SMTP credentials missing in .env)');
     return { ok: true, fallback: true };
@@ -250,6 +310,19 @@ async function sendPasswordChangeOtpEmail(to, code) {
   return sendMail({ to, subject: 'Your password change code - WedEazzy.com', html, text });
 }
 
+/** Admin Settings: one code authorises an email and/or password change. */
+async function sendCredentialsChangeOtpEmail(to, code) {
+  const html = renderHtmlFrame('Login details change code', 'Change Your Login Details', `
+    <p>Hello,</p>
+    <p>Someone asked to change the login email and/or password of your WedEazzy admin account. If this was you, enter this code on the Settings page:</p>
+    <div class="otp-box">${code}</div>
+    <p>This code is valid for <strong>${env.OTP_TTL_MIN} minutes</strong>. If you did not request this, ignore this email — nothing will change — and consider changing your password.</p>
+    <p>Best regards,<br>The WedEazzy Team</p>
+  `);
+  const text = `Your WedEazzy login details change code is ${code} (valid ${env.OTP_TTL_MIN} minutes). If you did not request this, ignore this email.`;
+  return sendMail({ to, subject: 'Your login details change code - WedEazzy.com', html, text });
+}
+
 /** Security notice to the OLD address after the account email was changed. */
 async function sendEmailChangedNoticeEmail(oldEmail, newEmail) {
   const html = renderHtmlFrame('Your email was changed', 'Account Email Changed', `
@@ -266,6 +339,7 @@ module.exports = {
   sendMail,
   sendEmailChangeOtpEmail,
   sendPasswordChangeOtpEmail,
+  sendCredentialsChangeOtpEmail,
   sendEmailChangedNoticeEmail,
   sendOtpEmail,
   sendPasswordResetEmail,

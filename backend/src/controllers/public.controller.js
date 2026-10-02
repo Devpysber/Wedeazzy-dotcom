@@ -473,7 +473,34 @@ function getGrowCampaignsPricing(req, res) {
   });
 }
 
+/**
+ * GET /api/public/countries — the countries a visitor can switch the
+ * marketplace to (admin panel > Countries, active + marketplace enabled), in
+ * display order, with live vendor counts. Feeds the searchable country picker
+ * (public/js/wz-country.js), so a country added by an admin appears there
+ * without a code change.
+ */
+let countriesCache = null; // { data, expiresAt }
+async function getCountries(req, res, next) {
+  try {
+    if (countriesCache && countriesCache.expiresAt > Date.now()) return res.json(countriesCache.data);
+    const [countries, counts] = await Promise.all([
+      prisma.country.findMany({
+        where: { status: 'active', isMarketplaceEnabled: true },
+        orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
+        select: { code: true, name: true, currency: true, currencySymbol: true, phoneCode: true },
+      }),
+      prisma.vendor.groupBy({ by: ['countryCode'], where: { isActive: true }, _count: { id: true } }),
+    ]);
+    const byCode = Object.fromEntries(counts.map((c) => [c.countryCode, c._count.id]));
+    const data = { ok: true, countries: countries.map((c) => ({ ...c, vendorCount: byCode[c.code] || 0 })) };
+    countriesCache = { data, expiresAt: Date.now() + 5 * 60 * 1000 };
+    res.json(data);
+  } catch (e) { next(e); }
+}
+
 module.exports = {
+  getCountries,
   getVendors,
   getVendorByIdOrSlug,
   getMetadata,

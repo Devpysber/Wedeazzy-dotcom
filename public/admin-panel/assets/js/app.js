@@ -1120,7 +1120,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <!-- EXECUTIVE SUBSCRIPTION STAT CARDS GRID (5 CARDS) -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 20px;">
+        <div class="wz-kpi-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 20px;">
 
           <!-- Card 1: Total Revenue -->
           <div class="panel-card" style="padding: 16px; background: #FFFFFF; border-left: 3px solid #E52B3A;">
@@ -1332,7 +1332,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <!-- KPI SUMMARY CARDS -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="wz-kpi-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
           <div class="panel-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
             <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16,185,129,0.12); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
               <i class="fa-solid fa-indian-rupee-sign"></i>
@@ -1579,7 +1579,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <!-- KPI SUMMARY CARDS -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="wz-kpi-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
           <div class="panel-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
             <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16,185,129,0.12); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
               <i class="fa-solid fa-sack-dollar"></i>
@@ -3630,7 +3630,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <!-- TOP STATS CARDS -->
-        <div id="emailCenterStatsCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        <div id="emailCenterStatsCards" class="wz-kpi-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
           <div class="panel-card loading-skeleton" style="height: 100px; border-radius: 12px;"></div>
           <div class="panel-card loading-skeleton" style="height: 100px; border-radius: 12px;"></div>
           <div class="panel-card loading-skeleton" style="height: 100px; border-radius: 12px;"></div>
@@ -5342,11 +5342,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const {
       kpis = {},
+      // No made-up curve when the server sends no trends: show flat zeros.
       trends = {
         months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-        inquiries: [120, 340, 560, 890, 1120, 1450, 1890, 2300, 2800, 3100, 3420, 3890],
-        bookings: [12, 28, 45, 62, 85, 110, 142, 178, 215, 260, 295, 340],
-        revenue: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        inquiries: new Array(12).fill(0),
+        bookings: new Array(12).fill(0),
+        revenue: new Array(12).fill(0)
       },
       subscriptions: rawSubscriptions,
       revenue = { total: 0, subscriptionRevenue: 0, growRevenue: 0 },
@@ -5371,19 +5372,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // Compute Category Performance client-side if server array is empty
     let catList = categoryPerformance;
     if (!catList || catList.length === 0) {
+      // Only real counts here: listings and owner-claimed from the vendor list.
+      // Inquiry counts aren't available client-side, so they stay 0 rather than estimated.
       const catCounts = {};
       scopedVendors.forEach(v => {
         const cat = v.category || 'Uncategorized';
-        catCounts[cat] = (catCounts[cat] || 0) + 1;
+        const c = catCounts[cat] || (catCounts[cat] = { listings: 0, claimed: 0 });
+        c.listings++;
+        if (v.hasOwner || v.claims === 'Verified Owner') c.claimed++;
       });
       catList = Object.entries(catCounts)
-        .sort((a, b) => b[1] - a[1])
+        .sort((a, b) => b[1].listings - a[1].listings)
         .slice(0, 10)
-        .map(([category, listingsCount]) => ({
+        .map(([category, c]) => ({
           category,
-          listingsCount,
-          claimedCount: Math.round(listingsCount * 0.05),
-          inquiriesCount: Math.round(listingsCount * 1.8)
+          listingsCount: c.listings,
+          claimedCount: c.claimed,
+          inquiriesCount: 0
         }));
     }
 
@@ -5401,7 +5406,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .map(([city, count]) => ({
           city,
           listingsCount: count,
-          inquiriesCount: Math.round(count * 2.2)
+          inquiriesCount: 0
         }));
     }
 
@@ -5445,7 +5450,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div style="font-size: 0.82rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-chart-line" style="color: var(--brand-rose);"></i> Executive Marketplace KPIs — ${scopeNames[scopeUpper]}
           </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;">
+          <div class="wz-kpi-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;">
             
             <!-- Card 1: Total Listings -->
             <div class="panel-card" style="padding: 20px; background: var(--surface-bg); border-top: 4px solid var(--brand-rose);">
@@ -6008,7 +6013,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <a href="#">Wedeazzy</a> <i class="fa-solid fa-angle-right"></i> <span>All Businesses</span>
         </div>
 
-        <div class="metrics-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 20px; margin-top: 15px;">
+        <div class="metrics-deck wz-kpi-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 20px; margin-top: 15px;">
           <!-- Card 1: Total Listings -->
           <div class="panel-card" style="padding: 18px 20px; background: var(--surface-bg); border-top: 4px solid var(--brand-rose);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -7094,10 +7099,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  <strong>Reset Database Mock</strong>
-                  <div style="font-size: 0.72rem; color: var(--text-muted);">Re-initialize all default booking and statistics tables.</div>
+                  <strong>Clear Local Dashboard Cache</strong>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">Clears dashboard data cached in this browser and reloads it from the server. Nothing in the database is changed.</div>
                 </div>
-                <button class="btn-premium" style="border-color: #ef4444; color: #ef4444;" onclick="window.WedEazzyStore.reset(); window.showToast('Database reset to defaults successfully!', 'success');">
+                <button class="btn-premium" style="border-color: #ef4444; color: #ef4444;" onclick="window.WedEazzyStore.reset(); window.showToast('Local dashboard cache cleared.', 'success');">
                   <i class="fa-solid fa-trash-can"></i> Purge Store
                 </button>
               </div>
@@ -7107,27 +7112,141 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="panel-card">
             <div class="panel-header">
               <div class="panel-title-group">
-                <h3>Admin Credentials Simulation</h3>
-                <p>Modify default credentials overrides.</p>
+                <h3>Admin Login Credentials</h3>
+                <p>Changes are confirmed with a 6-digit code sent to your current admin email.</p>
               </div>
             </div>
-            <form onsubmit="event.preventDefault(); window.showToast('Credentials updated successfully in local session! (Password changes are mock)', 'success');" style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 18px;">
               <div class="modal-form-group">
-                <label>Admin Login Account Email</label>
-                <input type="email" class="premium-input" value="wedeazzy@gmail.com" disabled style="background-color: var(--border-subtle); cursor: not-allowed;" />
+                <label>Current Admin Email</label>
+                <input type="email" id="acctCurrentEmail" class="premium-input" value="${escHtml((window.WedEazzyAuth && window.WedEazzyAuth.getSession() || {}).email || '')}" disabled style="background-color: var(--border-subtle); cursor: not-allowed;" />
               </div>
-              <div class="modal-form-group">
-                <label>New Passphrase</label>
-                <input type="password" class="premium-input" placeholder="••••••••••••" required />
-              </div>
-              <button class="btn-premium btn-premium-rose" type="submit" style="justify-content: center; margin-top: 10px;">
-                <i class="fa-solid fa-lock"></i> Save Secure Password
-              </button>
-            </form>
+
+              <form id="acctCredsForm" style="display: flex; flex-direction: column; gap: 12px;" novalidate>
+                <div class="modal-form-group">
+                  <label for="acctNewEmail">New Admin Email <span style="font-weight: 500; text-transform: none; color: var(--text-muted);">(leave blank to keep current)</span></label>
+                  <input type="email" id="acctNewEmail" class="premium-input" autocomplete="email" placeholder="new-admin@example.com" />
+                </div>
+                <div class="modal-form-group">
+                  <label for="acctNewPassword">New Password <span style="font-weight: 500; text-transform: none; color: var(--text-muted);">(leave blank to keep current)</span></label>
+                  <div class="wz-pw-wrap">
+                    <input type="password" id="acctNewPassword" class="premium-input" autocomplete="new-password" placeholder="At least 8 characters" />
+                    <button type="button" class="wz-pw-toggle" data-pw-toggle="acctNewPassword" title="Show password" aria-label="Show password"><i class="fa-regular fa-eye"></i></button>
+                  </div>
+                  <small style="color: var(--text-muted); font-size: 0.72rem;">Use 8+ characters with upper and lower case letters, a number and a symbol.</small>
+                </div>
+                <div class="modal-form-group">
+                  <label for="acctConfirmPassword">Confirm New Password</label>
+                  <div class="wz-pw-wrap">
+                    <input type="password" id="acctConfirmPassword" class="premium-input" autocomplete="new-password" />
+                    <button type="button" class="wz-pw-toggle" data-pw-toggle="acctConfirmPassword" title="Show password" aria-label="Show password"><i class="fa-regular fa-eye"></i></button>
+                  </div>
+                </div>
+                <div class="modal-form-group" data-step="code" hidden>
+                  <label for="acctCode">Verification Code</label>
+                  <input type="text" id="acctCode" class="premium-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6-digit code" />
+                  <small class="acct-hint" style="color: var(--text-muted); font-size: 0.72rem;"></small>
+                </div>
+                <button type="submit" class="btn-premium btn-premium-rose" style="justify-content: center;">
+                  <i class="fa-solid fa-shield-halved"></i> <span>Send Verification Code</span>
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
     `;
+
+    bindAccountForms();
+  }
+
+  /**
+   * Admin login details: fill a new email and/or a new password, then one
+   * code (emailed to the CURRENT admin address) confirms both together.
+   */
+  function bindAccountForms() {
+    const apiFetch = window.WedEazzyAuth.apiFetch.bind(window.WedEazzyAuth);
+    const form = document.getElementById('acctCredsForm');
+    const newEmail = document.getElementById('acctNewEmail');
+    const pw = document.getElementById('acctNewPassword');
+    const pw2 = document.getElementById('acctConfirmPassword');
+    const btn = form.querySelector('button[type="submit"]');
+    const btnLabel = btn.querySelector('span');
+    const codeGroup = form.querySelector('[data-step="code"]');
+    const codeInput = document.getElementById('acctCode');
+    const hint = codeGroup.querySelector('.acct-hint');
+    let codeSent = false;
+
+    // Show/hide toggles on the two password fields.
+    form.querySelectorAll('[data-pw-toggle]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const input = document.getElementById(b.dataset.pwToggle);
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        b.querySelector('i').className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+        b.title = show ? 'Hide password' : 'Show password';
+        b.setAttribute('aria-label', b.title);
+      });
+    });
+
+    async function call(path, body) {
+      const r = await apiFetch(`/api/admin/account/credentials/${path}`, { method: 'POST', body: body || {} });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.ok) throw new Error(d.message || d.error || 'Request failed. Please try again.');
+      return d;
+    }
+
+    function validate() {
+      const email = newEmail.value.trim();
+      const v = pw.value;
+      if (!email && !v) return 'Enter a new email, a new password, or both.';
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid new email address.';
+      if (v) {
+        if (v.length < 8 || !/[A-Z]/.test(v) || !/[a-z]/.test(v) || !/[0-9]/.test(v) || !/[^A-Za-z0-9]/.test(v)) {
+          return 'Password needs 8+ characters with upper and lower case letters, a number and a symbol.';
+        }
+        if (v !== pw2.value) return 'The two passwords do not match.';
+      }
+      return null;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = validate();
+      if (err) return showToast(err, 'warning');
+      btn.disabled = true;
+      try {
+        if (!codeSent) {
+          const d = await call('send-code');
+          codeSent = true;
+          codeGroup.hidden = false;
+          hint.textContent = `Code sent to ${d.sentTo}. It expires in ${Math.round((d.expiresIn || 300) / 60)} minutes.`;
+          if (d.devCode) codeInput.value = d.devCode;
+          btnLabel.textContent = 'Verify & Save';
+          codeInput.focus();
+          showToast(`Verification code sent to ${d.sentTo}.`, 'success');
+        } else {
+          const code = codeInput.value.trim();
+          if (!/^[0-9]{6}$/.test(code)) return showToast('Enter the 6-digit code from your email.', 'warning');
+          const d = await call('confirm', { code, newEmail: newEmail.value.trim() || undefined, newPassword: pw.value || undefined });
+          window.WedEazzyAuth.replaceSession(d.token, d.user && d.user.email);
+          document.getElementById('acctCurrentEmail').value = d.user.email;
+          form.reset();
+          form.querySelectorAll('[data-pw-toggle]').forEach((b) => { if (document.getElementById(b.dataset.pwToggle).type === 'text') b.click(); });
+          codeSent = false;
+          codeGroup.hidden = true;
+          btnLabel.textContent = 'Send Verification Code';
+          const parts = [];
+          if (d.changed && d.changed.email) parts.push(`email changed to ${d.user.email}`);
+          if (d.changed && d.changed.password) parts.push('password changed (other sessions signed out)');
+          showToast(`Admin ${parts.join(' and ')}.`, 'success');
+        }
+      } catch (ex) {
+        showToast(ex.message, 'danger');
+      } finally {
+        btn.disabled = false;
+      }
+    });
   }
 
   // -------------------------------------------------------------
@@ -7737,7 +7856,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <!-- KPI SUMMARY CARDS -->
-        <div id="growCampaignsKpiContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;"></div>
+        <div id="growCampaignsKpiContainer" class="wz-kpi-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;"></div>
 
         <div id="adminCampaignsContainer">
           <div style="text-align:center;padding:48px;color:var(--text-muted);">
@@ -8279,7 +8398,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const formattedRev = `${revSymbol}${Number(stats.totalRevenue || 0).toLocaleString('en-IN')}`;
 
         statsContainer.innerHTML = `
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;">
+          <div class="wz-kpi-deck" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;">
             
             <!-- KPI 1: Total Revenue -->
             <div style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 18px; padding: 22px; box-shadow: 0 4px 18px rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='none'">
